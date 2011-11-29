@@ -1,0 +1,200 @@
+System Storage Manager
+----------------------
+
+Licence
+-------
+
+(C)2011 Red Hat, Inc., Lukas Czerner <lczerner@redhat.com>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+Usage
+-----
+
+usage: ssm.py [-h] [--version] [-v] [-f]
+              {create,list,remove,add,check,resize} ...
+
+System Storage Manager
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
+  -v, --verbose         verbose execution
+  -f, --force           force execution
+
+Commands:
+  {create,list,remove,add,check,resize}
+    check               check consistency of the file system on the device
+    resize              change or set the volume and file system size
+    create              create a new volume with defined parameters
+    list                list information about all detected, devices, pools
+                        and volumes in the system
+    add                 add one or more devices into the pool
+    remove              remove devices from the pool, volumes or pools
+
+To get help for particular command please specify 'ssm.py [command] -h'.
+
+Dependencies
+------------
+
+-- ssm --
+	tune2fs
+	fsck.SUPPORTED_FS
+	resize2fs
+	xfs_db
+	xfs_check
+	xfs_growfs
+	mkfs.SUPPORTED_FS
+
+--lvm --
+	lvm binaries
+
+-- misc --
+	which
+	mount
+	blkid
+	wipefs
+
+-- btrfs --
+	btrfs
+
+-- crypt --
+	dmsetup
+	cryptsetup
+
+-- tests --
+	coverage
+
+-- python modules --
+	os
+	re
+	sys
+	stat
+	argparse
+	datetime
+	itertools
+	threading
+	subprocess
+
+Examples
+--------
+
+	# ./ssm.py list
+-----------------------------------
+Device           Total  Mount point
+-----------------------------------
+/dev/loop0    10.00 GB             
+/dev/loop1    10.00 GB             
+/dev/loop2    11.00 TB             
+/dev/loop3    11.00 TB             
+/dev/sda     149.05 GB  PARTITIONED
+/dev/sda1     19.53 GB  /          
+/dev/sda2     78.12 GB             
+/dev/sda3      1.95 GB  SWAP       
+/dev/sda4      1.00 KB             
+/dev/sda5     49.44 GB             
+/dev/sr0    1024.00 MB             
+-----------------------------------
+-----------------------------------------------------------------------------
+Volume     Volume size  FS       Free      Used   FS size  Type   Mount point
+-----------------------------------------------------------------------------
+/dev/dm-0     78.12 GB  ext4  2.11 GB  72.11 GB  78.12 GB  crypt  /home      
+/dev/sda1     19.53 GB  ext4  3.79 GB  14.77 GB  19.53 GB  part   /          
+-----------------------------------------------------------------------------
+
+
+Creating a volume of defined size with the defined file system. The default
+back-end is set to lvm and the name is device_pool:
+
+	# ./ssm.py create --fs ext4 -s 15G /dev/loop0 /dev/loop1
+
+
+The name of the new volume is '/dev/device_pool/lvol001'. Resize the volume
+to 10GB:
+
+	# ./ssm.py resize -s-5G /dev/device_pool/lvol001 
+
+
+Resize the volume to 100G, but it would require to add more devices into the
+pool:
+
+	# ./ssm.py resize -s 100G /dev/device_pool/lvol001 /dev/loop2
+
+
+List all volumes with file system:
+
+	# ./ssm.py list filesystems
+-----------------------------------------------------------------------------------------------
+Volume                    Volume size  FS        Free      Used    FS size  Type    Mount point  
+-----------------------------------------------------------------------------------------------
+/dev/device_pool/lvol001    100.00 GB  ext4  93.25 GB   1.75 GB  100.00 GB  linear               
+/dev/dm-0                    78.12 GB  ext4   2.11 GB  72.11 GB   78.12 GB  crypt   /home        
+/dev/sda1                    19.53 GB  ext4   3.79 GB  14.77 GB   19.53 GB  part    /            
+-----------------------------------------------------------------------------------------------
+
+
+Now lest try to create btrfs volume:
+
+	# ./ssm.py create --fs btrfs /dev/loop3 /dev/sda5
+
+
+Mount btrfs file system and create a few btrfs subvolume:
+
+	# mount /dev/loop3 /mnt/test
+	# ./ssm.py create -p btrfs_loop3
+	# ./ssm.py create -n new_subvolume -p btrfs_loop3
+
+
+List all volumes with file system:
+
+	# ./ssm.py list filesystems
+-----------------------------------------------------------------------------------------------------------------------
+Volume                          Volume size  FS         Free      Used    FS size  Type    Mount point                   
+-----------------------------------------------------------------------------------------------------------------------
+/dev/device_pool/lvol001          100.00 GB  ext4   93.25 GB   1.75 GB  100.00 GB  linear                                
+/dev/dm-0                          78.12 GB  ext4    2.11 GB  72.11 GB   78.12 GB  crypt   /home                         
+btrfs_loop3                        11.05 TB  btrfs  11.05 TB  36.00 KB   11.05 TB  btrfs   /mnt/test                     
+btrfs_loop3:2011-11-29-T113552     11.05 TB  btrfs  11.05 TB  36.00 KB   11.05 TB  btrfs   /mnt/test/2011-11-29-T113552  
+btrfs_loop3:new_subvolume          11.05 TB  btrfs  11.05 TB  36.00 KB   11.05 TB  btrfs   /mnt/test/new_subvolume       
+/dev/sda1                          19.53 GB  ext4    3.79 GB  14.77 GB   19.53 GB  part    /                             
+-----------------------------------------------------------------------------------------------------------------------
+
+
+Add device to the btrfs file system:
+
+	# ./ssm.py add /dev/loop2 -p btrfs_loop3
+
+
+Remove the whole lvm device_pool and one of the btrfs subvolume, and one
+unused device from the btrfs pool btrfs_loop3. Note that with btrfs, pool
+have the same name as the volume:
+
+	# ./ssm.py remove device_pool /dev/loop2 /mnt/test/new_subvolume/
+
+
+Design
+------
+
+Back-ends
+---------
+
+LVM:
+
+BTRFS:
+
+CRYPT:
+
+How to create new backend
+-------------------------
+
