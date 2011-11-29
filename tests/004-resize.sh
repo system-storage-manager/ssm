@@ -47,7 +47,7 @@ TEST_MNT=$TESTDIR/mnt
 _test_resize()
 {
 	size=$((TEST_MAX_SIZE/2))
-	echo 'y' | ssm -f -y resize --size ${size}M ${DM_DEV_DIR}/$DEFAULT_VOLUME
+	echo 'y' | ssm -f resize --size ${size}M ${DM_DEV_DIR}/$DEFAULT_VOLUME
 	size=$(align_size_up $size)
 	check lv_field $DEFAULT_DEVICE_POOL/$lvol1 lv_size ${size}.00m
 
@@ -57,7 +57,7 @@ _test_resize()
 		size=$(align_size_up $(($size-($TEST_MAX_SIZE/4))))
 		check lv_field $DEFAULT_DEVICE_POOL/$lvol1 lv_size ${size}.00m
 	fi
-	echo 'y' | ssm -f -y resize --size +$(($TEST_MAX_SIZE/5))M $DEFAULT_VOLUME
+	echo 'y' | ssm -f resize --size +$(($TEST_MAX_SIZE/5))M $DEFAULT_VOLUME
 	size=$(align_size_up $(($size+($TEST_MAX_SIZE/5))))
 	check lv_field $DEFAULT_DEVICE_POOL/$lvol1 lv_size ${size}.00m
 }
