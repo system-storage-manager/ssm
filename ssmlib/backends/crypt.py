@@ -45,7 +45,7 @@ class DmCryptVolume(object):
         command = ['dmsetup', 'table']
         self.output = misc.run(command, stderr=False)[1]
         for line in self.output.split("\n"):
-            if not line:
+            if not line or line == "No devices found":
                 break
             dm = {}
             array = line.split()
