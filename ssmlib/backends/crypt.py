@@ -19,7 +19,9 @@
 
 import re
 import os
-import misc
+from ssmlib import misc
+
+__all__ = ["DmCryptVolume"]
 
 try:
     DM_DEV_DIR = os.environ['DM_DEV_DIR']

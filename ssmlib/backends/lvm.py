@@ -19,7 +19,9 @@
 
 import os
 import stat
-import misc
+from ssmlib import misc
+
+__all__ = ["PvsInfo", "VgsInfo", "LvsInfo"]
 
 try:
     DM_DEV_DIR = os.environ['DM_DEV_DIR']

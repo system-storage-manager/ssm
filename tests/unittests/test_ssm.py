@@ -15,55 +15,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# Main testing script for the system storage manager
-
+# Unittests for the system storage manager
 
 import os
 import re
 import sys
-import ssm
 import stat
 import time
 import doctest
 import unittest
 import argparse
 import itertools
-import misc
-import lvm
-import crypt
-import btrfs
+from ssmlib import main
+from ssmlib import misc
 
-class MyStdout(object):
-    def __init__(self):
-        self.output = ""
-        self.stdout = sys.stdout
-
-    def write(self, s):
-        self.output += s
-
-
-class BaseStorageHandleInit(unittest.TestCase):
-    '''
-    Initialize StorageHandle class and some mock functions.
-    '''
-
-    def setUp(self):
-        self.storage = ssm.StorageHandle()
-        self.run_data = []
-        self.run_orig = misc.run
-        misc.run = self.mock_run
-
-    def mock_run(self, cmd, *args, **kwargs):
-        self.run_data.append(" ".join(cmd))
-        output = ""
-        if 'return_stdout' in kwargs and not kwargs['return_stdout']:
-            output = None
-        return (0, output)
-
-    def tearDown(self):
-        self.storage = None
-        self.run_data = []
-        misc.run = self.run_orig
+from tests.unittests.common import *
 
 class SimpleStorageHandleSanityCheck(BaseStorageHandleInit):
     '''
@@ -82,7 +48,7 @@ class SimpleStorageHandleSanityCheck(BaseStorageHandleInit):
         self.assertIsNone(self.storage._volumes)
 
     def test_create_fs(self):
-        for fs in ssm.EXTN:
+        for fs in main.EXTN:
             self.storage.set_globals(True, True, False, "my_new_config")
             self.storage._create_fs(fs, "/dev/foo/bar")
             self.assertEqual('mkfs.{0} -v -F /dev/foo/bar'.format(fs),
@@ -140,9 +106,9 @@ class StorageHandleSanityCheck(BaseStorageHandleInit):
         self.assertEqual(self.storage.config, "my_config")
 
         # Check if we have right instances
-        self.assertIsInstance(self.dev, ssm.Devices)
-        self.assertIsInstance(self.vol, ssm.Volumes)
-        self.assertIsInstance(self.pool, ssm.Pool)
+        self.assertIsInstance(self.dev, main.Devices)
+        self.assertIsInstance(self.vol, main.Volumes)
+        self.assertIsInstance(self.pool, main.Pool)
 
         # Check initial variables
         for source in self.dev, self.vol, self.pool:
@@ -224,7 +190,7 @@ class SimpleSsmSanityCheck(unittest.TestCase):
     '''
 
     def test_existing_objects(self):
-        obj = dir(ssm)
+        obj = dir(main)
         self.assertIn("StorageHandle", obj)
         self.assertIn("FsInfo", obj)
         self.assertIn("DeviceInfo", obj)
@@ -236,17 +202,17 @@ class SimpleSsmSanityCheck(unittest.TestCase):
         self.assertIn("Volumes", obj)
 
     def test_fsinfo_methods(self):
-        obj = dir(ssm.FsInfo)
+        obj = dir(main.FsInfo)
         self.assertIn("extN_get_info", obj)
         self.assertIn("extN_fsck", obj)
-        for fs in set(ssm.SUPPORTED_FS) - set(ssm.EXTN):
+        for fs in set(main.SUPPORTED_FS) - set(main.EXTN):
             if fs == 'btrfs':
                 continue
             self.assertIn("{0}_get_info".format(fs), obj)
             self.assertIn("{0}_fsck".format(fs), obj)
 
     def test_storage_handle_methods(self):
-        obj = dir(ssm.StorageHandle)
+        obj = dir(main.StorageHandle)
         self.assertIn("dev", obj)
         self.assertIn("pool", obj)
         self.assertIn("vol", obj)
@@ -259,148 +225,6 @@ class SimpleSsmSanityCheck(unittest.TestCase):
         self.assertIn("mirror", obj)
         self.assertIn("set_globals", obj)
 
-class MockSystemDataSource(unittest.TestCase):
-    def setUp(self):
-        self.directories = []
-        self.run_data = []
-        self.run_orig = misc.run
-        misc.run = self.mock_run
-        self.get_partitions_orig = misc.get_partitions
-        misc.get_partitions = self.mock_get_partitions
-        self.is_bdevice_orig = ssm.is_bdevice
-        ssm.is_bdevice = self.mock_is_bdevice
-        self.check_create_item_orig = ssm.StorageHandle.check_create_item
-        ssm.StorageHandle.check_create_item = self.mock_check_create_item
-        self.dev_data = {}
-        self.vol_data = {}
-        self.pool_data = {}
-        self._mpoint = False
-
-    def tearDown(self):
-        self.directories = []
-        self.run_data = []
-        self.dev_data = {}
-        self.pool_data = {}
-        self.vol_data = {}
-        misc.run = self.run_orig
-        misc.get_partitions = self.get_partitions_orig
-        ssm.is_bdevice = self.is_bdevice_orig
-        ssm.StorageHandle.check_create_item = self.check_create_item_orig
-
-    def _cmdEq(self, out, index=-1):
-        self.assertEqual(self.run_data[index], out)
-
-    def _checkCmd(self, command, args, expected=None):
-        for case in itertools.permutations(args):
-            cmd = command + " " + " ".join(case)
-            ssm.main(cmd)
-            if expected:
-                self._cmdEq(expected)
-
-    def mock_run(self, cmd, *args, **kwargs):
-        self.run_data.append(" ".join(cmd))
-        output = ""
-        if 'return_stdout' in kwargs and not kwargs['return_stdout']:
-            output = None
-        return (0, output)
-
-    def mock_get_partitions(self):
-        partitions = []
-        for name, data in self.dev_data.iteritems():
-            partitions.append([data['major'], data['minor'], data['dev_size'],
-                              data['dev_name'].rpartition("/")[2]])
-        return partitions
-
-    def mock_is_bdevice(self, path):
-        if path in self.dev_data:
-            return path
-        else:
-            err = "'{0}' is not valid block device".format(path)
-            raise argparse.ArgumentTypeError(err)
-
-    def mock_check_create_item(self, path):
-        if not self._mpoint:
-            if path in self.directories:
-                self._mpoint = path
-                return
-        return ssm.is_bdevice(path)
-
-    def _addDir(self, dirname):
-        self.directories.append(dirname)
-
-    def _addDevice(self, dev_name, dev_size, minor=0):
-        self.dev_data[dev_name] = {'dev_name': dev_name, 'dev_size': dev_size,
-                'major': '8', 'minor': str(minor)}
-
-    def _addPool(self, pool_name, devices):
-        if pool_name in self.pool_data:
-            pool_data = self.pool_data[pool_name]
-            pool_size = float(pool_data['pool_size'])
-            pool_free = float(pool_data['pool_free'])
-            pool_used = float(pool_data['pool_used'])
-            dev_count = int(pool_data['dev_count'])
-        else:
-            pool_size = pool_free = pool_used = 0.0
-            dev_count = 0
-
-        for dev in devices:
-            dev_data = self.dev_data[dev]
-            pool_size += float(dev_data['dev_size'])
-            pool_free += float(dev_data['dev_size'])
-            dev_data['pool_name'] = str(pool_name)
-            dev_data['dev_free'] = dev_data['dev_size']
-            dev_data['dev_used'] = '0.0'
-
-        dev_count += len(devices)
-        self.pool_data[pool_name] = {'pool_name': pool_name,
-                'pool_size': str(pool_size), 'pool_used': str(pool_used),
-                'dev_count': str(dev_count), 'pool_free': str(pool_size),
-                'vol_count': '0'}
-
-    def _addVol(self, vol_name, vol_size, stripes, pool_name, devices):
-        pool_data = self.pool_data[pool_name]
-        pool_free = float(pool_data['pool_free']) - vol_size
-        pool_used = float(pool_data['pool_used']) + vol_size
-
-        space_per_dev = vol_size / stripes
-
-        size = vol_size
-        for dev in devices:
-            dev_data = self.dev_data[dev]
-            if 'dev_free' not in dev_data:
-                self._addPool(pool_name, [dev])
-            if stripes > 1:
-                dev_data['pool_name'] = pool_name
-                dev_data['dev_used'] = str(float(dev_data['dev_used']) +
-                                                space_per_dev)
-                dev_data['dev_free'] = str(float(dev_data['dev_free']) -
-                                                space_per_dev)
-                size -= space_per_dev
-            else:
-                dev_data['pool_name'] = pool_name
-                if size > float(dev_data['dev_size']):
-                    use = float(dev_data['dev_size'])
-                else:
-                    use = size
-                dev_data['dev_used'] = str(float(dev_data['dev_used']) +
-                                                space_per_dev)
-                dev_data['dev_free'] = str(float(dev_data['dev_free']) -
-                                                 space_per_dev)
-                size -= use
-        if size > 1:
-            raise Exception("Error in the test in _addVol")
-        if stripes > 1:
-            vol_type = "striped"
-            stripesize = 32
-        else:
-            vol_type = "linear"
-            stripesize = 0
-        vol_name = "/dev/{0}/{1}".format(pool_name, vol_name)
-        self.vol_data[vol_name] = {'dm_name': vol_name,
-                'real_dev': vol_name, 'stripes': stripes, 'dev_name': vol_name,
-                'stripesize': 0, 'pool_name': pool_name, 'vol_size': vol_size,
-                'dev_size': vol_size, 'type': vol_type}
-
 
 class SsmFunctionCheck(MockSystemDataSource):
     '''
@@ -409,12 +233,12 @@ class SsmFunctionCheck(MockSystemDataSource):
 
     def setUp(self):
         super(SsmFunctionCheck, self).setUp()
-        self.volumes_orig = ssm.Volumes
-        ssm.Volumes = Volumes
-        self.pool_orig = ssm.Pool
-        ssm.Pool = Pool
-        self.devices_orig = ssm.Devices
-        ssm.Devices = Devices
+        self.volumes_orig = main.Volumes
+        main.Volumes = Volumes
+        self.pool_orig = main.Pool
+        main.Pool = Pool
+        self.devices_orig = main.Devices
+        main.Devices = Devices
         self._addDevice('/dev/sda', 11489037516)
         self._addDevice('/dev/sdb', 234566451)
         self._addDevice('/dev/sdc', 2684354560)
@@ -425,9 +249,9 @@ class SsmFunctionCheck(MockSystemDataSource):
 
     def tearDown(self):
         super(SsmFunctionCheck, self).tearDown()
-        ssm.Volumes = self.volumes_orig
-        ssm.Pool = self.pool_orig
-        ssm.Devices = self.devices_orig
+        main.Volumes = self.volumes_orig
+        main.Pool = self.pool_orig
+        main.Devices = self.devices_orig
 
     def mock_run(self, cmd, *args, **kwargs):
         for i,arg in enumerate(cmd):
@@ -452,57 +276,57 @@ class SsmFunctionCheck(MockSystemDataSource):
 
         # Create volume using single device from non existent default pool
         self._checkCmd("ssm create", ['/dev/sda'],
-            "pool create {0} /dev/sda".format(ssm.DEFAULT_DEVICE_POOL))
-        self._cmdEq("pool new {0} /dev/sda".format(ssm.DEFAULT_DEVICE_POOL), -2)
+            "pool create {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL))
+        self._cmdEq("pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
         self._checkCmd("ssm create", ['--name myvolume', '--fstype ext4', '/dev/sda'])
-        self._cmdEq("mkfs.ext4 /dev/{0}/myvolume".format(ssm.DEFAULT_DEVICE_POOL))
-        self._cmdEq("pool create {0} myvolume /dev/sda".format(ssm.DEFAULT_DEVICE_POOL), -2)
-        self._cmdEq("pool new {0} /dev/sda".format(ssm.DEFAULT_DEVICE_POOL), -3)
+        self._cmdEq("mkfs.ext4 /dev/{0}/myvolume".format(main.DEFAULT_DEVICE_POOL))
+        self._cmdEq("pool create {0} myvolume /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
+        self._cmdEq("pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -3)
 
         self._checkCmd("ssm -f create", ['--fstype ext4', '/dev/sda'])
-        self._cmdEq("mkfs.ext4 -F /dev/{0}/lvol001".format(ssm.DEFAULT_DEVICE_POOL))
-        self._cmdEq("force pool create {0} /dev/sda".format(ssm.DEFAULT_DEVICE_POOL), -2)
-        self._cmdEq("force pool new {0} /dev/sda".format(ssm.DEFAULT_DEVICE_POOL), -3)
+        self._cmdEq("mkfs.ext4 -F /dev/{0}/lvol001".format(main.DEFAULT_DEVICE_POOL))
+        self._cmdEq("force pool create {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
+        self._cmdEq("force pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -3)
 
         self._checkCmd("ssm -v create", ['--name myvolume', '--fstype xfs', '/dev/sda'])
-        self._cmdEq("mkfs.xfs /dev/{0}/myvolume".format(ssm.DEFAULT_DEVICE_POOL))
-        self._cmdEq("verbose pool create {0} myvolume /dev/sda".format(ssm.DEFAULT_DEVICE_POOL), -2)
-        self._cmdEq("verbose pool new {0} /dev/sda".format(ssm.DEFAULT_DEVICE_POOL), -3)
+        self._cmdEq("mkfs.xfs /dev/{0}/myvolume".format(main.DEFAULT_DEVICE_POOL))
+        self._cmdEq("verbose pool create {0} myvolume /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
+        self._cmdEq("verbose pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -3)
 
         self._checkCmd("ssm -v -f create", ['--name myvolume', '--fstype xfs', '/dev/sda'])
-        self._cmdEq("mkfs.xfs -f /dev/{0}/myvolume".format(ssm.DEFAULT_DEVICE_POOL))
-        self._cmdEq("force verbose pool create {0} myvolume /dev/sda".format(ssm.DEFAULT_DEVICE_POOL), -2)
-        self._cmdEq("force verbose pool new {0} /dev/sda".format(ssm.DEFAULT_DEVICE_POOL), -3)
+        self._cmdEq("mkfs.xfs -f /dev/{0}/myvolume".format(main.DEFAULT_DEVICE_POOL))
+        self._cmdEq("force verbose pool create {0} myvolume /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
+        self._cmdEq("force verbose pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -3)
 
         self._checkCmd("ssm -f create", ['/dev/sda'],
-            "force pool create {0} /dev/sda".format(ssm.DEFAULT_DEVICE_POOL))
-        self._cmdEq("force pool new {0} /dev/sda".format(ssm.DEFAULT_DEVICE_POOL), -2)
+            "force pool create {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL))
+        self._cmdEq("force pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
         self._checkCmd("ssm -v create", ['/dev/sda'],
-            "verbose pool create {0} /dev/sda".format(ssm.DEFAULT_DEVICE_POOL))
-        self._cmdEq("verbose pool new {0} /dev/sda".format(ssm.DEFAULT_DEVICE_POOL), -2)
+            "verbose pool create {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL))
+        self._cmdEq("verbose pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
         self._checkCmd("ssm -f -v create", ['/dev/sda'],
-            "force verbose pool create {0} /dev/sda".format(ssm.DEFAULT_DEVICE_POOL))
-        self._cmdEq("force verbose pool new {0} /dev/sda".format(ssm.DEFAULT_DEVICE_POOL), -2)
+            "force verbose pool create {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL))
+        self._cmdEq("force verbose pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
         self._checkCmd("ssm create", ['-s 2.6T', '/dev/sda'],
-            "pool create {0} 2791728742.40 /dev/sda".format(ssm.DEFAULT_DEVICE_POOL))
-        self._cmdEq("pool new {0} /dev/sda".format(ssm.DEFAULT_DEVICE_POOL), -2)
+            "pool create {0} 2791728742.40 /dev/sda".format(main.DEFAULT_DEVICE_POOL))
+        self._cmdEq("pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
         self._checkCmd("ssm create", ['-s 2.6T', '-I 16', '/dev/sda'],
-            "pool create {0} 2791728742.40 16 /dev/sda".format(ssm.DEFAULT_DEVICE_POOL))
-        self._cmdEq("pool new {0} /dev/sda".format(ssm.DEFAULT_DEVICE_POOL), -2)
+            "pool create {0} 2791728742.40 16 /dev/sda".format(main.DEFAULT_DEVICE_POOL))
+        self._cmdEq("pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
         self._checkCmd("ssm create", ['-s 2.6T', '-I 16', '-i 4', '/dev/sda'],
-            "pool create {0} 2791728742.40 4 16 /dev/sda".format(ssm.DEFAULT_DEVICE_POOL))
-        self._cmdEq("pool new {0} /dev/sda".format(ssm.DEFAULT_DEVICE_POOL), -2)
+            "pool create {0} 2791728742.40 4 16 /dev/sda".format(main.DEFAULT_DEVICE_POOL))
+        self._cmdEq("pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
         self._checkCmd("ssm create", ['-s 2.6T', '-I 16', '-i 4', '-n myvolume',
             '/dev/sda'],
-            "pool create {0} 2791728742.40 myvolume 4 16 /dev/sda".format(ssm.DEFAULT_DEVICE_POOL))
-        self._cmdEq("pool new {0} /dev/sda".format(ssm.DEFAULT_DEVICE_POOL), -2)
+            "pool create {0} 2791728742.40 myvolume 4 16 /dev/sda".format(main.DEFAULT_DEVICE_POOL))
+        self._cmdEq("pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
         # Create volume using single device from non existent my_pool
         self._checkCmd("ssm create", ['--pool my_pool', '/dev/sda'],
@@ -540,19 +364,19 @@ class SsmFunctionCheck(MockSystemDataSource):
 
         # Create volume using multiple devices
         self._checkCmd("ssm create", ['/dev/sda /dev/sdc1'],
-            "pool create {0} /dev/sda /dev/sdc1".format(ssm.DEFAULT_DEVICE_POOL))
-        self._cmdEq("pool new {0} /dev/sda /dev/sdc1".format(ssm.DEFAULT_DEVICE_POOL), -2)
+            "pool create {0} /dev/sda /dev/sdc1".format(main.DEFAULT_DEVICE_POOL))
+        self._cmdEq("pool new {0} /dev/sda /dev/sdc1".format(main.DEFAULT_DEVICE_POOL), -2)
 
         self._checkCmd("ssm create", ['--pool my_pool', '/dev/sda /dev/sdc1'],
             "pool create my_pool /dev/sda /dev/sdc1")
         self._cmdEq("pool new my_pool /dev/sda /dev/sdc1", -2)
 
         # Create volume using single device from existing pool
-        self._addPool(ssm.DEFAULT_DEVICE_POOL, ['/dev/sdb', '/dev/sdd'])
+        self._addPool(main.DEFAULT_DEVICE_POOL, ['/dev/sdb', '/dev/sdd'])
         self._checkCmd("ssm create", ['-s 2.6T', '-I 16',
             '-i 4', '-n myvolume', '/dev/sda'],
-            "pool create {0} 2791728742.40 myvolume 4 16 /dev/sda". format(ssm.DEFAULT_DEVICE_POOL))
-        self._cmdEq("pool extend {0} /dev/sda".format(ssm.DEFAULT_DEVICE_POOL), -2)
+            "pool create {0} 2791728742.40 myvolume 4 16 /dev/sda". format(main.DEFAULT_DEVICE_POOL))
+        self._cmdEq("pool extend {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
         self._addPool("my_pool", ['/dev/sdc2', '/dev/sdc3'])
         self._checkCmd("ssm create", ['-p my_pool', '-s 2.6T', '-I 16',
@@ -564,8 +388,8 @@ class SsmFunctionCheck(MockSystemDataSource):
         # in the pool
         self._checkCmd("ssm create", ['-s 2.6T', '-I 16',
             '-i 4', '-n myvolume', '/dev/sda /dev/sdb'],
-            "pool create {0} 2791728742.40 myvolume 4 16 /dev/sda /dev/sdb". format(ssm.DEFAULT_DEVICE_POOL))
-        self._cmdEq("pool extend {0} /dev/sda".format(ssm.DEFAULT_DEVICE_POOL), -2)
+            "pool create {0} 2791728742.40 myvolume 4 16 /dev/sda /dev/sdb". format(main.DEFAULT_DEVICE_POOL))
+        self._cmdEq("pool extend {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
         self._addPool("my_pool", ['/dev/sdc2', '/dev/sdc3'])
         self._checkCmd("ssm create", ['-p my_pool', '-s 2.6T', '-I 16',
@@ -579,10 +403,10 @@ class SsmFunctionCheck(MockSystemDataSource):
         # Adding to non existent pool
         # Add device into default pool
         self._checkCmd("ssm add", ['/dev/sda'],
-            "pool new {0} /dev/sda".format(ssm.DEFAULT_DEVICE_POOL))
+            "pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL))
         # Add more devices into default pool
         self._checkCmd("ssm add", ['/dev/sda /dev/sdc1'],
-            "pool new {0} /dev/sda /dev/sdc1".format(ssm.DEFAULT_DEVICE_POOL))
+            "pool new {0} /dev/sda /dev/sdc1".format(main.DEFAULT_DEVICE_POOL))
         # Add device into defined pool
         self._checkCmd("ssm add", ['-p my_pool', '/dev/sda'],
             "pool new my_pool /dev/sda")
@@ -604,13 +428,13 @@ class SsmFunctionCheck(MockSystemDataSource):
             "force verbose pool new my_pool /dev/sda")
 
         # Adding to existing default pool
-        self._addPool(ssm.DEFAULT_DEVICE_POOL, ['/dev/sdb', '/dev/sdd'])
+        self._addPool(main.DEFAULT_DEVICE_POOL, ['/dev/sdb', '/dev/sdd'])
         # Add device into default pool
         self._checkCmd("ssm add", ['/dev/sda'],
-            "pool extend {0} /dev/sda".format(ssm.DEFAULT_DEVICE_POOL))
+            "pool extend {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL))
         # Add more devices into default pool
         self._checkCmd("ssm add", ['/dev/sda /dev/sdc1'],
-            "pool extend {0} /dev/sda /dev/sdc1".format(ssm.DEFAULT_DEVICE_POOL))
+            "pool extend {0} /dev/sda /dev/sdc1".format(main.DEFAULT_DEVICE_POOL))
 
         # Adding to existing defined pool
         self._addPool("my_pool", ['/dev/sdc2', '/dev/sdc3'])
@@ -639,7 +463,7 @@ class SsmFunctionCheck(MockSystemDataSource):
         self._checkCmd("ssm add", ['--pool my_pool', '/dev/sdc2 /dev/sda'],
             "pool extend my_pool /dev/sda")
         self._checkCmd("ssm add", ['/dev/sda /dev/sdb'],
-            "pool extend {0} /dev/sda".format(ssm.DEFAULT_DEVICE_POOL))
+            "pool extend {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL))
 
 
     def test_remove(self):
@@ -653,130 +477,44 @@ class SsmFunctionCheck(MockSystemDataSource):
                      '/dev/sdb'])
 
         # remove volume
-        ssm.main("ssm remove /dev/default_pool/vol002")
+        main.main("ssm remove /dev/default_pool/vol002")
         self._cmdEq("vol remove /dev/default_pool/vol002")
         # remove multiple volumes
-        ssm.main("ssm remove /dev/default_pool/vol002 /dev/default_pool/vol003")
+        main.main("ssm remove /dev/default_pool/vol002 /dev/default_pool/vol003")
         self._cmdEq("vol remove /dev/default_pool/vol002", -2)
         self._cmdEq("vol remove /dev/default_pool/vol003")
         # remove pool
-        ssm.main("ssm remove my_pool")
+        main.main("ssm remove my_pool")
         self._cmdEq("pool remove my_pool")
         # remove multiple pools
-        ssm.main("ssm remove my_pool default_pool")
+        main.main("ssm remove my_pool default_pool")
         self._cmdEq("pool remove my_pool", -2)
         self._cmdEq("pool remove default_pool")
         # remove device
-        ssm.main("ssm remove /dev/sdc1")
+        main.main("ssm remove /dev/sdc1")
         self._cmdEq("pool reduce my_pool /dev/sdc1")
         # remove multiple devices
-        ssm.main("ssm remove /dev/sdc1 /dev/sdb")
+        main.main("ssm remove /dev/sdc1 /dev/sdb")
         self._cmdEq("pool reduce my_pool /dev/sdc1", -2)
         self._cmdEq("pool reduce default_pool /dev/sdb")
         # remove combination
-        ssm.main("ssm remove /dev/sdb my_pool /dev/default_pool/vol001")
+        main.main("ssm remove /dev/sdb my_pool /dev/default_pool/vol001")
         self._cmdEq("pool reduce default_pool /dev/sdb", -3)
         self._cmdEq("pool remove my_pool", -2)
         self._cmdEq("vol remove /dev/default_pool/vol001")
         # remove all
-        ssm.main("ssm remove --all")
+        main.main("ssm remove --all")
         self._cmdEq("pool remove default_pool", -2)
         self._cmdEq("pool remove my_pool")
         # remove force
-        ssm.main("ssm -f remove /dev/default_pool/vol002")
+        main.main("ssm -f remove /dev/default_pool/vol002")
         self._cmdEq("force vol remove /dev/default_pool/vol002")
         # remove verbose
-        ssm.main("ssm -v remove /dev/default_pool/vol002")
+        main.main("ssm -v remove /dev/default_pool/vol002")
         self._cmdEq("verbose vol remove /dev/default_pool/vol002")
         # remove verbose + force
-        ssm.main("ssm -v -f remove /dev/default_pool/vol002")
+        main.main("ssm -v -f remove /dev/default_pool/vol002")
         self._cmdEq("force verbose vol remove /dev/default_pool/vol002")
-
-class LvmFunctionCheck(MockSystemDataSource):
-
-    def setUp(self):
-        super(LvmFunctionCheck, self).setUp()
-        self._addDevice('/dev/sda', 11489037516)
-        self._addDevice('/dev/sdb', 234566451)
-        self._addDevice('/dev/sdc', 2684354560)
-        self._addDevice('/dev/sdc1', 894784853, 1)
-        self._addDevice('/dev/sdc2', 29826161, 2)
-        self._addDevice('/dev/sdc3', 1042177280, 3)
-        self._addDevice('/dev/sdd', 11673)
-
-    def mock_run(self, cmd, *args, **kwargs):
-        self.run_data.append(" ".join(cmd))
-        output = ""
-        if cmd[1] == 'pvs':
-            for dev, data in self.dev_data.iteritems():
-                if 'pool_name' in data:
-                    output += "{0}|{1}|{2}|{3}\n".format(dev, data['pool_name'],
-                            data['dev_free'], data['dev_used'])
-        elif cmd[1] == 'vgs':
-            for pool, data in self.pool_data.iteritems():
-                output += "{0}|{1}|{2}|{3}|{4}\n".format(pool, data['dev_count'],
-                        data['pool_size'], data['pool_free'], data['vol_count'])
-        elif cmd[1] == 'lvs':
-            for vol, data in self.vol_data.iteritems():
-                output += "{0}|{1}|{2}|{3}|{4}|{5}\n".format(data['pool_name'],
-                        data['vol_size'], data['stripes'], data['stripesize'],
-                        data['type'], data['dev_name'])
-        if 'return_stdout' in kwargs and not kwargs['return_stdout']:
-            output = None
-        return (0, output)
-
-    def test_lvm_remove(self):
-        # Generate some storage data
-        self._addPool('default_pool', ['/dev/sda', '/dev/sdb'])
-        self._addPool('my_pool', ['/dev/sdc2', '/dev/sdc3', '/dev/sdc1'])
-        self._addVol('vol001', 117283225, 1, 'default_pool', ['/dev/sda'])
-        self._addVol('vol002', 237284225, 1, 'default_pool', ['/dev/sda'])
-        self._addVol('vol003', 1024, 1, 'default_pool', ['/dev/sdd'])
-        self._addVol('vol004', 209715200, 2, 'default_pool', ['/dev/sda',
-                     '/dev/sdb'])
-
-        # remove volume
-        ssm.main("ssm remove /dev/default_pool/vol002")
-        self._cmdEq("lvm lvremove /dev/default_pool/vol002")
-        # remove multiple volumes
-        ssm.main("ssm remove /dev/default_pool/vol002 /dev/default_pool/vol003")
-        self.assertEqual(self.run_data[-2], "lvm lvremove /dev/default_pool/vol002")
-        self._cmdEq("lvm lvremove /dev/default_pool/vol003")
-        # remove pool
-        ssm.main("ssm remove my_pool")
-        self._cmdEq("lvm vgremove my_pool")
-        # remove multiple pools
-        ssm.main("ssm remove my_pool default_pool")
-        self.assertEqual(self.run_data[-2], "lvm vgremove my_pool")
-        self._cmdEq("lvm vgremove default_pool")
-        # remove device
-        ssm.main("ssm remove /dev/sdc1")
-        self._cmdEq("lvm vgreduce my_pool /dev/sdc1")
-        # remove multiple devices
-        ssm.main("ssm remove /dev/sdc1 /dev/sdb")
-        self.assertEqual(self.run_data[-2], "lvm vgreduce my_pool /dev/sdc1")
-        self._cmdEq("lvm vgreduce default_pool /dev/sdb")
-        # remove combination
-        ssm.main("ssm remove /dev/sdb my_pool /dev/default_pool/vol001")
-        self.assertEqual(self.run_data[-3], "lvm vgreduce default_pool /dev/sdb")
-        self.assertEqual(self.run_data[-2], "lvm vgremove my_pool")
-        self._cmdEq("lvm lvremove /dev/default_pool/vol001")
-        # remove all
-        ssm.main("ssm remove --all")
-        self.assertEqual(self.run_data[-2], "lvm vgremove default_pool")
-        self._cmdEq("lvm vgremove my_pool")
-        # remove force
-        ssm.main("ssm -f remove /dev/default_pool/vol002")
-        self._cmdEq("lvm lvremove -f /dev/default_pool/vol002")
-        # remove verbose
-        ssm.main("ssm -v remove /dev/default_pool/vol002")
-        self._cmdEq("lvm lvremove -v /dev/default_pool/vol002")
-        # remove verbose + force
-        ssm.main("ssm -v -f remove /dev/default_pool/vol002")
-        self._cmdEq("lvm lvremove -v -f /dev/default_pool/vol002")
-
-        #ssm.main("ssm list")
-
 
 class MyInfo(object):
     def __init__(self, data=None, force=False, verbose=False, yes=False):
@@ -869,19 +607,19 @@ class DevInfo(MyInfo):
         misc.run(cmd)
 
 
-class Pool(ssm.Storage):
+class Pool(main.Storage):
     def __init__(self, *args, **kwargs):
         super(Pool, self).__init__(*args, **kwargs)
         _default_backend = PoolInfo(force=self.force, verbose=self.verbose,
                                    yes=self.yes)
         self._data = {'test': _default_backend}
-        self.default = ssm.Item(_default_backend, ssm.DEFAULT_DEVICE_POOL)
+        self.default = main.Item(_default_backend, main.DEFAULT_DEVICE_POOL)
         self.header = ['Pool', 'Devices', 'Free', 'Used', 'Total']
         self.attrs = ['pool_name', 'dev_count', 'pool_free', 'pool_used', 'pool_size']
         self.types = [str, str, float, float, float]
 
 
-class Volumes(ssm.Storage):
+class Volumes(main.Storage):
     def __init__(self, *args, **kwargs):
         super(Volumes, self).__init__(*args, **kwargs)
         self._data = {'test': VolumeInfo(force=self.force, verbose=self.verbose,
@@ -893,83 +631,13 @@ class Volumes(ssm.Storage):
         self.types = [str, float, str, float, float, float, str, str]
 
 
-class Devices(ssm.Storage):
+class Devices(main.Storage):
     def __init__(self, *args, **kwargs):
         super(Devices, self).__init__(*args, **kwargs)
-        self._data = {'dev': ssm.DeviceInfo(data=DevInfo().data,
+        self._data = {'dev': main.DeviceInfo(data=DevInfo().data,
                         force=self.force, verbose=self.verbose, yes=self.yes)}
         self.header = ['Device', 'Free', 'Used',
                        'Total', 'Pool', 'Mount point']
         self.attrs = ['dev_name', 'dev_free', 'dev_used', 'dev_size',
                       'pool_name', 'mount']
         self.types = [str, float, float, float, str, str]
-
-
-def run_bash_tests():
-    cur = os.getcwd()
-    os.chdir('./tests')
-    command = ['ls', '-m']
-    if os.access('.coverage', os.R_OK):
-        os.remove('.coverage')
-
-    failed = []
-    passed = []
-    count = 0
-    misc.run('./set.sh', stdout=False)
-    output = misc.run(command, stdout=False)[1]
-    t0 = time.time()
-    for script in output.split(","):
-        script = script.strip()
-        if not re.match("^\d\d\d-.*\.sh$", script):
-            continue
-        count += 1
-        sys.stdout.write("{0:<30}".format(script))
-        bad_file = re.sub("\.sh$",".bad", script)
-        if os.access(bad_file, os.R_OK):
-            os.remove(bad_file)
-        ret, out = misc.run(['./' + script], stdout=False, can_fail=True)
-        if ret:
-            print "[FAILED]"
-            failed.append(script)
-            with open(bad_file, 'w') as f:
-                f.write(out)
-        else:
-            print "[PASSED]"
-            passed.append(script)
-    t1 = time.time() - t0
-    print "Ran {0} tests in {1} seconds.".format(count, round(t1, 2))
-    print "{0} tests PASSED: {1}".format(len(passed), ", ".join(passed))
-    ret = 0
-    if len(failed) > 0:
-        print "{0} tests FAILED: {1}".format(len(failed), ", ".join(failed))
-        print "See files with \"bad\" extension for output"
-        ret = 1
-    # Show coverage report output if possible
-    if misc.check_binary('coverage'):
-        print "[+] Coverage"
-        misc.run(['coverage', 'report'], stdout=True, can_fail=True)
-    os.chdir(cur)
-    return ret
-
-
-if __name__ == '__main__':
-    print "[+] Running doctests"
-    result = doctest.testmod(ssm, exclude_empty=True, report=True,
-            raise_on_error=True)
-    result = doctest.testmod(lvm, exclude_empty=True, report=True,
-            raise_on_error=True)
-    result = doctest.testmod(crypt, exclude_empty=True, report=True,
-            raise_on_error=True)
-    result = doctest.testmod(btrfs, exclude_empty=True, report=True,
-            raise_on_error=True)
-    result = doctest.testmod(misc, exclude_empty=True, report=True,
-            raise_on_error=True)
-    print "[+] Running unittests"
-    result = unittest.main(verbosity=2, exit=False, failfast=True)
-    if not os.geteuid() == 0:
-        sys.exit("\nRoot privileges required to run more tests!\n")
-    print "[+] Running bash tests"
-    result = run_bash_tests()
-    sys.exit(result)
-
-

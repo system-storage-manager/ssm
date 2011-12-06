@@ -9,48 +9,52 @@ TODO
  - Remove the physical volume after it is removed from the group
  D Parse subvolumes on mounted btrfs
  D Create subvolumes on btrfs on 'create'
- - Create btrfs tests
+ - Create btrfs unittests
  - Document python classes and add more documentation into the code
  - Extend python unittests to other backends
  D Write-up dependencies
- - Reorganise File structure of the project
+ D Reorganise File structure of the project
  - Add mirror support
  - Add snapshots support
  - Add raid support
  D Licence and licence notice in the source files
- - Create readme
+ D Create readme
  - Better table alignment when the output spans multiple lines
  - Better error handling - not just plain Exception, but rather named exception
    and handle it as main() in ssm module
  D Wire in bash tests into the test_ssm.py
  D Create a way to exclude "real" system devices,pools,volumes from the ssm
    consideration for testing purposes
- - Create btrfs bash tests + figure out how to handle it (SSM_PREFIX_ONLY ??)
+ - Create btrfs bash tests
+ D Create a way to exclude "real" system devices,pools,volumes from the ssm
+   consideration for testing purposes
+ - Update readme
+ - Add more documentation into the code
 
 
 Until public repo release (Alpha):
 ----------------------------------
- - Document python classes and add more documentation into the code
+ D Create readme
+ D Document python classes and add more documentation into the code
  D Parse subvolumes on mounted btrfs
  D Create subvolumes on btrfs on 'create'
  D Fix create so the 'size' argument is recalculated to be in Kilobytes
  D Write-up dependencies
  D Licence and licence notice in the source files
- - Create readme
  D Wire in bash tests into the test_ssm.py
- - Create btrfs bash tests
  D Create a way to exclude "real" system devices,pools,volumes from the ssm
    consideration for testing purposes
+ D Reorganise File structure of the project
 
 
 Until Beta release:
 -------------------
- - Create btrfs tests
+ - Create btrfs bash tests
+ - Create btrfs unittests
  - Extend python unittests to other backends
  - Use wipefs -a before using the device in add()
  - Consider using wipefs -a after removing the device
  - Remove the physical volume after it is removed from the group
- - Reorganise File structure of the project
  - Figure out how to create better pool names so it is unique in the system and
    between the systems.
  - Add mirror support
@@ -60,6 +64,8 @@ Until Beta release:
  - Better table alignment when the output spans multiple lines
  - Better error handling - not just plain Exception, but rather named exception
    and handle it as main() in ssm module
+ - Update readme
+ - Add more documentation into the code
 
 
 (D = DONE)

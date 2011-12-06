@@ -20,13 +20,13 @@
 import re
 import os
 import sys
-import misc
 import stat
 import argparse
-from lvm import PvsInfo, VgsInfo, LvsInfo
-from crypt import DmCryptVolume
-from btrfs import BtrfsVolume, BtrfsDev, BtrfsPool
+from ssmlib import misc
 from itertools import chain, compress
+
+# Import backends
+from ssmlib.backends import lvm, crypt, btrfs
 
 EXTN = ['ext2', 'ext3', 'ext4']
 SUPPORTED_FS = ['xfs', 'btrfs'] + EXTN
@@ -478,11 +478,12 @@ class Pool(Storage):
 
     def __init__(self, *args, **kwargs):
         super(Pool, self).__init__(*args, **kwargs)
-        _default_backend = VgsInfo(force=self.force, verbose=self.verbose,
+        _default_backend = lvm.VgsInfo(force=self.force, verbose=self.verbose,
                                    yes=self.yes)
         self._data = {'lvm': _default_backend,
-                     'btrfs': BtrfsPool(force=self.force, verbose=self.verbose,
-                                   yes=self.yes)}
+                     'btrfs': \
+                        btrfs.BtrfsPool(force=self.force, verbose=self.verbose,
+                        yes=self.yes)}
         self.default = Item(_default_backend, DEFAULT_DEVICE_POOL)
         self.header = ['Pool', 'Type', 'Devices', 'Free', 'Used', 'Total']
         self.attrs = ['pool_name', 'type', 'dev_count', 'pool_free',
@@ -504,7 +505,8 @@ class Devices(Storage):
 
     def __init__(self, *args, **kwargs):
         super(Devices, self).__init__(*args, **kwargs)
-        self._data = {'dev': DeviceInfo(data=PvsInfo(BtrfsDev().data).data,
+        self._data = {'dev': \
+            DeviceInfo(data=lvm.PvsInfo(btrfs.BtrfsDev().data).data,
             force=self.force, verbose=self.verbose, yes=self.yes)}
         self.header = ['Device', 'Free', 'Used',
                        'Total', 'Pool', 'Mount point']
@@ -522,11 +524,11 @@ class Volumes(Storage):
 
     def __init__(self, *args, **kwargs):
         super(Volumes, self).__init__(*args, **kwargs)
-        self._data = {'lvm': LvsInfo(force=self.force, verbose=self.verbose,
-                        yes=self.yes),
-                     'crypt': DmCryptVolume(force=self.force,
+        self._data = {'lvm': lvm.LvsInfo(force=self.force,
                         verbose=self.verbose, yes=self.yes),
-                     'btrfs': BtrfsVolume(force=self.force,
+                     'crypt': crypt.DmCryptVolume(force=self.force,
+                        verbose=self.verbose, yes=self.yes),
+                     'btrfs': btrfs.BtrfsVolume(force=self.force,
                         verbose=self.verbose, yes=self.yes)}
         self.header = ['Volume', 'Volume size', 'FS', 'Free',
                        'Used', 'FS size', 'Type', 'Mount point']
@@ -929,7 +931,7 @@ def main(args=None):
                 epilog='''To get help for particular command please specify
                        \'%(prog)s [command] -h\'.''')
     parser.add_argument('--version', action='version',
-                        version='%(prog)s 0.1-alpha (alpha version)')
+                        version='%(prog)s 0.1dev')
     parser.add_argument('-v', '--verbose', help="verbose execution",
                         action="store_true")
     parser.add_argument('-f', '--force', help="force execution",
