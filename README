@@ -44,7 +44,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Usage
 =====
 
-usage: ssm.py [-h] [--version] [-v] [-f]
+usage: ssm [-h] [--version] [-v] [-f]
               {create,list,remove,add,check,resize} ...
 
 System Storage Manager
@@ -65,7 +65,7 @@ Commands:
     add                 add one or more devices into the pool
     remove              remove devices from the pool, volumes or pools
 
-To get help for particular command please specify 'ssm.py [command] -h'.
+To get help for particular command please specify 'ssm [command] -h'.
 
 
 Dependencies
@@ -121,7 +121,7 @@ python modules
 Examples
 ========
 
-    # ./ssm.py list
+    # ssm list
     -----------------------------------
     Device           Total  Mount point
     -----------------------------------
@@ -148,24 +148,24 @@ Examples
 Creating a volume of defined size with the defined file system. The default
 back-end is set to lvm and the name is device_pool:
 
-    # ./ssm.py create --fs ext4 -s 15G /dev/loop0 /dev/loop1
+    # ssm create --fs ext4 -s 15G /dev/loop0 /dev/loop1
 
 
 The name of the new volume is '/dev/device_pool/lvol001'. Resize the volume
 to 10GB:
 
-    # ./ssm.py resize -s-5G /dev/device_pool/lvol001 
+    # ssm resize -s-5G /dev/device_pool/lvol001 
 
 
 Resize the volume to 100G, but it would require to add more devices into the
 pool:
 
-    # ./ssm.py resize -s 100G /dev/device_pool/lvol001 /dev/loop2
+    # ssm resize -s 100G /dev/device_pool/lvol001 /dev/loop2
 
 
 List all volumes with file system:
 
-    # ./ssm.py list filesystems
+    # ssm list filesystems
     -----------------------------------------------------------------------------------------------
     Volume                    Volume size  FS        Free      Used    FS size  Type    Mount point  
     -----------------------------------------------------------------------------------------------
@@ -177,19 +177,19 @@ List all volumes with file system:
 
 Now lest try to create btrfs volume:
 
-    # ./ssm.py create --fs btrfs /dev/loop3 /dev/sda5
+    # ssm create --fs btrfs /dev/loop3 /dev/sda5
 
 
 Mount btrfs file system and create a few btrfs subvolume:
 
     # mount /dev/loop3 /mnt/test
-    # ./ssm.py create -p btrfs_loop3
-    # ./ssm.py create -n new_subvolume -p btrfs_loop3
+    # ssm create -p btrfs_loop3
+    # ssm create -n new_subvolume -p btrfs_loop3
 
 
 List all volumes with file system:
 
-    # ./ssm.py list filesystems
+    # ssm list filesystems
     -----------------------------------------------------------------------------------------------------------------------
     Volume                          Volume size  FS         Free      Used    FS size  Type    Mount point                   
     -----------------------------------------------------------------------------------------------------------------------
@@ -204,14 +204,14 @@ List all volumes with file system:
 
 Add device to the btrfs file system:
 
-    # ./ssm.py add /dev/loop2 -p btrfs_loop3
+    # ssm add /dev/loop2 -p btrfs_loop3
 
 
 Remove the whole lvm device_pool and one of the btrfs subvolume, and one
 unused device from the btrfs pool btrfs_loop3. Note that with btrfs, pool
 have the same name as the volume:
 
-    # ./ssm.py remove device_pool /dev/loop2 /mnt/test/new_subvolume/
+    # ssm remove device_pool /dev/loop2 /mnt/test/new_subvolume/
 
 
 Design
