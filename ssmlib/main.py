@@ -537,6 +537,23 @@ class Volumes(Storage):
         self.types = [str, float, str, float, float, float, str, str]
         self._apply_prefix_filter()
 
+class Snapshots(Storage):
+    '''
+    Store Snapshots from all the backends that supports snapshotting. When
+    the snapshotting support is added into the backed it should be registered
+    within this class with appropriate name.
+    '''
+
+    def __init__(self, *args, **kwargs):
+        super(Snapshots, self).__init__(*args, **kwargs)
+        self._data = {}
+        self.header = ['Snapshot', 'Origin', 'Volume size', 'Size',
+                       'Type', 'Mount point']
+        self.attrs = ['snap_name', 'origin', 'vol_size', 'snap_size',
+                      'type', 'mount']
+        self.types = [str, str, float, float, str, str]
+        self._apply_prefix_filter()
+
 
 class StorageHandle(object):
     '''
@@ -553,6 +570,7 @@ class StorageHandle(object):
         self._dev = None
         self._pool = None
         self._volumes = None
+        self._snapshots = None
 
     def set_globals(self, force, verbose, yes, config):
         '''
@@ -569,6 +587,8 @@ class StorageHandle(object):
             self.vol.set_globals(force, verbose, yes)
         if self._pool:
             self.pool.set_globals(force, verbose, yes)
+        if self._snapshots:
+            self.snap.set_globals(force, verbose, yes)
 
     @property
     def dev(self):
@@ -592,6 +612,14 @@ class StorageHandle(object):
         self._volumes = Volumes(force=self.force, verbose=self.verbose,
                                 yes=self.yes)
         return self._volumes
+
+    @property
+    def snap(self):
+        if self._snapshots:
+            return self._snapshots
+        self._snapshots = Snapshots(force=self.force, verbose=self.verbose,
+                                    yes=self.yes)
+        return self._snapshots
 
     def _create_fs(self, fstype, volume):
         """
@@ -746,6 +774,7 @@ class StorageHandle(object):
             self.dev.ptable()
             self.pool.ptable()
             self.vol.ptable(more_data=self.dev.filesystems())
+            self.snap.ptable()
         elif args.type in ['fs', 'filesystems']:
             self.vol.ptable(more_data=self.dev.filesystems(), cond="fs_only")
         elif args.type in ['dev', 'devices']:
@@ -754,6 +783,8 @@ class StorageHandle(object):
             self.vol.ptable(more_data=self.dev.filesystems())
         elif args.type == "pool":
             self.pool.ptable()
+        elif args.type in ['snap', 'snapshots']:
+            self.snap.ptable()
 
     def add(self, args):
         '''
@@ -796,6 +827,28 @@ class StorageHandle(object):
             except RuntimeError, ex:
                 print ex
                 print >> sys.stderr, "Unable to remove '{0}'".format(item.name)
+
+    def snapshot(self, args):
+        '''
+        Create a new snapshot of the volume.
+        '''
+        pool = self.pool[args.volume['pool_name']]
+        vol_size = float(args.volume['vol_size'])
+        pool_size = float(pool['pool_size'])
+
+        if not args.size:
+        # We'll ceate snapshot of the size of 20% of the original volume
+            snap_size = vol_size * 0.20
+            user_set_size = False
+        else:
+            snap_size = float(misc.get_real_size(args.size))
+            user_set_size = True
+
+        if pool_size < snap_size:
+            snap_size = pool_size
+
+        args.volume.snapshot(args.dest, snap_size, user_set_size)
+
 
     def mirror(self, args):
         print "mirror"
@@ -844,6 +897,29 @@ class StorageHandle(object):
             return dev
         err = "'{0}' is not a valid volume to resize".format(string)
         raise argparse.ArgumentTypeError(err)
+
+    def can_snapshot(self, string):
+        vol = self.vol[string]
+        have = False
+        if not vol:
+            for vol in self.vol:
+                if 'mount' in vol and (vol['mount'] == string.rstrip("/")):
+                    have = True
+                    break
+        else:
+            have = True
+        if not have:
+            err = "'{0}' is not valid volume nor mount point.".format(string)
+            raise argparse.ArgumentTypeError(err)
+        else:
+            err = "Backend for '{0}' does not support snapshotting.".format(string)
+            try:
+                if not getattr(vol, "snapshot"):
+                    raise argparse.ArgumentTypeError(err)
+                else:
+                    return vol
+            except AttributeError:
+                raise argparse.ArgumentTypeError(err)
 
     def check_remove_item(self, string):
         '''
@@ -955,11 +1031,12 @@ def main(args=None):
             type=storage.is_volume)
     parser_resize.add_argument('-s', '--size',
             help='''New size of the volume. With the + or - sign the value is
-            added to or subtracted from the actual size of the volume and
-            without it, the value will be set as the new volume size. A size
-            suffix of [k|K] for kilobytes, [m|M] for megabytes, [g|G] for
-            gigabytes, [t|T] for terabytes or [p|P] for petabytes is optional.
-            If no unit is provided the default is kilobytes.''',
+                    added to or subtracted from the actual size of the volume
+                    and without it, the value will be set as the new volume
+                    size. A size suffix of [k|K] for kilobytes, [m|M] for
+                    megabytes, [g|G] for gigabytes, [t|T] for terabytes or
+                    [p|P] for petabytes is optional. If no unit is provided
+                    the default is kilobytes.''',
             type=valid_resize_size)
     parser_resize.add_argument("device", nargs='*',
             help='''Devices to use for extending the volume. If the
@@ -1012,9 +1089,11 @@ def main(args=None):
 
     # list command
     parser_list = subcommands.add_parser("list", help='''list information about
-                    all detected, devices, pools and volumes in the system''')
+                    all detected, devices, pools, volumes and snapshots
+                    in the system''')
     parser_list.add_argument('type', nargs='?',
-            choices=["volumes", "dev", "devices", "pool", "fs", "filesystems"])
+            choices=["volumes", "dev", "devices", "pool", "fs",
+                     "filesystems", "snap", "snapshots"])
     parser_list.set_defaults(func=storage.list)
 
     # add command
@@ -1037,6 +1116,25 @@ def main(args=None):
             help="Items to remove. Item could be device, pool, or volume.",
             type=storage.check_remove_item)
     parser_remove.set_defaults(func=storage.remove)
+
+    # snapshot command
+    parser_snapshot = subcommands.add_parser("snapshot", help='''take a
+            snapshot of the existing volume''')
+    parser_snapshot.add_argument('-s', '--size',
+            help='''Gives the size to allocate for the new snapshot volume
+                    A size suffix K|k, M|m, G|g, T|t, P|p, E|e can be used
+                    to define 'power of two' units. If no unit is provided, it
+                    defaults to kilobytes. This is option and if not give,
+                    the size will be determined automatically.''')
+    parser_snapshot.add_argument('-d', '--dest',
+            help='''Destination of the snapshot specified with absolute path,
+                    or the name to be used for the new snapshot. This is
+                    optional and if not specified default backed policy will
+                    be performed.''')
+    parser_snapshot.add_argument('volume',
+            help="Volume, or mount point to take a snapshot of.",
+            type=storage.can_snapshot)
+    parser_snapshot.set_defaults(func=storage.snapshot)
 
     # mirror command
     #parser_mirror = subcommands.add_parser("mirror", help="mirror")
