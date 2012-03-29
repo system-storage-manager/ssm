@@ -19,6 +19,7 @@
 
 import os
 import stat
+import datetime
 from ssmlib import misc
 
 __all__ = ["PvsInfo", "VgsInfo", "LvsInfo"]
@@ -57,6 +58,9 @@ class LvmInfo(object):
     def _data_index(self, row):
         return row.values()[len(row.values()) - 1]
 
+    def _skip_data(self, row):
+        return False
+
     def _parse_data(self, command):
         if not self.binary:
             return
@@ -67,6 +71,8 @@ class LvmInfo(object):
             array = line.split("|")
             row = dict([(self.attrs[index], array[index].lstrip())
                 for index in range(len(array))])
+            if self._skip_data(row):
+                continue
             self._fill_aditional_info(row)
             self.data[self._data_index(row)] = row
 
@@ -199,14 +205,16 @@ class LvsInfo(LvmInfo):
         super(LvsInfo, self).__init__(*args, **kwargs)
         command = ["lvm", "lvs", "--separator", "|", "--noheadings",
                 "--nosuffix", "--units", "k", "-o",
-                "vg_name,lv_size,stripes,stripesize,segtype,lv_path"]
+                "vg_name,lv_size,stripes,stripesize,segtype,lv_path,origin"]
         self.attrs = ['pool_name', 'vol_size', 'stripes',
-                'stripesize', 'type', 'dev_name']
+                'stripesize', 'type', 'dev_name', 'origin']
         self.handle_fs = True
         self.mounts = misc.get_mounts('^{0}/mapper'.format(DM_DEV_DIR))
         self._parse_data(command)
 
     def _fill_aditional_info(self, lv):
+        if lv['origin']:
+            lv['hide'] = True
         lv['real_dev'] = misc.get_real_device(lv['dev_name'])
 
         sysfile = "/sys/block/{0}/dm/name".format(
@@ -250,3 +258,60 @@ class LvsInfo(LvmInfo):
         if resize_fs:
             command.insert(1, '-r')
         self.run_lvm(command)
+
+    def snapshot(self, lv, destination, size, user_set_size):
+        if not destination:
+            now = datetime.datetime.now()
+            destination = now.strftime("snap%Y%m%dT%H%M%S")
+
+        command = ['lvcreate', '--size', str(size) + 'K', '--snapshot',
+                '--name', destination, lv]
+
+        self.run_lvm(command)
+
+class SnapInfo(LvmInfo):
+
+    def __init__(self, *args, **kwargs):
+        super(SnapInfo, self).__init__(*args, **kwargs)
+        command = ["lvm", "lvs", "--separator", "|", "--noheadings",
+                "--nosuffix", "--units", "k", "-o",
+                "vg_name,lv_size,stripes,stripesize,segtype,lv_path,origin,snap_percent"]
+        self.attrs = ['pool_name', 'vol_size', 'stripes',
+                'stripesize', 'type', 'dev_name', 'origin', 'snap_size']
+        self.handle_fs = True
+        self.mounts = misc.get_mounts('^{0}/mapper'.format(DM_DEV_DIR))
+        self._parse_data(command)
+
+    def _skip_data(self, row):
+        if not row['origin']:
+            return True
+        else:
+            return False
+
+    def _data_index(self, row):
+        return misc.get_real_device(row['dev_name'])
+
+    def _fill_aditional_info(self, snap):
+        snap['hide'] = False
+        snap['snap_name'] = snap['dev_name']
+        snap['snap_path'] = snap['dev_name']
+        size = float(snap['vol_size']) * float(snap['snap_size'])
+        snap['snap_size'] = str(size/100.00)
+
+        snap['real_dev'] = misc.get_real_device(snap['dev_name'])
+
+        sysfile = "/sys/block/{0}/dm/name".format(
+                  os.path.basename(snap['real_dev']))
+
+        # In some weird cases the "real" device might not be in /dev/dm-*
+        # form (see tests). In this case constructed sysfile will not exist
+        # so we just use real device name to search mounts.
+        try:
+            with open(sysfile, 'r') as f:
+                lvname = f.readline()[:-1]
+            snap['dm_name'] = "{0}/mapper/{1}".format(DM_DEV_DIR, lvname)
+        except IOError:
+            snap['dm_name'] = snap['real_dev']
+
+        if snap['dm_name'] in self.mounts:
+            snap['mount'] = self.mounts[snap['dm_name']]
