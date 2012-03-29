@@ -17,6 +17,7 @@
 
 # btrfs module for System Storage Manager
 
+import re
 import os
 import sys
 import datetime
@@ -47,6 +48,8 @@ class Btrfs(object):
         self._vol = {}
         self._pool = {}
         self._dev = {}
+        self._snap = {}
+        self._subvolumes = {}
         self._binary = misc.check_binary('btrfs')
 
         if not self._binary:
@@ -123,6 +126,46 @@ class Btrfs(object):
         command.insert(0, "btrfs")
         misc.run(command, stdout=True)
 
+    def _fill_subvolumes(self):
+        if not self._binary:
+            return
+        if self._subvolumes:
+            return
+        command = ['btrfs', 'subvolume', 'list']
+        for name, vol in self._vol.iteritems():
+            if 'mount' in vol:
+                output = misc.run(command + [vol['mount']], stdout=False)[1]
+                for volume in self._parse_subvolumes(output):
+                    new = volume.copy()
+                    new.update(vol)
+                    new['dev_name'] = "{0}:{1}".format(name, new['path'])
+                    new['mount'] = "{0}/{1}".format(vol['mount'],
+                            new['path'])
+
+                    new['hide'] = False
+                    # Store snapshot info
+                    if re.match("snap-\d{4}-\d{2}-\d{2}-T\d{6}",
+                            os.path.basename(new['mount'])):
+                        new['hide'] = True
+                        new['snap_name'] = new['dev_name']
+                        new['snap_name'] = "{0}:{1}".format(name,
+                                os.path.basename(new['path']))
+                        new['snap_path'] = new['mount']
+
+                    self._subvolumes[new['dev_name']] = new
+
+    def _parse_subvolumes(self, output):
+        volume = {}
+        for line in output.strip().split("\n"):
+            if not line:
+                continue
+            array = line.split()
+            volume['ID'] = array[1]
+            volume['top_level'] = array[4]
+            volume['path'] = array[6]
+            volume['subvolume'] = True
+            yield volume
+
     def _find_uniq_pool_name(self, label, dev):
         if len(label) < 3 or label == "none":
             label = "btrfs_{0}".format(os.path.basename(dev))
@@ -167,39 +210,13 @@ class BtrfsVolume(Btrfs):
 
     def __init__(self, *args, **kwargs):
         super(BtrfsVolume, self).__init__(*args, **kwargs)
+        self._fill_subvolumes()
         if self.data:
             self.data.update(self._vol)
+            self.data.update(self._subvolumes)
         else:
             self.data = self._vol
-        self._fill_subvolumes()
-
-    def _fill_subvolumes(self):
-        if not self._binary:
-            return
-        command = ['btrfs', 'subvolume', 'list']
-        _data = {}
-        for name, vol in self._vol.iteritems():
-            if 'mount' in vol:
-                output = misc.run(command + [vol['mount']], stdout=False)[1]
-                for volume in self._subvolumes(output):
-                    volume.update(vol)
-                    volume['dev_name'] = "{0}:{1}".format(name, volume['path'])
-                    volume['mount'] = "{0}/{1}".format(vol['mount'],
-                            volume['path'])
-                    _data[volume['dev_name']] = volume.copy()
-        self.data.update(_data)
-
-    def _subvolumes(self, output):
-        volume = {}
-        for line in output.strip().split("\n"):
-            if not line:
-                continue
-            array = line.split()
-            volume['ID'] = array[1]
-            volume['top_level'] = array[4]
-            volume['path'] = array[6]
-            volume['subvolume'] = True
-            yield volume
+            self.data.update(self._subvolumes)
 
     def remove(self, vol):
         # Volume and pool name should be the same, since it actually is the
@@ -214,6 +231,21 @@ class BtrfsVolume(Btrfs):
         if 'mount' not in vol:
             raise Exception("Btrfs pool can be reduced only when mounted!")
         command = ['filesystem', 'resize', str(int(size)) + "K", vol['mount']]
+        self.run_btrfs(command)
+
+    def snapshot(self, vol, destination, size, user_set_size):
+        vol = self.data[vol]
+        if 'mount' not in vol:
+            raise Exception("Btrfs volume can be snapshotted only when mounted!")
+
+        if not destination:
+            now = datetime.datetime.now()
+            destination = vol['mount'] + now.strftime("/snap-%Y-%m-%d-T%H%M%S")
+
+        if user_set_size:
+            print "Warning: Btrfs doesn't allow setting a size of a subvolume"
+
+        command = ['subvolume', 'snapshot', vol['mount'], destination]
         self.run_btrfs(command)
 
 
@@ -307,3 +339,20 @@ class BtrfsPool(Btrfs):
             vol = self._create_filesystem(pool, size, name, devs,
                                           stripes, stripesize)
         return vol
+
+
+class BtrfsSnap(Btrfs):
+
+    def __init__(self, *args, **kwargs):
+        super(BtrfsSnap, self).__init__(*args, **kwargs)
+
+        self._fill_subvolumes()
+        for name, vol in self._subvolumes.iteritems():
+            if 'snap_name' in vol:
+                self._snap[vol['snap_name']] = vol.copy()
+                self._snap[vol['snap_name']]['hide'] = False
+
+        if self.data:
+            self.data.update(self._snap)
+        else:
+            self.data = self._snap

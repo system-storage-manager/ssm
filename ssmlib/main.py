@@ -546,7 +546,8 @@ class Snapshots(Storage):
 
     def __init__(self, *args, **kwargs):
         super(Snapshots, self).__init__(*args, **kwargs)
-        self._data = {}
+        self._data = {'btrfs': btrfs.BtrfsSnap(force=self.force,
+                        verbose=self.verbose, yes=self.yes)}
         self.header = ['Snapshot', 'Origin', 'Volume size', 'Size',
                        'Type', 'Mount point']
         self.attrs = ['snap_name', 'origin', 'vol_size', 'snap_size',
