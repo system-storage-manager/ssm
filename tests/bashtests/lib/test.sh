@@ -16,7 +16,8 @@ TZ=UTC
 unset CDPATH
 export HERE=$(pwd)
 export PATH=$HERE/lib:$PATH
-export SSM="python $HERE/../../bin/ssm"
+export SSM="$HERE/../../bin/ssm"
+chmod +x $SSM
 
 # grab some common utilities
 . lib/utils
