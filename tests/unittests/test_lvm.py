@@ -48,9 +48,9 @@ class LvmFunctionCheck(MockSystemDataSource):
                         data['pool_size'], data['pool_free'], data['vol_count'])
         elif cmd[1] == 'lvs':
             for vol, data in self.vol_data.iteritems():
-                output += "{0}|{1}|{2}|{3}|{4}|{5}\n".format(data['pool_name'],
+                output += "{0}|{1}|{2}|{3}|{4}|{5}|{6}\n".format(data['pool_name'],
                         data['vol_size'], data['stripes'], data['stripesize'],
-                        data['type'], data['dev_name'])
+                        data['type'], data['dev_name'], data['origin'])
         if 'return_stdout' in kwargs and not kwargs['return_stdout']:
             output = None
         return (0, output)
