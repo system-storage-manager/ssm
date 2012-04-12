@@ -105,4 +105,31 @@ class LvmFunctionCheck(MockSystemDataSource):
         main.main("ssm -v -f remove /dev/default_pool/vol002")
         self._cmdEq("lvm lvremove -v -f /dev/default_pool/vol002")
 
-        #main.main("ssm list")
+    def test_lvm_snapshot(self):
+        # Generate some storage data
+        self._addPool('default_pool', ['/dev/sda', '/dev/sdb'])
+        self._addPool('my_pool', ['/dev/sdc2', '/dev/sdc3', '/dev/sdc1'])
+        self._addVol('vol001', 117283225, 1, 'default_pool', ['/dev/sda'])
+        self._addVol('vol002', 237284225, 1, 'default_pool', ['/dev/sda'],
+                    '/mnt/mount1')
+        self._addVol('vol003', 1024, 1, 'default_pool', ['/dev/sdd'])
+        self._addVol('vol004', 209715200, 2, 'default_pool', ['/dev/sda',
+                     '/dev/sdb'], '/mnt/mount')
+
+        # Create snapshot
+        self._checkCmd("ssm snapshot --name new_snap", ['/dev/default_pool/vol001'],
+            "lvm lvcreate --size 23456645.0K --snapshot --name new_snap /dev/default_pool/vol001")
+        # Create snapshot verbose
+        self._checkCmd("ssm -v snapshot --name new_snap", ['/dev/default_pool/vol001'],
+            "lvm lvcreate -v --size 23456645.0K --snapshot --name new_snap /dev/default_pool/vol001")
+        # Create snapshot force
+        self._checkCmd("ssm -f snapshot --name new_snap", ['/dev/default_pool/vol001'],
+            "lvm lvcreate -f --size 23456645.0K --snapshot --name new_snap /dev/default_pool/vol001")
+        # Create snapshot force verbose
+        self._checkCmd("ssm -f -v snapshot --name new_snap", ['/dev/default_pool/vol001'],
+            "lvm lvcreate -v -f --size 23456645.0K --snapshot --name new_snap /dev/default_pool/vol001")
+
+        # Create snapshot with size and name specified
+        self._checkCmd("ssm snapshot", ['--size 1G', '--name new_snap',
+                                        '/dev/default_pool/vol001'],
+            "lvm lvcreate --size 1048576.0K --snapshot --name new_snap /dev/default_pool/vol001")
