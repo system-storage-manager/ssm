@@ -249,17 +249,27 @@ class LvsInfo(LvmInfo):
     def _data_index(self, row):
         return row['real_dev']
 
+    def _get_dev_name(self, lv):
+        real = misc.get_real_device(lv)
+        if real in self.data:
+            return self.data[real]['dev_name']
+        else:
+            return lv
+
     def remove(self, lv):
+        lv = self._get_dev_name(lv)
         command = ['lvremove', lv]
         self.run_lvm(command)
 
     def resize(self, lv, size, resize_fs=True):
+        lv = self._get_dev_name(lv)
         command = ['lvresize', '-L', str(size) + 'k', lv]
         if resize_fs:
             command.insert(1, '-r')
         self.run_lvm(command)
 
     def snapshot(self, lv, destination, name, size, user_set_size):
+        lv = self._get_dev_name(lv)
         if not name:
             now = datetime.datetime.now()
             name = now.strftime("snap%Y%m%dT%H%M%S")
