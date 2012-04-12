@@ -223,6 +223,7 @@ class SimpleSsmSanityCheck(unittest.TestCase):
         self.assertIn("add", obj)
         self.assertIn("remove", obj)
         self.assertIn("mirror", obj)
+        self.assertIn("snapshot", obj)
         self.assertIn("set_globals", obj)
 
 
@@ -465,7 +466,6 @@ class SsmFunctionCheck(MockSystemDataSource):
         self._checkCmd("ssm add", ['/dev/sda /dev/sdb'],
             "pool extend {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL))
 
-
     def test_remove(self):
         # Generate some storage data
         self._addPool('default_pool', ['/dev/sda', '/dev/sdb'])
@@ -515,6 +515,73 @@ class SsmFunctionCheck(MockSystemDataSource):
         # remove verbose + force
         main.main("ssm -v -f remove /dev/default_pool/vol002")
         self._cmdEq("force verbose vol remove /dev/default_pool/vol002")
+
+    def test_snapshot(self):
+        # Generate some storage data
+        self._addPool('default_pool', ['/dev/sda', '/dev/sdb'])
+        self._addPool('my_pool', ['/dev/sdc2', '/dev/sdc3', '/dev/sdc1'])
+        self._addVol('vol001', 117283225, 1, 'default_pool', ['/dev/sda'],
+                    '/mnt/test1')
+        self._addVol('vol002', 237284225, 1, 'default_pool', ['/dev/sda'])
+        self._addVol('vol003', 1024, 1, 'default_pool', ['/dev/sdd'])
+        self._addVol('vol004', 209715200, 2, 'default_pool', ['/dev/sda',
+                     '/dev/sdb'], '/mnt/test')
+
+        # Create snapshot
+        self._checkCmd("ssm snapshot", ['/dev/default_pool/vol004'],
+            "vol snapshot /dev/default_pool/vol004 41943040.0 False")
+        # Create snapshot verbose
+        self._checkCmd("ssm -v snapshot", ['/dev/default_pool/vol004'],
+            "verbose vol snapshot /dev/default_pool/vol004 41943040.0 False")
+        # Create snapshot force
+        self._checkCmd("ssm -f snapshot", ['/dev/default_pool/vol004'],
+            "force vol snapshot /dev/default_pool/vol004 41943040.0 False")
+        # Create snapshot force verbose
+        self._checkCmd("ssm -f -v snapshot", ['/dev/default_pool/vol004'],
+            "force verbose vol snapshot /dev/default_pool/vol004 41943040.0 False")
+
+        # Create snapshot with size specified
+        self._checkCmd("ssm snapshot --size 1G", ['/dev/default_pool/vol004'],
+            "vol snapshot /dev/default_pool/vol004 1048576.0 True")
+        # Create snapshot with destination specified
+        self._checkCmd("ssm snapshot --dest /mnt/test", ['/dev/default_pool/vol004'],
+            "vol snapshot /dev/default_pool/vol004 /mnt/test 41943040.0 False")
+        # Create snapshot with the name specified
+        self._checkCmd("ssm snapshot --name test", ['/dev/default_pool/vol004'],
+            "vol snapshot /dev/default_pool/vol004 test 41943040.0 False")
+        # Create snapshot with both destination and size specified
+        self._checkCmd("ssm snapshot",
+            ['--size 1G', '--dest /mnt/test' ,'/dev/default_pool/vol004'],
+            "vol snapshot /dev/default_pool/vol004 /mnt/test 1048576.0 True")
+        # Create snapshot with both name and size specified
+        self._checkCmd("ssm snapshot",
+            ['--size 1G', '--name test' ,'/dev/default_pool/vol004'],
+            "vol snapshot /dev/default_pool/vol004 test 1048576.0 True")
+
+        # Repeat the test with specifying mount point instead of volume
+
+        # Create snapshot
+        self._checkCmd("ssm snapshot", ['/mnt/test'],
+            "vol snapshot /dev/default_pool/vol004 41943040.0 False")
+        # Create snapshot with size specified
+        self._checkCmd("ssm snapshot --size 1G", ['/mnt/test'],
+            "vol snapshot /dev/default_pool/vol004 1048576.0 True")
+        # Create snapshot with destination specified
+        self._checkCmd("ssm snapshot --dest /mnt/test", ['/mnt/test'],
+            "vol snapshot /dev/default_pool/vol004 /mnt/test 41943040.0 False")
+        # Create snapshot with the name specified
+        self._checkCmd("ssm snapshot --name test", ['/mnt/test'],
+            "vol snapshot /dev/default_pool/vol004 test 41943040.0 False")
+        # Create snapshot with both destination and size specified
+        self._checkCmd("ssm snapshot",
+            ['--size 1G', '--dest /mnt/test' ,'/mnt/test'],
+            "vol snapshot /dev/default_pool/vol004 /mnt/test 1048576.0 True")
+        # Create snapshot with both name and size specified
+        self._checkCmd("ssm snapshot",
+            ['--size 1G', '--name test' ,'/mnt/test'],
+            "vol snapshot /dev/default_pool/vol004 test 1048576.0 True")
+
+
 
 class MyInfo(object):
     def __init__(self, data=None, force=False, verbose=False, yes=False):
@@ -584,6 +651,7 @@ class PoolInfo(MyInfo):
             name = "lvol001"
         return "/dev/{0}/{1}".format(pool, name)
 
+
 class VolumeInfo(MyInfo):
     def __init__(self, *args, **kwargs):
         super(VolumeInfo, self).__init__(*args, **kwargs)
@@ -591,6 +659,10 @@ class VolumeInfo(MyInfo):
 
     def remove(self, volume):
         misc.run([self.f, self.v, self.y, 'vol remove', volume])
+
+    def snapshot(self, volume, destination, name, size, user_set_size):
+        misc.run([self.f, self.v, self.y, 'vol snapshot', volume, destination,
+                name, str(size), str(user_set_size)])
 
 
 class DevInfo(MyInfo):
