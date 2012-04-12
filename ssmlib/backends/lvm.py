@@ -259,13 +259,13 @@ class LvsInfo(LvmInfo):
             command.insert(1, '-r')
         self.run_lvm(command)
 
-    def snapshot(self, lv, destination, size, user_set_size):
-        if not destination:
+    def snapshot(self, lv, destination, name, size, user_set_size):
+        if not name:
             now = datetime.datetime.now()
-            destination = now.strftime("snap%Y%m%dT%H%M%S")
+            name = now.strftime("snap%Y%m%dT%H%M%S")
 
         command = ['lvcreate', '--size', str(size) + 'K', '--snapshot',
-                '--name', destination, lv]
+                '--name', name, lv]
 
         self.run_lvm(command)
 

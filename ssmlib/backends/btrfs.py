@@ -233,14 +233,16 @@ class BtrfsVolume(Btrfs):
         command = ['filesystem', 'resize', str(int(size)) + "K", vol['mount']]
         self.run_btrfs(command)
 
-    def snapshot(self, vol, destination, size, user_set_size):
+    def snapshot(self, vol, destination, name, size, user_set_size):
         vol = self.data[vol]
         if 'mount' not in vol:
             raise Exception("Btrfs volume can be snapshotted only when mounted!")
 
-        if not destination:
+        if not destination and not name:
             now = datetime.datetime.now()
             destination = vol['mount'] + now.strftime("/snap-%Y-%m-%d-T%H%M%S")
+        if name:
+            destination = vol['mount'] + "/" + name
 
         if user_set_size:
             print "Warning: Btrfs doesn't allow setting a size of a subvolume"

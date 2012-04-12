@@ -850,7 +850,7 @@ class StorageHandle(object):
         if pool_size < snap_size:
             snap_size = pool_size
 
-        args.volume.snapshot(args.dest, snap_size, user_set_size)
+        args.volume.snapshot(args.dest, args.name, snap_size, user_set_size)
 
 
     def mirror(self, args):
@@ -1129,11 +1129,15 @@ def main(args=None):
                     to define 'power of two' units. If no unit is provided, it
                     defaults to kilobytes. This is option and if not give,
                     the size will be determined automatically.''')
-    parser_snapshot.add_argument('-d', '--dest',
-            help='''Destination of the snapshot specified with absolute path,
-                    or the name to be used for the new snapshot. This is
-                    optional and if not specified default backed policy will
-                    be performed.''')
+    group = parser_snapshot.add_mutually_exclusive_group()
+    group.add_argument('-d', '--dest',
+            help='''Destination of the snapshot specified with absolute path
+                    to be used for the new snapshot. This is optional and if
+                    not specified default backend policy will be performed.''')
+    group.add_argument('-n', '--name',
+            help='''Name of the new snapshot. This is optional and if not
+                specified  default backend policy will be performed.''')
+
     parser_snapshot.add_argument('volume',
             help="Volume, or mount point to take a snapshot of.",
             type=storage.can_snapshot)
