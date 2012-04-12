@@ -37,10 +37,10 @@ pool2=$vg3
 DEFAULT_VOLUME=${DEFAULT_DEVICE_POOL}/$lvol1
 
 TEST_FS=
-which mkfs.ext2 && TEST_FS+="ext2 "
-which mkfs.ext3 && TEST_FS+="ext3 "
-which mkfs.ext4 && TEST_FS+="ext4 "
-which mkfs.xfs  && TEST_FS+="xfs"
+which mkfs.ext2 && grep -E "^\sext[234]$" /proc/filesystems && TEST_FS+="ext2 "
+which mkfs.ext3 && grep -E "^\sext[34]$" /proc/filesystems && TEST_FS+="ext3 "
+which mkfs.ext4 && grep -E "^\sext4$" /proc/filesystems && TEST_FS+="ext4 "
+which mkfs.xfs  && grep -E "^\sxfs$" /proc/filesystems && TEST_FS+="xfs"
 
 TEST_MNT=$TESTDIR/mnt
 
