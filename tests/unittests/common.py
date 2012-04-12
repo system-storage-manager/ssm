@@ -156,7 +156,8 @@ class MockSystemDataSource(unittest.TestCase):
                 'dev_count': str(dev_count), 'pool_free': str(pool_size),
                 'vol_count': '0'}
 
-    def _addVol(self, vol_name, vol_size, stripes, pool_name, devices):
+    def _addVol(self, vol_name, vol_size, stripes, pool_name, devices,
+                mount=None):
         pool_data = self.pool_data[pool_name]
         pool_free = float(pool_data['pool_free']) - vol_size
         pool_used = float(pool_data['pool_used']) + vol_size
@@ -198,4 +199,5 @@ class MockSystemDataSource(unittest.TestCase):
         self.vol_data[vol_name] = {'dm_name': vol_name,
                 'real_dev': vol_name, 'stripes': stripes, 'dev_name': vol_name,
                 'stripesize': 0, 'pool_name': pool_name, 'vol_size': vol_size,
-                'dev_size': vol_size, 'type': vol_type, 'origin': ""}
+                'dev_size': vol_size, 'type': vol_type, 'origin': "",
+                'mount': mount}
