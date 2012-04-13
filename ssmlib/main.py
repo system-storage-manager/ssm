@@ -530,11 +530,11 @@ class Volumes(Storage):
                         verbose=self.verbose, yes=self.yes),
                      'btrfs': btrfs.BtrfsVolume(force=self.force,
                         verbose=self.verbose, yes=self.yes)}
-        self.header = ['Volume', 'Volume size', 'FS', 'Free',
-                       'Used', 'FS size', 'Type', 'Mount point']
-        self.attrs = ['dev_name', 'vol_size', 'fs_type',
-                      'fs_free', 'fs_used', 'fs_size', 'type', 'mount']
-        self.types = [str, float, str, float, float, float, str, str]
+        self.header = ['Volume', 'Pool', 'Volume size', 'FS', 'FS size',
+                       'Free', 'Type', 'Mount point']
+        self.attrs = ['dev_name', 'pool_name', 'vol_size', 'fs_type',
+                      'fs_size', 'fs_free', 'type', 'mount']
+        self.types = [str, str, float, str, float, float, str, str]
         self._apply_prefix_filter()
 
 class Snapshots(Storage):
