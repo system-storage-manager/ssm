@@ -49,7 +49,8 @@ def run_bash_tests():
         if not re.match("^\d\d\d-.*\.sh$", script):
             continue
         count += 1
-        sys.stdout.write("{0:<30}".format(script))
+        print "{0:<29}".format(script),
+        sys.stdout.flush()
         bad_file = re.sub("\.sh$",".bad", script)
         if os.access(bad_file, os.R_OK):
             os.remove(bad_file)
