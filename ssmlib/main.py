@@ -30,6 +30,7 @@ from ssmlib.backends import lvm, crypt, btrfs
 
 EXTN = ['ext2', 'ext3', 'ext4']
 SUPPORTED_FS = ['xfs', 'btrfs'] + EXTN
+SUPPORTED_BACKENDS = ['lvm', 'btrfs']
 os.environ['LANG'] = "C"
 
 # Name of the default pool
@@ -37,6 +38,15 @@ try:
     DEFAULT_DEVICE_POOL = os.environ['DEFAULT_DEVICE_POOL']
 except KeyError:
     DEFAULT_DEVICE_POOL = "device_pool"
+
+# Default back-end
+try:
+    SSM_DEFAULT_BACKEND = os.environ['SSM_DEFAULT_BACKEND']
+    if SSM_DEFAULT_BACKEND not in SUPPORTED_BACKENDS:
+        raise KeyError
+except KeyError:
+    SSM_DEFAULT_BACKEND = 'lvm'
+
 
 # If this environment variable is set, ssm will only consider such devices,
 # pools and volumes which names start with this prefix. This is especially
@@ -478,13 +488,14 @@ class Pool(Storage):
 
     def __init__(self, *args, **kwargs):
         super(Pool, self).__init__(*args, **kwargs)
-        _default_backend = lvm.VgsInfo(force=self.force, verbose=self.verbose,
-                                   yes=self.yes)
-        self._data = {'lvm': _default_backend,
+        self._data = {'lvm':
+                        lvm.VgsInfo(force=self.force, verbose=self.verbose,
+                        yes=self.yes),
                      'btrfs': \
                         btrfs.BtrfsPool(force=self.force, verbose=self.verbose,
                         yes=self.yes)}
-        self.default = Item(_default_backend, DEFAULT_DEVICE_POOL)
+        self.default = Item(self.get_backend(SSM_DEFAULT_BACKEND),
+                            DEFAULT_DEVICE_POOL)
         self.header = ['Pool', 'Type', 'Devices', 'Free', 'Used', 'Total']
         self.attrs = ['pool_name', 'type', 'dev_count', 'pool_free',
                       'pool_used', 'pool_size']
