@@ -796,7 +796,8 @@ class StorageHandle(object):
         if args.pool.exists():
             for dev in args.device[:]:
                 item = self.dev[dev]
-                if item['pool_name'] == args.pool.name:
+                if item and 'pool_name' in item and \
+                   item['pool_name'] == args.pool.name:
                     args.device.remove(dev)
             if len(args.device) > 0:
                 args.pool.extend(args.device)
@@ -851,7 +852,6 @@ class StorageHandle(object):
             snap_size = pool_size
 
         args.volume.snapshot(args.dest, args.name, snap_size, user_set_size)
-
 
     def mirror(self, args):
         print "mirror"
