@@ -190,6 +190,11 @@ class PvsInfo(LvmInfo):
 
     def _fill_aditional_info(self, pv):
         pv['hide'] = False
+        # If the device is not in any group we do not need this info
+        # and we do not want it to show up in the device listing
+        if not pv['pool_name']:
+            pv['dev_used'] = ''
+            pv['dev_free'] = ''
 
     def remove(self, devices):
         if len(devices) == 0:
