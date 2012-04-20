@@ -276,7 +276,7 @@ class BtrfsPool(Btrfs):
         else:
             self.data = self._pool
 
-    def _create_filesystem(self, pool, size=None, name=None, devs=None,
+    def _create_filesystem(self, pool, name, devs, size=None,
                            stripes=None, stripesize=None):
         if not devs:
             raise Exception("To create btrfs volume, some devices must be " + \
@@ -287,7 +287,7 @@ class BtrfsPool(Btrfs):
         command.extend(devs)
         print command
         misc.run(command, stdout=True)
-        return devs[0]
+        return name
 
     def reduce(self, pool, device):
         pool = self.data[pool]
@@ -315,7 +315,6 @@ class BtrfsPool(Btrfs):
     def remove(self, pool):
         # Volume and pool name should be the same, since it actually is the
         # same file system
-        print  "Removing pool ", pool
         self._remove_filesystem(pool)
 
     def create(self, pool, size=None, name=None, devs=None,
@@ -339,8 +338,16 @@ class BtrfsPool(Btrfs):
             else:
                 vol = "{0}/{1}".format(self._pool[pool]['mount'], name)
             self.run_btrfs(['subvolume', 'create', vol])
+            vol = "{0}:{1}".format(pool, name)
         else:
-            vol = self._create_filesystem(pool, size, name, devs,
+            if len(devs) == 0:
+                raise Exception("No devices specified when creating btrfs" + \
+                                "volume")
+            if name:
+                name = "btrfs_{0}".format(os.path.basename(devs[0]))
+            else:
+                name = pool
+            vol = self._create_filesystem(pool, name, devs, size,
                                           stripes, stripesize)
         return vol
 
