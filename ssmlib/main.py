@@ -217,6 +217,7 @@ class DeviceInfo(object):
     '''
 
     def __init__(self, data=None, force=False, verbose=False, yes=False):
+        self.type = 'device'
         self.data = data or {}
         self.attrs = ['major', 'minor', 'dev_size', 'dev_name']
         self.force = force
@@ -289,6 +290,7 @@ class Item(object):
     def __init__(self, obj, name):
         self.obj = obj
         self.name = name
+        self.type = obj.type
 
     @property
     def data(self):

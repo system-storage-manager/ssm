@@ -34,6 +34,7 @@ MAX_LVS = 999
 class LvmInfo(object):
 
     def __init__(self, data=None, force=False, verbose=False, yes=False):
+        self.type = 'lvm'
         self.data = data or {}
         self.attrs = []
         self.output = None

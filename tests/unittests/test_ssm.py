@@ -589,6 +589,7 @@ class MyInfo(object):
         self.force = force
         self.verbose = verbose
         self.yes = yes
+        self.type = 'backend'
 
     @property
     def y(self):

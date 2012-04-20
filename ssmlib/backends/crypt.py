@@ -32,6 +32,7 @@ except KeyError:
 class DmCryptVolume(object):
 
     def __init__(self, data=None, force=False, verbose=False, yes=False):
+        self.type = 'crypt'
         self.data = data or {}
         self.output = None
         self.force = force

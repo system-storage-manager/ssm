@@ -41,6 +41,7 @@ def get_real_number(string):
 class Btrfs(object):
 
     def __init__(self, data=None, force=False, verbose=False, yes=False):
+        self.type = 'btrfs'
         self.data = data or {}
         self.force = force
         self.verbose = verbose
