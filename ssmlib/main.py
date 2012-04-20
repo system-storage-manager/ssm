@@ -384,6 +384,9 @@ class Storage(object):
                 return Item(source, name)
         return None
 
+    def reinitialize(self):
+        self.__init__(self.force, self.verbose, self.yes)
+
     def _apply_prefix_filter(self):
         '''
         If SSM_PREFIX FILTER is set, remove all items which basenames does not
@@ -612,12 +615,20 @@ class StorageHandle(object):
                             yes=self.yes)
         return self._dev
 
+    def reinit_dev(self):
+        if self._dev:
+            self._dev.reinitialize()
+
     @property
     def pool(self):
         if self._pool:
             return self._pool
         self._pool = Pool(force=self.force, verbose=self.verbose, yes=self.yes)
         return self._pool
+
+    def reinit_pool(self):
+        if self._pool:
+            self._pool.reinitialize()
 
     @property
     def vol(self):
@@ -627,6 +638,10 @@ class StorageHandle(object):
                                 yes=self.yes)
         return self._volumes
 
+    def reinit_vol(self):
+        if self._volumes:
+            self._volumes.reinitialize()
+
     @property
     def snap(self):
         if self._snapshots:
@@ -634,6 +649,10 @@ class StorageHandle(object):
         self._snapshots = Snapshots(force=self.force, verbose=self.verbose,
                                     yes=self.yes)
         return self._snapshots
+
+    def reinit_snap(self):
+        if self._snapshots:
+            self._snapshots.reinitialize()
 
     def _create_fs(self, fstype, volume):
         """
