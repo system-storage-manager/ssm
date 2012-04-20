@@ -398,11 +398,18 @@ class Storage(object):
         '''
         if not SSM_PREFIX_FILTER:
             return
+        reg = re.compile("^{0}".format(SSM_PREFIX_FILTER))
         for source in self._data.itervalues():
             for item in source:
-                if not re.search("^{0}".format(SSM_PREFIX_FILTER),
-                        os.path.basename(item)):
-                    del source.data[item]
+                if reg.search(os.path.basename(item)):
+                    continue
+                if 'pool_name' in source.data[item] and \
+                   reg.search(source.data[item]['pool_name']):
+                    continue
+                if 'dm_name' in source.data[item] and \
+                   reg.search(os.path.basename(source.data[item]['dm_name'])):
+                    continue
+                del source.data[item]
 
     def get_backend(self, name):
         return self._data[name]
