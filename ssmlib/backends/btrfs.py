@@ -220,6 +220,13 @@ class BtrfsVolume(Btrfs):
             self.data = self._vol
             self.data.update(self._subvolumes)
 
+    def mount(self, vol, mpoint, options=None):
+        if options == None:
+            options = []
+        vol = self.data[vol]
+        options.append('subvolid={0}'.format(vol['ID']))
+        misc.do_mount(vol['real_dev'], mpoint, options)
+
     def remove(self, vol):
         # Volume and pool name should be the same, since it actually is the
         # same file system

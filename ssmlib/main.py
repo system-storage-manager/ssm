@@ -678,6 +678,12 @@ class StorageHandle(object):
                 command.insert(1, '-v')
         misc.run(command, stdout=True)
 
+    def _do_mount(self, volume, options=None):
+        try:
+            volume.mount(self._mpoint, options)
+        except AttributeError:
+            misc.do_mount(volume['real_dev'], self._mpoint, options)
+
     def check(self, args):
         '''
         Check the file system on the volume. FsInfo is used for that purpose,
@@ -761,24 +767,13 @@ class StorageHandle(object):
         '''
         devices = args.device
         args.device = []
-        print "Going to create new device with {0}".format(devices)
-        if args.pool.exists():
-            print "Pool {0} exists".format(args.pool.name)
         # Get the size in kilobytes
         if args.size:
             args.size = misc.get_real_size(args.size)
 
-        # Btrfs is a bit special, since it is in fact the file system, but it
-        # does volume management on its own. So ssm does not handle it as
-        # "regular" file system, but rather as volume manager.
-        if args.fstype == 'btrfs':
-            if not args.name:
-                args.name = "btrfs_{0}".format(os.path.basename(devices[0]))
-            args.pool = Item(self.pool.get_backend('btrfs'), args.name)
-        if args.pool.exists() and args.pool['type'] == 'btrfs' and \
-                self._mpoint:
-            args.name = self._mpoint
-            self._mpoint = None
+        if self._mpoint and not (args.fstype or args.pool.type == 'btrfs'):
+            raise Exception("Mount point specified, but no file" + \
+                            "system provided!\n")
 
         for dev in devices[:]:
             if self.dev[dev] and 'pool_name' in self.dev[dev] and \
@@ -789,24 +784,20 @@ class StorageHandle(object):
             if not self.dev[dev] or 'pool_name' not in self.dev[dev]:
                 args.device.append(dev)
 
-        if len(args.device) > 0 and \
-           args.fstype != 'btrfs':
+        if len(args.device) > 0 and args.pool.type != 'btrfs':
             self.add(args)
 
-        print args.size
         lvname = args.pool.create(devs=devices,
                                   size=args.size,
                                   stripesize=args.stripesize,
                                   stripes=args.stripes,
                                   name=args.name)
-        if not args.fstype:
-            return
-        if not args.fstype == 'btrfs':
-            print "Creating {0} file".format(args.fstype) + \
-                  "system on {0}: ".format(lvname)
+
+        if args.fstype and args.pool.type != 'btrfs':
             self._create_fs(args.fstype, lvname)
         if self._mpoint:
-            misc.do_mount(lvname, self._mpoint)
+            self.reinit_vol()
+            self._do_mount(self.vol[lvname])
 
     def list(self, args):
         '''
