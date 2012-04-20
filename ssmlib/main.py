@@ -901,6 +901,23 @@ class StorageHandle(object):
         err = "'{0}' does not contain valid file system".format(real)
         raise argparse.ArgumentTypeError(err)
 
+    def _find_device_record(self, path):
+        '''
+        Try to find device name for path, which is used as an key in
+        self.dev - this is usually the real block device, but in some
+        rare cases (dmsetup) we can have real block device which name
+        does not correspond with what we have in /proc/partitions
+        '''
+        if self.dev[path]:
+            return path
+
+        minor = os.minor(os.lstat(path).st_rdev)
+        dm_dev = "/dev/dm-{0}".format(minor)
+        if self.dev[dm_dev]:
+            return dm_dev
+        else:
+            return path
+
     def check_create_item(self, path):
         '''
         Check the create argument for block device or directory.
@@ -914,7 +931,8 @@ class StorageHandle(object):
             if stat.S_ISDIR(mode):
                 self._mpoint = path
                 return
-        return is_bdevice(path)
+        path = is_bdevice(path)
+        return self._find_device_record(path)
 
     def is_pool(self, string):
         pool = self.pool[string]
@@ -1014,8 +1032,9 @@ def valid_resize_size(size):
 
 
 def is_bdevice(path):
+    path = misc.get_real_device(path)
     try:
-        mode = os.stat(path).st_mode
+        mode = os.lstat(path).st_mode
     except OSError:
         err = "'{0}' is not valid block device".format(path)
         raise argparse.ArgumentTypeError(err)
