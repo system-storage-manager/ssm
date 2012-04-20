@@ -25,7 +25,7 @@ DEV_SIZE=100
 TEST_MAX_SIZE=$(($DEV_COUNT*$DEV_SIZE))
 aux prepare_devs $DEV_COUNT $DEV_SIZE
 TEST_DEVS=$(cat DEVICES)
-export DEFAULT_DEVICE_POOL=$vg1
+export SSM_LVM_DEFAULT_POOL=$vg1
 export LVOL_PREFIX="lvol"
 lvol1=${LVOL_PREFIX}001
 lvol2=${LVOL_PREFIX}002
@@ -44,11 +44,11 @@ size=$(($DEV_SIZE*6))
 ssm create --size ${size}M $TEST_DEVS
 
 # Take a snapshot with the default params
-ssm snapshot $DEFAULT_DEVICE_POOL/$lvol1
-check vg_field $DEFAULT_DEVICE_POOL lv_count 2
+ssm snapshot $SSM_LVM_DEFAULT_POOL/$lvol1
+check vg_field $SSM_LVM_DEFAULT_POOL lv_count 2
 
 # Remove entire pool
-ssm -f remove $DEFAULT_DEVICE_POOL
+ssm -f remove $SSM_LVM_DEFAULT_POOL
 
 # Create volume with all devices at once
 size=$(($DEV_SIZE*6))
@@ -56,26 +56,26 @@ ssm create --size ${size}M $TEST_DEVS
 
 # Take a snapshot with defined name
 snap_size=$(($size/5))
-ssm snapshot --name $snap1 $DEFAULT_DEVICE_POOL/$lvol1
-check lv_field $DEFAULT_DEVICE_POOL/$snap1 lv_size ${snap_size}.00m
-ssm snapshot --name $snap2 $DEFAULT_DEVICE_POOL/$lvol1
-check lv_field $DEFAULT_DEVICE_POOL/$snap2 lv_size ${snap_size}.00m
-ssm snapshot --name $snap3 $DEFAULT_DEVICE_POOL/$lvol1
-check lv_field $DEFAULT_DEVICE_POOL/$snap3 lv_size ${snap_size}.00m
-check vg_field $DEFAULT_DEVICE_POOL lv_count 4
+ssm snapshot --name $snap1 $SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$snap1 lv_size ${snap_size}.00m
+ssm snapshot --name $snap2 $SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$snap2 lv_size ${snap_size}.00m
+ssm snapshot --name $snap3 $SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$snap3 lv_size ${snap_size}.00m
+check vg_field $SSM_LVM_DEFAULT_POOL lv_count 4
 
 # Remove the snapshot volumes
-ssm -f remove $DEFAULT_DEVICE_POOL/$snap1 $DEFAULT_DEVICE_POOL/$snap2 $DEFAULT_DEVICE_POOL/$snap3
+ssm -f remove $SSM_LVM_DEFAULT_POOL/$snap1 $SSM_LVM_DEFAULT_POOL/$snap2 $SSM_LVM_DEFAULT_POOL/$snap3
 
 # Take a snapshot with defined name and size
 snap_size=$(($DEV_SIZE))
-ssm snapshot --size ${snap_size}M --name $snap1 $DEFAULT_DEVICE_POOL/$lvol1
-check lv_field $DEFAULT_DEVICE_POOL/$snap1 lv_size ${snap_size}.00m
-ssm snapshot --size ${snap_size}M --name $snap2 $DEFAULT_DEVICE_POOL/$lvol1
-check lv_field $DEFAULT_DEVICE_POOL/$snap2 lv_size ${snap_size}.00m
-ssm snapshot --size ${snap_size}M --name $snap3 $DEFAULT_DEVICE_POOL/$lvol1
-check lv_field $DEFAULT_DEVICE_POOL/$snap3 lv_size ${snap_size}.00m
-check vg_field $DEFAULT_DEVICE_POOL lv_count 4
+ssm snapshot --size ${snap_size}M --name $snap1 $SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$snap1 lv_size ${snap_size}.00m
+ssm snapshot --size ${snap_size}M --name $snap2 $SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$snap2 lv_size ${snap_size}.00m
+ssm snapshot --size ${snap_size}M --name $snap3 $SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$snap3 lv_size ${snap_size}.00m
+check vg_field $SSM_LVM_DEFAULT_POOL lv_count 4
 
 ssm -f remove --all
 
@@ -87,25 +87,25 @@ ssm create --size ${size}M --fs ext4 $TEST_DEVS $TEST_MNT
 # Take a snapshot with defined name of volume referenced by the mountpoint
 snap_size=$(($size/5))
 ssm snapshot --name $snap1 $TEST_MNT
-check lv_field $DEFAULT_DEVICE_POOL/$snap1 lv_size ${snap_size}.00m
+check lv_field $SSM_LVM_DEFAULT_POOL/$snap1 lv_size ${snap_size}.00m
 ssm snapshot --name $snap2 $TEST_MNT
-check lv_field $DEFAULT_DEVICE_POOL/$snap2 lv_size ${snap_size}.00m
+check lv_field $SSM_LVM_DEFAULT_POOL/$snap2 lv_size ${snap_size}.00m
 ssm snapshot --name $snap3 $TEST_MNT
-check lv_field $DEFAULT_DEVICE_POOL/$snap3 lv_size ${snap_size}.00m
-check vg_field $DEFAULT_DEVICE_POOL lv_count 4
+check lv_field $SSM_LVM_DEFAULT_POOL/$snap3 lv_size ${snap_size}.00m
+check vg_field $SSM_LVM_DEFAULT_POOL lv_count 4
 
 # Remove the snapshot volumes
-ssm -f remove $DEFAULT_DEVICE_POOL/$snap1 $DEFAULT_DEVICE_POOL/$snap2 $DEFAULT_DEVICE_POOL/$snap3
+ssm -f remove $SSM_LVM_DEFAULT_POOL/$snap1 $SSM_LVM_DEFAULT_POOL/$snap2 $SSM_LVM_DEFAULT_POOL/$snap3
 
 # Take a snapshot with defined name of volume referenced by the full volume name
 snap_size=$(($DEV_SIZE))
-ssm snapshot --size ${snap_size}M --name $snap1 $DM_DEV_DIR/$DEFAULT_DEVICE_POOL/$lvol1
-check lv_field $DEFAULT_DEVICE_POOL/$snap1 lv_size ${snap_size}.00m
-ssm snapshot --size ${snap_size}M --name $snap2 $DM_DEV_DIR/$DEFAULT_DEVICE_POOL/$lvol1
-check lv_field $DEFAULT_DEVICE_POOL/$snap2 lv_size ${snap_size}.00m
-ssm snapshot --size ${snap_size}M --name $snap3 $DM_DEV_DIR/$DEFAULT_DEVICE_POOL/$lvol1
-check lv_field $DEFAULT_DEVICE_POOL/$snap3 lv_size ${snap_size}.00m
-check vg_field $DEFAULT_DEVICE_POOL lv_count 4
+ssm snapshot --size ${snap_size}M --name $snap1 $DM_DEV_DIR/$SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$snap1 lv_size ${snap_size}.00m
+ssm snapshot --size ${snap_size}M --name $snap2 $DM_DEV_DIR/$SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$snap2 lv_size ${snap_size}.00m
+ssm snapshot --size ${snap_size}M --name $snap3 $DM_DEV_DIR/$SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$snap3 lv_size ${snap_size}.00m
+check vg_field $SSM_LVM_DEFAULT_POOL lv_count 4
 
 umount $TEST_MNT
 
@@ -129,6 +129,6 @@ ssm snapshot --help
 # Some cases which should fail
 not ssm snapshot
 ssm create $TEST_DEVS
-not ssm snapshot $DEFAULT_DEVICE_POOL/$lvol1
+not ssm snapshot $SSM_LVM_DEFAULT_POOL/$lvol1
 
 ssm -f remove --all

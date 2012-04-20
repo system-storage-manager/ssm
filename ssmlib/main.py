@@ -506,8 +506,8 @@ class Pool(Storage):
                      'btrfs': \
                         btrfs.BtrfsPool(force=self.force, verbose=self.verbose,
                         yes=self.yes)}
-        self.default = Item(self.get_backend(SSM_DEFAULT_BACKEND),
-                            DEFAULT_DEVICE_POOL)
+        backend = self.get_backend(SSM_DEFAULT_BACKEND)
+        self.default = Item(backend, backend.default_pool_name)
         self.header = ['Pool', 'Type', 'Devices', 'Free', 'Used', 'Total']
         self.attrs = ['pool_name', 'type', 'dev_count', 'pool_free',
                       'pool_used', 'pool_size']
@@ -935,7 +935,8 @@ class StorageHandle(object):
     def is_pool(self, string):
         pool = self.pool[string]
         if not pool:
-            self.pool.default.name = string
+            if string:
+                self.pool.default.name = string
             pool = self.pool.default
         return pool
 
@@ -1127,7 +1128,7 @@ def main(args=None):
                     volume. This is optional and if stripesize is set
                     and multiple devices are provided stripes is
                     determined automatically from the number of devices.''')
-    parser_create.add_argument('-p', '--pool', default=DEFAULT_DEVICE_POOL,
+    parser_create.add_argument('-p', '--pool', default="",
             help="Pool to use to create the new volume.", type=storage.is_pool)
     parser_create.add_argument('device', nargs='*',
             help='''Devices to use for creating the volume. If the device is
@@ -1151,7 +1152,7 @@ def main(args=None):
     # add command
     parser_add = subcommands.add_parser("add", help='''add one or more devices
                                         into the pool''')
-    parser_add.add_argument('-p', '--pool', default=DEFAULT_DEVICE_POOL,
+    parser_add.add_argument('-p', '--pool', default="",
             help='''Pool to add device into. If not specified the default
                  pool is used.''', type=storage.is_pool)
     parser_add.add_argument('device', nargs='+',

@@ -26,7 +26,7 @@ DEV_SIZE=100
 TEST_MAX_SIZE=$(($DEV_COUNT*($DEV_SIZE-4)))
 aux prepare_devs $DEV_COUNT $DEV_SIZE
 TEST_DEVS=$(cat DEVICES)
-export DEFAULT_DEVICE_POOL=$vg1
+export SSM_LVM_DEFAULT_POOL=$vg1
 export LVOL_PREFIX="lvol"
 lvol1=${LVOL_PREFIX}001
 lvol2=${LVOL_PREFIX}002
@@ -34,7 +34,7 @@ lvol3=${LVOL_PREFIX}003
 
 pool1=$vg2
 pool2=$vg3
-DEFAULT_VOLUME=${DEFAULT_DEVICE_POOL}/$lvol1
+DEFAULT_VOLUME=${SSM_LVM_DEFAULT_POOL}/$lvol1
 
 TEST_FS=
 which mkfs.ext2 && grep -E "^\sext[234]$" /proc/filesystems && TEST_FS+="ext2 "
@@ -49,66 +49,66 @@ _test_resize()
 	size=$((TEST_MAX_SIZE/2))
 	echo 'y' | ssm -f resize --size ${size}M ${DM_DEV_DIR}/$DEFAULT_VOLUME
 	size=$(align_size_up $size)
-	check lv_field $DEFAULT_DEVICE_POOL/$lvol1 lv_size ${size}.00m
+	check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
 
 	# xfs does not support shrinking (xfs only grows big!! :))
 	if [ "$fs" != "xfs" ]; then
 		ssm -f -v resize -s-$(($TEST_MAX_SIZE/4))M $DEFAULT_VOLUME
 		size=$(align_size_up $(($size-($TEST_MAX_SIZE/4))))
-		check lv_field $DEFAULT_DEVICE_POOL/$lvol1 lv_size ${size}.00m
+		check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
 	fi
 	echo 'y' | ssm -f resize --size +$(($TEST_MAX_SIZE/5))M $DEFAULT_VOLUME
 	size=$(align_size_up $(($size+($TEST_MAX_SIZE/5))))
-	check lv_field $DEFAULT_DEVICE_POOL/$lvol1 lv_size ${size}.00m
+	check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
 }
 
 ssm add $TEST_DEVS
 size=$((TEST_MAX_SIZE/3))
 ssm create --size ${size}M $TEST_DEVS
 size=$(align_size_up $size)
-check lv_field $DEFAULT_DEVICE_POOL/$lvol1 lv_size ${size}.00m
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
 
 ssm -f resize --size +$(($TEST_MAX_SIZE/3))M ${DM_DEV_DIR}/$DEFAULT_VOLUME
 size=$(align_size_up $(($size+($TEST_MAX_SIZE/3))))
-check lv_field $DEFAULT_DEVICE_POOL/$lvol1 lv_size ${size}.00m
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
 
 ssm -f resize -s-$(($TEST_MAX_SIZE/2))M $DEFAULT_VOLUME
 size=$(align_size_up $(($size-($TEST_MAX_SIZE/2))))
-check lv_field $DEFAULT_DEVICE_POOL/$lvol1 lv_size ${size}.00m
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
 
 ssm -f resize --size $(($TEST_MAX_SIZE/2))M $DEFAULT_VOLUME
 size=$(align_size_up $(($TEST_MAX_SIZE/2)))
-check lv_field $DEFAULT_DEVICE_POOL/$lvol1 lv_size ${size}.00m
-ssm -f remove $DEFAULT_DEVICE_POOL
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+ssm -f remove $SSM_LVM_DEFAULT_POOL
 
 ssm create $dev1
-check lv_field $DEFAULT_DEVICE_POOL/$lvol1 pv_count 1
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 1
 devs=${TEST_DEVS##*$dev1 }
 ssm resize --size +$((TEST_MAX_SIZE/2))M $DEFAULT_VOLUME $devs
 count=$(((TEST_MAX_SIZE/2/($DEV_SIZE-4))+1))
-check lv_field $DEFAULT_DEVICE_POOL/$lvol1 pv_count $count
-ssm -f remove $DEFAULT_DEVICE_POOL
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count $count
+ssm -f remove $SSM_LVM_DEFAULT_POOL
 
 ssm create $dev1
-check lv_field $DEFAULT_DEVICE_POOL/$lvol1 pv_count 1
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 1
 devs=${TEST_DEVS##*$dev1 }
 ssm resize --size $((TEST_MAX_SIZE/2))M ${DM_DEV_DIR}/$DEFAULT_VOLUME $devs
 count=$((TEST_MAX_SIZE/2/($DEV_SIZE-4)))
-check lv_field $DEFAULT_DEVICE_POOL/$lvol1 pv_count $count
-ssm -f remove $DEFAULT_DEVICE_POOL
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count $count
+ssm -f remove $SSM_LVM_DEFAULT_POOL
 
 ssm create --size $((DEV_SIZE/2))M $dev1
-check lv_field $DEFAULT_DEVICE_POOL/$lvol1 pv_count 1
-ssm resize --size +$((DEV_SIZE/3))M $DEFAULT_DEVICE_POOL/$lvol1 $dev2
-check lv_field $DEFAULT_DEVICE_POOL/$lvol1 pv_count 1
-ssm -f resize -s-$((DEV_SIZE/3))M $DEFAULT_DEVICE_POOL/$lvol1 $dev2 $dev3
-ssm resize --size +$((DEV_SIZE/3))M $DEFAULT_DEVICE_POOL/$lvol1 $dev2 $dev3
-check lv_field $DEFAULT_DEVICE_POOL/$lvol1 pv_count 1
-ssm -f resize -s-$((DEV_SIZE/3))M $DEFAULT_DEVICE_POOL/$lvol1 $dev2 $dev3
-check lv_field $DEFAULT_DEVICE_POOL/$lvol1 pv_count 1
-ssm resize --size +${DEV_SIZE}M $DEFAULT_DEVICE_POOL/$lvol1 $dev2 $dev3
-check lv_field $DEFAULT_DEVICE_POOL/$lvol1 pv_count 2
-ssm -f remove $DEFAULT_DEVICE_POOL
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 1
+ssm resize --size +$((DEV_SIZE/3))M $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 1
+ssm -f resize -s-$((DEV_SIZE/3))M $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2 $dev3
+ssm resize --size +$((DEV_SIZE/3))M $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2 $dev3
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 1
+ssm -f resize -s-$((DEV_SIZE/3))M $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2 $dev3
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 1
+ssm resize --size +${DEV_SIZE}M $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2 $dev3
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 2
+ssm -f remove $SSM_LVM_DEFAULT_POOL
 
 [ ! -d $TEST_MNT ] && mkdir $TEST_MNT &> /dev/null
 for fs in $TEST_FS; do
@@ -119,7 +119,7 @@ for fs in $TEST_FS; do
 
 	_test_resize
 	ssm -f check $DEFAULT_VOLUME
-	ssm -f remove $DEFAULT_DEVICE_POOL
+	ssm -f remove $SSM_LVM_DEFAULT_POOL
 
         echo $fs
         if [ $fs == 'ext2' ]; then
@@ -138,7 +138,7 @@ for fs in $TEST_FS; do
 
 	#umount $TEST_MNT
 	#ssm -f check $DEFAULT_VOLUME
-	#ssm -f remove $DEFAULT_DEVICE_POOL
+	#ssm -f remove $SSM_LVM_DEFAULT_POOL
 done
 ssm  -f remove --all
 

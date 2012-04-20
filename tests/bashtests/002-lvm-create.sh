@@ -25,7 +25,7 @@ DEV_SIZE=100
 TEST_MAX_SIZE=$(($DEV_COUNT*$DEV_SIZE))
 aux prepare_devs $DEV_COUNT $DEV_SIZE
 TEST_DEVS=$(cat DEVICES)
-export DEFAULT_DEVICE_POOL=$vg1
+export SSM_LVM_DEFAULT_POOL=$vg1
 export LVOL_PREFIX="lvol"
 lvol1=${LVOL_PREFIX}001
 lvol2=${LVOL_PREFIX}002
@@ -45,28 +45,28 @@ ssm create $TEST_DEVS
 not ssm create $TEST_DEVS
 not ssm create $TEST_DEVS -p $pool1
 not ssm create -s ${DEV_SIZE}M $TEST_DEVS
-check lv_field $DEFAULT_DEVICE_POOL/$lvol1 pv_count $DEV_COUNT
-ssm -f remove $DEFAULT_DEVICE_POOL
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count $DEV_COUNT
+ssm -f remove $SSM_LVM_DEFAULT_POOL
 
 # Create the group first and then create volume using the whole group
 ssm add $TEST_DEVS
 ssm create
-check lv_field $DEFAULT_DEVICE_POOL/$lvol1 pv_count $DEV_COUNT
-ssm -f remove $DEFAULT_DEVICE_POOL
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count $DEV_COUNT
+ssm -f remove $SSM_LVM_DEFAULT_POOL
 
 # Create a logical volume of fixed size
 size=$(($DEV_SIZE*6))
 ssm create -s ${size}M $TEST_DEVS
 not ssm create -s ${TEST_MAX_SIZE}M
 size=$(align_size_up $size)
-check lv_field $DEFAULT_DEVICE_POOL/$lvol1 lv_size ${size}.00m
-ssm -f remove $DEFAULT_DEVICE_POOL
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+ssm -f remove $SSM_LVM_DEFAULT_POOL
 
 # Create a striped logical volume
 ssm create -I 32 $TEST_DEVS
 not ssm create -I 32 -s ${TEST_MAX_SIZE}M
-check lv_field $DEFAULT_DEVICE_POOL/$lvol1 stripesize 32.00k
-ssm  -f remove $DEFAULT_DEVICE_POOL
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 stripesize 32.00k
+ssm  -f remove $SSM_LVM_DEFAULT_POOL
 
 # Create several volumes with different parameters
 ssm  add $TEST_DEVS
@@ -74,11 +74,11 @@ ssm create -I 8 -i $(($DEV_COUNT/2)) -s $(($DEV_SIZE*2))M
 ssm create -i $(($DEV_COUNT)) -s $(($DEV_SIZE))M
 not ssm create -I 32 -s $(($DEV_SIZE*2))M
 ssm create
-check lv_field $DEFAULT_DEVICE_POOL/$lvol1 stripesize 8.00k
-check lv_field $DEFAULT_DEVICE_POOL/$lvol1 stripes $(($DEV_COUNT/2))
-check lv_field $DEFAULT_DEVICE_POOL/$lvol2 stripes $DEV_COUNT
-check lv_field $DEFAULT_DEVICE_POOL/$lvol3 segtype linear
-ssm  -f remove $DEFAULT_DEVICE_POOL
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 stripesize 8.00k
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 stripes $(($DEV_COUNT/2))
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol2 stripes $DEV_COUNT
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol3 segtype linear
+ssm  -f remove $SSM_LVM_DEFAULT_POOL
 
 # Create several volumes with different parameters from different groups
 ssm add $dev1 $dev2 $dev3 -p $pool1
@@ -89,8 +89,8 @@ ssm create --stripesize 32 --stripes 3 --size $((DEV_SIZE/2))M -p $pool2
 ssm create $dev7 $dev8 $dev9 --stripesize 8
 ssm create -p $pool1 --stripes 3
 not ssm create -s ${DEV_SIZE}M -p $pool1
-check lv_field $DEFAULT_DEVICE_POOL/$lvol1 stripesize 8.00k
-check lv_field $DEFAULT_DEVICE_POOL/$lvol1 stripes 3
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 stripesize 8.00k
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 stripes 3
 check lv_field $pool1/$lvol1 stripes 3
 check lv_field $pool2/$lvol1 stripesize 32.00k
 check lv_field $pool2/$lvol1 stripes 3
@@ -101,24 +101,24 @@ ssm  -f remove --all
 # Create logical volumes with file system
 for fs in $TEST_FS; do
 	ssm create --fs=$fs --name $lvol3 -s $(($DEV_SIZE*6))M $TEST_DEVS
-	check lv_field $DEFAULT_DEVICE_POOL/$lvol3 pv_count $DEV_COUNT
-	ssm -f check ${DEFAULT_DEVICE_POOL}/$lvol3
-	ssm check ${DEFAULT_DEVICE_POOL}/$lvol3
-	ssm  -f remove $DEFAULT_DEVICE_POOL
+	check lv_field $SSM_LVM_DEFAULT_POOL/$lvol3 pv_count $DEV_COUNT
+	ssm -f check ${SSM_LVM_DEFAULT_POOL}/$lvol3
+	ssm check ${SSM_LVM_DEFAULT_POOL}/$lvol3
+	ssm  -f remove $SSM_LVM_DEFAULT_POOL
 
 	ssm create --fs=$fs -I 32 -s $(($DEV_SIZE*6))M $TEST_DEVS
-	check lv_field $DEFAULT_DEVICE_POOL/$lvol1 pv_count $DEV_COUNT
-	check lv_field $DEFAULT_DEVICE_POOL/$lvol1 stripesize 32.00k
-	ssm check ${DEFAULT_DEVICE_POOL}/$lvol1
-	ssm  -f remove $DEFAULT_DEVICE_POOL
+	check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count $DEV_COUNT
+	check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 stripesize 32.00k
+	ssm check ${SSM_LVM_DEFAULT_POOL}/$lvol1
+	ssm  -f remove $SSM_LVM_DEFAULT_POOL
 
 	ssm add $TEST_DEVS
 	ssm create --fs=$fs -I 8 -i $((DEV_COUNT/5)) -s $(($DEV_SIZE*2))M
-	check lv_field $DEFAULT_DEVICE_POOL/$lvol1 stripes $(($DEV_COUNT/5))
-	check lv_field $DEFAULT_DEVICE_POOL/$lvol1 stripesize 8.00k
-	ssm check ${DEFAULT_DEVICE_POOL}/$lvol1
+	check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 stripes $(($DEV_COUNT/5))
+	check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 stripesize 8.00k
+	ssm check ${SSM_LVM_DEFAULT_POOL}/$lvol1
         ssm list
-	ssm  -f remove $DEFAULT_DEVICE_POOL
+	ssm  -f remove $SSM_LVM_DEFAULT_POOL
 done
 
 ssm create --help

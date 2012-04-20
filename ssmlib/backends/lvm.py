@@ -25,6 +25,11 @@ from ssmlib import misc
 __all__ = ["PvsInfo", "VgsInfo", "LvsInfo"]
 
 try:
+    SSM_LVM_DEFAULT_POOL = os.environ['SSM_LVM_DEFAULT_POOL']
+except KeyError:
+    SSM_LVM_DEFAULT_POOL = "lvm_pool"
+
+try:
     DM_DEV_DIR = os.environ['DM_DEV_DIR']
 except KeyError:
     DM_DEV_DIR = "/dev"
@@ -42,6 +47,7 @@ class LvmInfo(object):
         self.verbose = verbose
         self.yes = yes
         self.binary = misc.check_binary('lvm')
+        self.default_pool_name = SSM_LVM_DEFAULT_POOL
 
     def run_lvm(self, command, noforce=False):
         if not self.binary:

@@ -24,6 +24,11 @@ from ssmlib import misc
 __all__ = ["DmCryptVolume"]
 
 try:
+    SSM_CRYPT_DEFAULT_POOL = os.environ['SSM_CRYPT_DEFAULT_POOL']
+except KeyError:
+    SSM_CRYPT_DEFAULT_POOL = "crypt_pool"
+
+try:
     DM_DEV_DIR = os.environ['DM_DEV_DIR']
 except KeyError:
     DM_DEV_DIR = "/dev"
@@ -39,6 +44,7 @@ class DmCryptVolume(object):
         self.verbose = verbose
         self.yes = yes
         self.mounts = misc.get_mounts('^{0}/mapper'.format(DM_DEV_DIR))
+        self.default_pool_name = SSM_CRYPT_DEFAULT_POOL
 
         if not misc.check_binary('dmsetup') or \
            not misc.check_binary('cryptsetup'):

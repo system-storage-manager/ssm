@@ -25,6 +25,11 @@ from ssmlib import misc
 
 __all__ = ["BtrfsVolume", "BtrfsPool", "BtrfsDev"]
 
+try:
+    SSM_BTRFS_DEFAULT_POOL = os.environ['SSM_BTRFS_DEFAULT_POOL']
+except KeyError:
+    SSM_BTRFS_DEFAULT_POOL = "btrfs_pool"
+
 
 def get_real_number(string):
     number = float(string[0:-2])
@@ -46,6 +51,7 @@ class Btrfs(object):
         self.force = force
         self.verbose = verbose
         self.yes = yes
+        self.default_pool_name = SSM_BTRFS_DEFAULT_POOL
         self._vol = {}
         self._pool = {}
         self._dev = {}
