@@ -89,6 +89,7 @@ class Btrfs(object):
 
                 if label != 'none':
                     vol['label'] = label
+                vol['ID'] = 0
 
             elif array[0] == 'Total':
                 pool['dev_count'] = array[2]
@@ -137,8 +138,8 @@ class Btrfs(object):
             if 'mount' in vol:
                 output = misc.run(command + [vol['mount']], stdout=False)[1]
                 for volume in self._parse_subvolumes(output):
-                    new = volume.copy()
-                    new.update(vol)
+                    new = vol.copy()
+                    new.update(volume)
                     new['dev_name'] = "{0}:{1}".format(name, new['path'])
                     new['mount'] = "{0}/{1}".format(vol['mount'],
                             new['path'])
