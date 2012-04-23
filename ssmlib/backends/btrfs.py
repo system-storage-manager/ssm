@@ -296,7 +296,6 @@ class BtrfsPool(Btrfs):
         if size:
             command.extend(['-b', str(float(size) * 1024)])
         command.extend(devs)
-        print command
         misc.run(command, stdout=True)
         return name
 
@@ -337,8 +336,8 @@ class BtrfsPool(Btrfs):
                     "name can be specified when creating btrfs subvolume, " + \
                     "the rest will be ignored"
             if 'mount' not in self._pool[pool]:
-                raise Exception("Can not create btrfs subvolume on " + \
-                        "umounted file system. Please mount it first!")
+                tmp = misc.temp_mount("UUID={0}".format(self._pool[pool]['uuid']))
+                self._pool[pool]['mount'] = tmp
 
             if not name:
                 now = datetime.datetime.now()
