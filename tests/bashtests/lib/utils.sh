@@ -172,6 +172,15 @@ align_size_up() {
     echo "$(($extents*$extent))"
 }
 
+umount_all() {
+    [ ! -d $TEST_MNT ] && return
+    for mp in $(ls $TEST_MNT); do
+        mount | grep " $TEST_MNT/$mp " 2>&1> /dev/null && {
+		while umount $TEST_MNT/$mp 2> /dev/null; do continue; done
+	} || true
+    done
+}
+
 if test -n "$PREFIX"; then
     vg=${PREFIX}vg
     lv=LV
@@ -179,9 +188,11 @@ if test -n "$PREFIX"; then
     for i in `seq 1 16`; do
         name="${PREFIX}pv$i"
         dev="$DM_DEV_DIR/mapper/$name"
+        mnt="$TEST_MNT/test$i"
         eval "dev$i=$dev"
         eval "lv$i=LV$i"
         eval "vg$i=${PREFIX}vg$i"
+        eval "mnt$i=$mnt"
     done
 fi
 

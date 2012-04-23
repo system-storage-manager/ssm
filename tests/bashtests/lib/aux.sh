@@ -91,6 +91,11 @@ teardown() {
     fi
     echo -n "## teardown..."
 
+    # Umount devices
+    umount_all
+
+    echo -n .
+
     test -d $DM_DEV_DIR/mapper && teardown_devs
 
     echo -n .
@@ -106,6 +111,15 @@ teardown() {
 make_ioerror() {
 	echo 0 10000000 error | dmsetup create -u TEST-ioerror ioerror
 	ln -s $DM_DEV_DIR/mapper/ioerror $DM_DEV_DIR/ioerror
+}
+
+prepare_mnts() {
+    count=$1
+    [ ! -d $TEST_MNT ] && mkdir $TEST_MNT &> /dev/null
+    for n in $(seq $count); do
+        mnt="$TEST_MNT/test$n"
+        mkdir $mnt
+    done
 }
 
 prepare_loop() {

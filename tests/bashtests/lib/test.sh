@@ -29,6 +29,7 @@ export SSM_PREFIX_FILTER=$PREFIX
 
 export TESTDIR=$(mkdtemp ${LVM_TEST_DIR-$(pwd)} $PREFIX.XXXXXXXXXX) \
 	|| { echo "failed to create temporary directory in ${LVM_TEST_DIR-$(pwd)}"; exit 1; }
+export TEST_MNT=$TESTDIR/mnt
 
 # check if coverage exists
 export COVERAGE=$(which coverage) || unset COVERAGE
