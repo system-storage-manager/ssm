@@ -1201,10 +1201,14 @@ def main(args=None):
     #storage.set_globals(args.force, args.verbose, args.yes, args.config)
     storage.set_globals(args.force, args.verbose, False, None)
 
+    # Register clean-up function on exit
+    sys.exitfunc = misc.do_cleanup
+
     try:
         args.func(args)
     except argparse.ArgumentTypeError, ex:
         parser.error(ex)
+
     return 0
 
 if __name__ == "__main__":

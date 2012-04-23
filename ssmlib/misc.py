@@ -20,8 +20,13 @@
 import os
 import re
 import sys
+import tempfile
 import threading
 import subprocess
+
+# List of temporary mount points which should be cleaned up
+# before exiting
+TMP_MOUNTED = []
 
 
 def get_unit_size(string):
@@ -150,6 +155,33 @@ def do_mount(device, directory, options=None):
         command.extend(['-o', ",".join(options)])
     command.extend([device, directory])
     run(command)
+
+
+def do_umount(mpoint):
+    command = ['umount', mpoint]
+    run(command)
+
+
+def temp_mount(device, options=None):
+    tmp = tempfile.mkdtemp()
+    do_mount(device, tmp, options)
+    TMP_MOUNTED.append(tmp)
+    return tmp
+
+
+def temp_umount(mpoint=None):
+    if not mpoint:
+        mpoint = TMP_MOUNTED.pop()
+    do_umount(mpoint)
+    os.rmdir(mpoint)
+
+
+def do_cleanup():
+    while 1:
+        try:
+            temp_umount()
+        except IndexError:
+            break
 
 
 def get_fs_type(dev):
