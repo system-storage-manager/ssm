@@ -242,8 +242,8 @@ class LvsInfo(LvmInfo):
         except IOError:
             lv['dm_name'] = lv['real_dev']
 
-        if lv['dm_name'] in self.mounts:
-            lv['mount'] = self.mounts[lv['dm_name']]
+        if lv['real_dev'] in self.mounts:
+            lv['mount'] = self.mounts[lv['real_dev']]
 
     def __getitem__(self, name):
         if name in self.data.iterkeys():

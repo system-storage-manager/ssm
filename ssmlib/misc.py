@@ -196,7 +196,8 @@ def get_mounts(regex):
             m = reg.search(line)
             if m:
                 l = line.split()[:2]
-                mounts[l[0]] = l[1]
+                dev = get_real_device(l[0])
+                mounts[dev] = l[1]
     return mounts
 
 

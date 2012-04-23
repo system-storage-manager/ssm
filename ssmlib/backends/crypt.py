@@ -65,8 +65,9 @@ class DmCryptVolume(object):
             dm['dm_name'] = devname
             dm['pool_name'] = 'dm-crypt'
             dm['dev_name'] = misc.get_real_device(devname)
-            if dm['dm_name'] in self.mounts:
-                dm['mount'] = self.mounts[dm['dm_name']]
+            dm['real_dev'] = dm['dev_name']
+            if dm['real_dev'] in self.mounts:
+                dm['mount'] = self.mounts[dm['real_dev']]
 
             # Check if the device really exists in the system. In some cases
             # (tests) DM_DEV_DIR can lie to us, if that is the case, simple

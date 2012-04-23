@@ -114,8 +114,8 @@ class Btrfs(object):
                 dev['dev_used'] = str(dev_used)
                 fs_size += get_real_number(array[3])
 
-                if dev['dev_name'] in self.mounts:
-                    vol['mount'] = self.mounts[dev['dev_name']]
+                if vol['real_dev'] in self.mounts:
+                    vol['mount'] = self.mounts[vol['real_dev']]
                     pool['mount'] = vol['mount']
 
                 dev_size = \
