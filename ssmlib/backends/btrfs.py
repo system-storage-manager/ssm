@@ -209,8 +209,7 @@ class Btrfs(object):
             if dev['pool_name'] != name:
                 continue
             if 'mount' in self._vol[name]:
-                print >> sys.stderr, "'{0}' is mounted!".format(name)
-                return
+                raise Exception("'{0}' is mounted!".format(name))
             misc.wipefs(dev['dev_name'], 'btrfs')
 
 
@@ -355,12 +354,11 @@ class BtrfsPool(Btrfs):
         else:
             if len(devs) == 0:
                 raise Exception("No devices specified when creating btrfs" + \
-                                "volume")
+                                " volume")
             if name:
-                name = "btrfs_{0}".format(os.path.basename(devs[0]))
-            else:
-                name = pool
-            vol = self._create_filesystem(pool, name, devs, size,
+                print >> sys.stderr, "WARNING: Creating new pool, (--name " + \
+                                     "{0}) will be ignored!".format(name)
+            vol = self._create_filesystem(pool, pool, devs, size,
                                           stripes, stripesize)
         return vol
 

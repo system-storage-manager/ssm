@@ -858,7 +858,7 @@ class StorageHandle(object):
                                         "to achieve by removing " +
                                         "{0}".format(item.name))
                 item.remove()
-            except RuntimeError, ex:
+            except (Exception, RuntimeError), ex:
                 print ex
                 print >> sys.stderr, "Unable to remove '{0}'".format(item.name)
 
