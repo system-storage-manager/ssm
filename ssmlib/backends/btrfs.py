@@ -310,7 +310,7 @@ class BtrfsPool(Btrfs):
     def new(self, pool, devices):
         if type(devices) is not list:
             devices = [devices]
-        print "new {0} with {1}".format(pool, devices)
+        self.create(pool, devs=devices)
 
     def extend(self, pool, devices):
         pool = self.data[pool]
