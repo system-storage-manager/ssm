@@ -102,8 +102,7 @@ class Btrfs(object):
                 fs_used = get_real_number(array[6])
 
             elif array[0] == 'devid':
-                if 'real_dev' not in vol:
-                    vol['real_dev'] = array[7]
+                vol['real_dev'] = array[7]
                 dev['dev_name'] = array[7]
 
                 if not pool_name:
