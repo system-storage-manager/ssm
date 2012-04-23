@@ -314,7 +314,8 @@ class BtrfsPool(Btrfs):
     def extend(self, pool, devices):
         pool = self.data[pool]
         if 'mount' not in pool:
-            raise Exception("Btrfs pool can be extended only when mounted!")
+            tmp = misc.temp_mount("UUID={0}".format(pool['uuid']))
+            pool['mount'] = tmp
         if type(devices) is not list:
             devices = [devices]
         command = ['device', 'add']
