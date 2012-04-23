@@ -302,7 +302,8 @@ class BtrfsPool(Btrfs):
     def reduce(self, pool, device):
         pool = self.data[pool]
         if 'mount' not in pool:
-            raise Exception("Btrfs pool can be reduced only when mounted!")
+            tmp = misc.temp_mount("UUID={0}".format(pool['uuid']))
+            pool['mount'] = tmp
         command = ['device', 'delete', device, pool['mount']]
         self.run_btrfs(command)
 
