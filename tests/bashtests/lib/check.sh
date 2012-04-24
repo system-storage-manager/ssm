@@ -292,4 +292,51 @@ pvlv_counts()
 	vg_field $local_vg snap_count $num_snaps
 }
 
+btrfs_fs_field()
+{
+	lines=$(btrfs filesystem show 2> /dev/null | grep -A 1 "'$1'" || true)
+
+	case $2 in
+		"label")
+			actual=$(echo $lines | cut -f2 -d' ' | sed -e "s/'//g") ;;
+		"dev_count")
+			actual=$(echo $lines | cut -f7 -d' ') ;;
+		"uuid")
+			actual=$(echo $lines | cut -f4 -d' ') ;;
+		*)
+			echo "Unknown filed $2"
+			exit 1
+			;;
+	esac
+
+	test "$actual" = "$3" || {
+		echo "btrfs_fs_field: label=$1, field=$2, actual=$actual, expected=$3"
+		exit 1
+	}
+}
+
+btrfs_vol_field()
+{
+
+	case $2 in
+		"vol_count")
+			actual=$(btrfs subvolume list $1 | wc -l);;
+		"subvolume")
+			actual=$(btrfs subvolume list $1 2> /dev/null | \
+				cut --complement -f 1-6 -d' ' | \
+				grep -E "^$3$" || true)
+			echo "actual = $actual"
+			;;
+		*)
+			echo "Unknown filed $2"
+			exit 1
+			;;
+	esac
+
+	test "$actual" = "$3" || {
+		echo "btrfs_fs_field: mount=$1, field=$2, actual=$actual, expected=$3"
+		exit 1
+	}
+}
+
 "$@"
