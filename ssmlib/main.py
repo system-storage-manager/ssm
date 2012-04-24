@@ -934,6 +934,10 @@ class StorageHandle(object):
         path = is_bdevice(path)
         return self._find_device_record(path)
 
+    def get_bdevice(self, path):
+        path = is_bdevice(path)
+        return self._find_device_record(path)
+
     def is_pool(self, string):
         pool = self.pool[string]
         if not pool:
@@ -988,6 +992,15 @@ class StorageHandle(object):
         device = self.dev[string]
         if device:
             return device
+        else:
+            try:
+                path = is_bdevice(string)
+                path = self._find_device_record(path)
+                device = self.dev[path]
+                if device:
+                    return device
+            except argparse.ArgumentTypeError:
+                pass
         for vol in self.vol:
             if 'mount' in vol and (vol['mount'] == string.rstrip("/")):
                 return vol
@@ -1159,7 +1172,7 @@ def main(args=None):
                  pool is used.''', type=storage.is_pool)
     parser_add.add_argument('device', nargs='+',
             help="Devices to add into the pool",
-            type=is_bdevice)
+            type=storage.get_bdevice)
     parser_add.set_defaults(func=storage.add)
 
     # remove command
