@@ -560,6 +560,7 @@ class Volumes(Storage):
         self.types = [str, str, float, str, float, float, str, str]
         self._apply_prefix_filter()
 
+
 class Snapshots(Storage):
     '''
     Store Snapshots from all the backends that supports snapshotting. When
