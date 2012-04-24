@@ -784,7 +784,8 @@ class StorageHandle(object):
             if not self.dev[dev] or 'pool_name' not in self.dev[dev]:
                 args.device.append(dev)
 
-        if len(args.device) > 0 and args.pool.type != 'btrfs':
+        if len(args.device) > 0 and not \
+           (not args.pool.exists() and args.pool.type == 'btrfs'):
             self.add(args)
 
         lvname = args.pool.create(devs=devices,
