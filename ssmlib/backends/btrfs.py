@@ -91,7 +91,7 @@ class Btrfs(object):
 
                 label = array[1].strip("'")
                 uuid = array[3]
-                pool['uuid'] = uuid
+                pool['uuid'] = vol['uuid'] = uuid
 
                 if label != 'none':
                     vol['label'] = label
@@ -249,7 +249,8 @@ class BtrfsVolume(Btrfs):
     def snapshot(self, vol, destination, name, size, user_set_size):
         vol = self.data[vol]
         if 'mount' not in vol:
-            raise Exception("Btrfs volume can be snapshotted only when mounted!")
+            tmp = misc.temp_mount("UUID={0}".format(vol['uuid']))
+            vol['mount'] = tmp
 
         if not destination and not name:
             now = datetime.datetime.now()
