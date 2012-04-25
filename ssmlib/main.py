@@ -224,7 +224,10 @@ class DeviceInfo(object):
         self.verbose = verbose
         self.yes = yes
 
-        dmnumber = misc.get_dmnumber("device-mapper")
+        hide_dmnumbers = []
+        for name in ['device-mapper', 'sr']:
+            hide_dmnumbers.append(misc.get_dmnumber(name))
+
         mounts = misc.get_mounts('^/dev')
         swaps = misc.get_swaps()
 
@@ -232,7 +235,7 @@ class DeviceInfo(object):
             devices = dict(zip(self.attrs, items))
             devices['vol_size'] = devices['dev_size']
             devices['dev_name'] = "/dev/" + devices['dev_name']
-            if devices['major'] == dmnumber:
+            if devices['major'] in hide_dmnumbers:
                 devices['hide'] = True
             if devices['dev_name'] in self.data:
                 if 'hide' in self.data[devices['dev_name']] and \
