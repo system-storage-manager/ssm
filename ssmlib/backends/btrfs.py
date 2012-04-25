@@ -242,7 +242,8 @@ class BtrfsVolume(Btrfs):
     def resize(self, vol, size, resize_fs=True):
         vol = self.data[vol]
         if 'mount' not in vol:
-            raise Exception("Btrfs pool can be reduced only when mounted!")
+            tmp = misc.temp_mount("UUID={0}".format(vol['uuid']))
+            vol['mount'] = tmp
         command = ['filesystem', 'resize', str(int(size)) + "K", vol['mount']]
         self.run_btrfs(command)
 
