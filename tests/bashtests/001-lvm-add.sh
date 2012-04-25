@@ -23,6 +23,7 @@ export test_description='Exercise ssm add'
 DEV_COUNT=10
 aux prepare_devs $DEV_COUNT 10
 TEST_DEVS=$(cat DEVICES)
+export SSM_DEFAULT_BACKEND='lvm'
 export SSM_LVM_DEFAULT_POOL=$vg1
 
 pool1=$vg2
