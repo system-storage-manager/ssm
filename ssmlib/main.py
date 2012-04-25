@@ -825,12 +825,16 @@ class StorageHandle(object):
         '''
         Add devices into the pool
         '''
-        if args.pool.exists():
-            for dev in args.device[:]:
-                item = self.dev[dev]
-                if item and 'pool_name' in item and \
-                   item['pool_name'] == args.pool.name:
+        for dev in args.device[:]:
+            item = self.dev[dev]
+            if item and 'pool_name' in item:
+                if item['pool_name'] == args.pool.name:
                     args.device.remove(dev)
+                else:
+                    err = "Device '{0}' is already used in ".format(dev) + \
+                          "the pool '{0}'.".format(item['pool_name'])
+                    raise argparse.ArgumentTypeError(err)
+        if args.pool.exists():
             if len(args.device) > 0:
                 args.pool.extend(args.device)
         else:
