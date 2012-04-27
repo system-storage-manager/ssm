@@ -149,7 +149,7 @@ class VgsInfo(LvmInfo):
         self.run_lvm(command)
 
     def create(self, vg, size=None, name=None, devs=None,
-            stripes=None, stripesize=None):
+            raid=None):
         devices = devs or []
         command = ['lvcreate', vg]
         if size:
@@ -167,14 +167,21 @@ class VgsInfo(LvmInfo):
             lvname = self._generate_lvname(vg)
 
         command.extend(['-n', lvname.rpartition("/")[-1]])
-        if not stripes and stripesize and len(devices) > 0:
-            stripes = str(len(devices))
-        elif not stripes and stripesize:
-            raise Exception("Stripesize defined, but stripes not!")
-        if stripesize:
-            command.extend(['-I', stripesize])
-        if stripes:
-            command.extend(['-i', stripes])
+
+        if raid:
+            if raid['level'] == '0':
+                if not raid['stripes'] and len(devices) > 0:
+                    raid['stripes'] = str(len(devices))
+                elif not raid['stripes'] and raid['stripesize']:
+                    raise Exception("Number of stripes should be defined!")
+                if raid['stripesize']:
+                    command.extend(['-I', raid['stripesize']])
+                if raid['stripes']:
+                    command.extend(['-i', raid['stripes']])
+            else:
+                raise Exception("Lvm backed currently does not support " + \
+                                "RAID level {0}".format(raid['level']))
+
         command.extend(devices)
         self.run_lvm(command, noforce=True)
         return "{0}/{1}/{2}".format(DM_DEV_DIR, vg, lvname)

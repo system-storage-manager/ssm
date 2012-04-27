@@ -272,8 +272,8 @@ class SsmFunctionCheck(MockSystemDataSource):
 
     def test_create(self):
 
-        out = MyStdout()
-        sys.stdout = out
+        #out = MyStdout()
+        #sys.stdout = out
 
         # Create volume using single device from non existent default pool
         self._checkCmd("ssm create", ['/dev/sda'],
@@ -316,17 +316,17 @@ class SsmFunctionCheck(MockSystemDataSource):
             "pool create {0} 2791728742.40 /dev/sda".format(main.DEFAULT_DEVICE_POOL))
         self._cmdEq("pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
-        self._checkCmd("ssm create", ['-s 2.6T', '-I 16', '/dev/sda'],
-            "pool create {0} 2791728742.40 16 /dev/sda".format(main.DEFAULT_DEVICE_POOL))
+        self._checkCmd("ssm create", ['-r 0', '-s 2.6T', '-I 16', '/dev/sda'],
+            "pool create {0} 2791728742.40 0 16 /dev/sda".format(main.DEFAULT_DEVICE_POOL))
         self._cmdEq("pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
-        self._checkCmd("ssm create", ['-s 2.6T', '-I 16', '-i 4', '/dev/sda'],
-            "pool create {0} 2791728742.40 4 16 /dev/sda".format(main.DEFAULT_DEVICE_POOL))
+        self._checkCmd("ssm create", ['-r 1', '-s 2.6T', '-I 16', '-i 4', '/dev/sda'],
+            "pool create {0} 2791728742.40 1 4 16 /dev/sda".format(main.DEFAULT_DEVICE_POOL))
         self._cmdEq("pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
-        self._checkCmd("ssm create", ['-s 2.6T', '-I 16', '-i 4', '-n myvolume',
+        self._checkCmd("ssm create", ['-r 10', '-s 2.6T', '-I 16', '-i 4', '-n myvolume',
             '/dev/sda'],
-            "pool create {0} 2791728742.40 myvolume 4 16 /dev/sda".format(main.DEFAULT_DEVICE_POOL))
+            "pool create {0} 2791728742.40 myvolume 10 4 16 /dev/sda".format(main.DEFAULT_DEVICE_POOL))
         self._cmdEq("pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
         # Create volume using single device from non existent my_pool
@@ -350,17 +350,17 @@ class SsmFunctionCheck(MockSystemDataSource):
             "pool create my_pool 2791728742.40 /dev/sda")
         self._cmdEq("pool new my_pool /dev/sda", -2)
 
-        self._checkCmd("ssm create", ['-p my_pool', '-s 2.6T', '-I 16',
-            '/dev/sda'], "pool create my_pool 2791728742.40 16 /dev/sda")
+        self._checkCmd("ssm create", ['-r 10', '-p my_pool', '-s 2.6T', '-I 16',
+            '/dev/sda'], "pool create my_pool 2791728742.40 10 16 /dev/sda")
         self._cmdEq("pool new my_pool /dev/sda", -2)
 
-        self._checkCmd("ssm create", ['-p my_pool', '-s 2.6T', '-I 16',
-            '-i 4', '/dev/sda'], "pool create my_pool 2791728742.40 4 16 /dev/sda")
+        self._checkCmd("ssm create", ['-r 0', '-p my_pool', '-s 2.6T', '-I 16',
+            '-i 4', '/dev/sda'], "pool create my_pool 2791728742.40 0 4 16 /dev/sda")
         self._cmdEq("pool new my_pool /dev/sda", -2)
 
-        self._checkCmd("ssm create", ['-p my_pool', '-s 2.6T', '-I 16',
+        self._checkCmd("ssm create", ['-r 1', '-p my_pool', '-s 2.6T', '-I 16',
             '-i 4', '-n myvolume', '/dev/sda'],
-            "pool create my_pool 2791728742.40 myvolume 4 16 /dev/sda")
+            "pool create my_pool 2791728742.40 myvolume 1 4 16 /dev/sda")
         self._cmdEq("pool new my_pool /dev/sda", -2)
 
         # Create volume using multiple devices
@@ -374,31 +374,31 @@ class SsmFunctionCheck(MockSystemDataSource):
 
         # Create volume using single device from existing pool
         self._addPool(main.DEFAULT_DEVICE_POOL, ['/dev/sdb', '/dev/sdd'])
-        self._checkCmd("ssm create", ['-s 2.6T', '-I 16',
+        self._checkCmd("ssm create", ['-r 10', '-s 2.6T', '-I 16',
             '-i 4', '-n myvolume', '/dev/sda'],
-            "pool create {0} 2791728742.40 myvolume 4 16 /dev/sda". format(main.DEFAULT_DEVICE_POOL))
+            "pool create {0} 2791728742.40 myvolume 10 4 16 /dev/sda". format(main.DEFAULT_DEVICE_POOL))
         self._cmdEq("pool extend {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
         self._addPool("my_pool", ['/dev/sdc2', '/dev/sdc3'])
-        self._checkCmd("ssm create", ['-p my_pool', '-s 2.6T', '-I 16',
+        self._checkCmd("ssm create", ['-r 1', '-p my_pool', '-s 2.6T', '-I 16',
             '-i 4', '-n myvolume', '/dev/sda'],
-            "pool create my_pool 2791728742.40 myvolume 4 16 /dev/sda")
+            "pool create my_pool 2791728742.40 myvolume 1 4 16 /dev/sda")
         self._cmdEq("pool extend my_pool /dev/sda", -2)
 
         # Create volume using multiple devices which one of the is in already
         # in the pool
-        self._checkCmd("ssm create", ['-s 2.6T', '-I 16',
+        self._checkCmd("ssm create", ['-r 0', '-s 2.6T', '-I 16',
             '-i 4', '-n myvolume', '/dev/sda /dev/sdb'],
-            "pool create {0} 2791728742.40 myvolume 4 16 /dev/sda /dev/sdb". format(main.DEFAULT_DEVICE_POOL))
+            "pool create {0} 2791728742.40 myvolume 0 4 16 /dev/sda /dev/sdb". format(main.DEFAULT_DEVICE_POOL))
         self._cmdEq("pool extend {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
         self._addPool("my_pool", ['/dev/sdc2', '/dev/sdc3'])
-        self._checkCmd("ssm create", ['-p my_pool', '-s 2.6T', '-I 16',
+        self._checkCmd("ssm create", ['-r 10', '-p my_pool', '-s 2.6T', '-I 16',
             '-i 4', '-n myvolume', '/dev/sdc2 /dev/sda'],
-            "pool create my_pool 2791728742.40 myvolume 4 16 /dev/sdc2 /dev/sda")
+            "pool create my_pool 2791728742.40 myvolume 10 4 16 /dev/sdc2 /dev/sda")
         self._cmdEq("pool extend my_pool /dev/sda", -2)
 
-        sys.stdout = out.stdout
+        #sys.stdout = out.stdout
 
     def test_add(self):
         # Adding to non existent pool
@@ -643,11 +643,17 @@ class PoolInfo(MyInfo):
         misc.run(cmd)
 
     def create(self, pool, size='', name='', devs='',
-               stripes='', stripesize=''):
+               raid=None):
         if type(devs) is not list:
             devices = [devs]
+        if raid:
+            stripes = raid['stripes']
+            stripesize = raid['stripesize']
+            level = raid['level']
+        else:
+            stripes = stripesize = level = ""
         misc.run([self.f, self.v, self.y, 'pool create', pool, size, name,
-            stripes, stripesize, " ".join(devs)])
+            level, stripes, stripesize, " ".join(devs)])
         if not name:
             name = "lvol001"
         return "/dev/{0}/{1}".format(pool, name)

@@ -289,12 +289,23 @@ class BtrfsPool(Btrfs):
         else:
             self.data = self._pool
 
-    def _create_filesystem(self, pool, name, devs, size=None,
-                           stripes=None, stripesize=None):
+    def _create_filesystem(self, pool, name, devs, size=None, raid=None):
         if not devs:
             raise Exception("To create btrfs volume, some devices must be " + \
                             "provided")
         command = ['mkfs.btrfs', '-L', name]
+
+        if raid:
+            if raid['level'] == '0':
+                command.extend(['-m', 'raid0', '-d', 'raid0'])
+            elif raid['level'] == '1':
+                command.extend(['-m', 'raid1', '-d', 'raid1'])
+            elif raid['level'] == '10':
+                command.extend(['-m', 'raid10', '-d', 'raid10'])
+            else:
+                raise Exception("Btrfs backed currently does not support " + \
+                                "RAID level {0}".format(raid['level']))
+
         if size:
             command.extend(['-b', str(float(size) * 1024)])
         command.extend(devs)
@@ -332,13 +343,13 @@ class BtrfsPool(Btrfs):
         self._remove_filesystem(pool)
 
     def create(self, pool, size=None, name=None, devs=None,
-            stripes=None, stripesize=None):
+            raid=None):
         if pool in self._pool:
             vol = None
-            if size or devs or stripes or stripesize:
-                print >> sys.stderr, "Only name, volume name and pool" + \
-                    "name can be specified when creating btrfs subvolume, " + \
-                    "the rest will be ignored"
+            if size or raid:
+                print >> sys.stderr, "WARNING: Only name, volume name and " + \
+                    "pool name can be specified when creating btrfs " + \
+                    "subvolume, the rest will be ignored."
             if 'mount' not in self._pool[pool]:
                 tmp = misc.temp_mount("UUID={0}".format(self._pool[pool]['uuid']))
                 self._pool[pool]['mount'] = tmp
@@ -360,8 +371,7 @@ class BtrfsPool(Btrfs):
             if name:
                 print >> sys.stderr, "WARNING: Creating new pool, (--name " + \
                                      "{0}) will be ignored!".format(name)
-            vol = self._create_filesystem(pool, pool, devs, size,
-                                          stripes, stripesize)
+            vol = self._create_filesystem(pool, pool, devs, size, raid)
         return vol
 
 
