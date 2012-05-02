@@ -102,7 +102,8 @@ class Btrfs(object):
                 fs_used = get_real_number(array[6])
 
             elif array[0] == 'devid':
-                vol['real_dev'] = array[7]
+                if 'mount' not in vol:
+                    vol['real_dev'] = array[7]
                 dev['dev_name'] = array[7]
 
                 if not pool_name:
@@ -146,8 +147,13 @@ class Btrfs(object):
                     new = vol.copy()
                     new.update(volume)
                     new['dev_name'] = "{0}:{1}".format(name, new['path'])
-                    new['mount'] = "{0}/{1}".format(vol['mount'],
-                            new['path'])
+
+                    item = "{0}:/{1}".format(vol['real_dev'], new['path'])
+                    if item in self.mounts:
+                        new['mount'] = self.mounts[item]['mp']
+                    else:
+                        new['mount'] = "{0}/{1}".format(vol['mount'],
+                                new['path'])
 
                     new['hide'] = False
                     # Store snapshot info
