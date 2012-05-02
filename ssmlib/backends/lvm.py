@@ -228,7 +228,7 @@ class LvsInfo(LvmInfo):
         self.attrs = ['pool_name', 'vol_size', 'stripes',
                 'stripesize', 'type', 'dev_name', 'origin']
         self.handle_fs = True
-        self.mounts = misc.get_mounts('^{0}/mapper'.format(DM_DEV_DIR))
+        self.mounts = misc.get_mounts('{0}/mapper'.format(DM_DEV_DIR))
         self._parse_data(command)
 
     def _fill_aditional_info(self, lv):
@@ -250,7 +250,7 @@ class LvsInfo(LvmInfo):
             lv['dm_name'] = lv['real_dev']
 
         if lv['real_dev'] in self.mounts:
-            lv['mount'] = self.mounts[lv['real_dev']]
+            lv['mount'] = self.mounts[lv['real_dev']]['mp']
 
     def __getitem__(self, name):
         if name in self.data.iterkeys():
@@ -309,7 +309,7 @@ class SnapInfo(LvmInfo):
         self.attrs = ['pool_name', 'vol_size', 'stripes',
                 'stripesize', 'type', 'dev_name', 'origin', 'snap_size']
         self.handle_fs = True
-        self.mounts = misc.get_mounts('^{0}/mapper'.format(DM_DEV_DIR))
+        self.mounts = misc.get_mounts('{0}/mapper'.format(DM_DEV_DIR))
         self._parse_data(command)
 
     def _skip_data(self, row):
@@ -344,4 +344,4 @@ class SnapInfo(LvmInfo):
             snap['dm_name'] = snap['real_dev']
 
         if snap['dm_name'] in self.mounts:
-            snap['mount'] = self.mounts[snap['dm_name']]
+            snap['mount'] = self.mounts[snap['dm_name']]['mp']

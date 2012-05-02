@@ -62,7 +62,7 @@ class Btrfs(object):
         if not self._binary:
             return
 
-        self.mounts = misc.get_mounts('^/dev/')
+        self.mounts = misc.get_mounts('/dev/')
         command = ['btrfs', 'filesystem', 'show']
         self.output = misc.run(command, stderr=False)[1]
 
@@ -114,7 +114,7 @@ class Btrfs(object):
                 fs_size += get_real_number(array[3])
 
                 if vol['real_dev'] in self.mounts:
-                    vol['mount'] = self.mounts[vol['real_dev']]
+                    vol['mount'] = self.mounts[vol['real_dev']]['mp']
                     pool['mount'] = vol['mount']
 
                 dev_size = \

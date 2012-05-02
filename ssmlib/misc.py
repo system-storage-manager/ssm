@@ -220,7 +220,30 @@ def get_partitions():
     return partitions
 
 
-def get_mounts(regex):
+def get_mountinfo(regex=".*"):
+    mounts = {}
+    reg = re.compile(regex)
+    names = ['id', 'parent', 'major_minor', 'root', 'mp', 'options']
+    with open('/proc/self/mountinfo', 'r') as f:
+        for line in f:
+            m = reg.search(line)
+            if not m:
+                continue
+            array = line.split(None, 6)
+            row = dict([(names[index], array[index])
+                for index in min(range(len(array) - 1), range(len(names)))])
+            array = line.rsplit(None, 3)
+            row['fs'] = array[1]
+            row['dev'] = array[2]
+            row['sb_options'] = array[3]
+            dev = get_real_device(row['dev'])
+            if dev in mounts:
+                dev = "{0}:{1}".format(dev, row['root'])
+            mounts[dev] = row
+    return mounts
+
+
+def get_mounts_old(regex=".*"):
     mounts = {}
     reg = re.compile(regex)
     with open('/proc/mounts', 'r') as f:
@@ -229,8 +252,15 @@ def get_mounts(regex):
             if m:
                 l = line.split()[:2]
                 dev = get_real_device(l[0])
-                mounts[dev] = l[1]
+                mounts[dev] = {'dev': l[0], 'mp': l[1]}
     return mounts
+
+
+def get_mounts(regex=".*"):
+    if os.path.exists("/proc/self/mountinfo"):
+        return get_mountinfo(regex)
+    else:
+        return get_mounts_old(regex)
 
 
 def get_dmnumber(name):

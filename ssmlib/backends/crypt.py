@@ -43,7 +43,7 @@ class DmCryptVolume(object):
         self.force = force
         self.verbose = verbose
         self.yes = yes
-        self.mounts = misc.get_mounts('^{0}/mapper'.format(DM_DEV_DIR))
+        self.mounts = misc.get_mounts('{0}/mapper'.format(DM_DEV_DIR))
         self.default_pool_name = SSM_CRYPT_DEFAULT_POOL
 
         if not misc.check_binary('dmsetup') or \
@@ -67,7 +67,7 @@ class DmCryptVolume(object):
             dm['dev_name'] = misc.get_real_device(devname)
             dm['real_dev'] = dm['dev_name']
             if dm['real_dev'] in self.mounts:
-                dm['mount'] = self.mounts[dm['real_dev']]
+                dm['mount'] = self.mounts[dm['real_dev']]['mp']
 
             # Check if the device really exists in the system. In some cases
             # (tests) DM_DEV_DIR can lie to us, if that is the case, simple

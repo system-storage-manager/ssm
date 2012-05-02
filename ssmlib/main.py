@@ -229,7 +229,7 @@ class DeviceInfo(object):
         for name in ['device-mapper', 'sr']:
             hide_dmnumbers.append(misc.get_dmnumber(name))
 
-        mounts = misc.get_mounts('^/dev')
+        mounts = misc.get_mounts('/dev/')
         swaps = misc.get_swaps()
 
         for items in misc.get_partitions():
@@ -246,7 +246,7 @@ class DeviceInfo(object):
             else:
                 self.data[devices['dev_name']] = devices
             if devices['dev_name'] in mounts:
-                devices['mount'] = mounts[devices['dev_name']]
+                devices['mount'] = mounts[devices['dev_name']]['mp']
 
         for item in swaps:
             if item[0] in self.data:
