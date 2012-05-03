@@ -19,6 +19,7 @@
 
 import unittest
 from ssmlib import main
+from ssmlib.backends import lvm
 from tests.unittests.common import *
 
 
@@ -33,6 +34,8 @@ class LvmFunctionCheck(MockSystemDataSource):
         self._addDevice('/dev/sdc2', 29826161, 2)
         self._addDevice('/dev/sdc3', 1042177280, 3)
         self._addDevice('/dev/sdd', 11673)
+        self._addDevice('/dev/sde', 1042177280)
+        main.SSM_DEFAULT_BACKEND = 'lvm'
 
     def mock_run(self, cmd, *args, **kwargs):
         self.run_data.append(" ".join(cmd))
@@ -54,6 +57,89 @@ class LvmFunctionCheck(MockSystemDataSource):
         if 'return_stdout' in kwargs and not kwargs['return_stdout']:
             output = None
         return (0, output)
+
+    def test_lvm_create(self):
+        default_pool = lvm.SSM_LVM_DEFAULT_POOL
+
+        # Create volume using single device from non existent default pool
+        self._checkCmd("ssm create", ['/dev/sda'],
+            "lvm lvcreate {0} -l 100%PVS -n lvol001 /dev/sda".format(default_pool))
+        self._cmdEq("lvm vgcreate {0} /dev/sda".format(default_pool), -2)
+
+        self._checkCmd("ssm create", ['--name myvolume', '--fstype ext4', '/dev/sda'])
+        self._cmdEq("mkfs.ext4 /dev/{0}/myvolume".format(default_pool))
+        self._cmdEq("lvm lvcreate {0} -l 100%PVS -n myvolume /dev/sda".format(default_pool), -2)
+        self._cmdEq("lvm vgcreate {0} /dev/sda".format(default_pool), -3)
+
+        self._checkCmd("ssm -f create", ['--fstype ext4', '/dev/sda'])
+        self._cmdEq("mkfs.ext4 -F /dev/{0}/lvol001".format(default_pool))
+        self._cmdEq("lvm lvcreate {0} -l 100%PVS -n lvol001 /dev/sda".format(default_pool), -2)
+        self._cmdEq("lvm vgcreate -f {0} /dev/sda".format(default_pool), -3)
+
+        self._checkCmd("ssm -v create", ['--name myvolume', '--fstype xfs', '/dev/sda'])
+        self._cmdEq("mkfs.xfs /dev/{0}/myvolume".format(default_pool))
+        self._cmdEq("lvm lvcreate -v {0} -l 100%PVS -n myvolume /dev/sda".format(default_pool), -2)
+        self._cmdEq("lvm vgcreate -v {0} /dev/sda".format(default_pool), -3)
+
+        self._checkCmd("ssm -v -f create", ['--name myvolume', '--fstype xfs', '/dev/sda'])
+        self._cmdEq("mkfs.xfs -f /dev/{0}/myvolume".format(default_pool))
+        self._cmdEq("lvm lvcreate -v {0} -l 100%PVS -n myvolume /dev/sda".format(default_pool), -2)
+        self._cmdEq("lvm vgcreate -v -f {0} /dev/sda".format(default_pool), -3)
+
+        self._checkCmd("ssm create", ['-s 2.6T', '/dev/sda'],
+            "lvm lvcreate {0} -L 2791728742.40K -n lvol001 /dev/sda".format(default_pool))
+        self._cmdEq("lvm vgcreate {0} /dev/sda".format(default_pool), -2)
+
+        self._checkCmd("ssm create", ['-r 0', '-s 2.6T', '-I 16', '/dev/sda'],
+            "lvm lvcreate {0} -L 2791728742.40K -n lvol001 -I 16 -i 1 /dev/sda".format(default_pool))
+        self._cmdEq("lvm vgcreate {0} /dev/sda".format(default_pool), -2)
+
+        self._checkCmd("ssm create", ['-r 0', '-s 2.6T', '-I 16', '-i 4', '/dev/sda'],
+            "lvm lvcreate {0} -L 2791728742.40K -n lvol001 -I 16 -i 4 /dev/sda".format(default_pool))
+        self._cmdEq("lvm vgcreate {0} /dev/sda".format(default_pool), -2)
+
+        # Create volume using single device from non existent my_pool
+        self._checkCmd("ssm create", ['--pool my_pool', '/dev/sda'],
+            "lvm lvcreate my_pool -l 100%PVS -n lvol001 /dev/sda")
+        self._cmdEq("lvm vgcreate my_pool /dev/sda", -2)
+
+        self._checkCmd("ssm create", ['-r 0', '-p my_pool', '-s 2.6T', '-I 16',
+            '-i 4', '/dev/sda'],
+            "lvm lvcreate my_pool -L 2791728742.40K -n lvol001 -I 16 -i 4 /dev/sda")
+        self._cmdEq("lvm vgcreate my_pool /dev/sda", -2)
+
+        # Create volume using multiple devices
+        self._checkCmd("ssm create", ['/dev/sda /dev/sdc1'],
+            "lvm lvcreate {0} -l 100%PVS -n lvol001 /dev/sda /dev/sdc1".format(default_pool))
+        self._cmdEq("lvm vgcreate {0} /dev/sda /dev/sdc1".format(default_pool), -2)
+
+        # Create volume using single device from existing pool
+        self._addPool(default_pool, ['/dev/sdb', '/dev/sdd'])
+        self._checkCmd("ssm create", ['-r 0', '-s 2.6T', '-I 16',
+            '-i 4', '-n myvolume', '/dev/sda'],
+            "lvm lvcreate {0} -L 2791728742.40K -n myvolume -I 16 -i 4 /dev/sda". format(default_pool))
+        self._cmdEq("lvm vgextend {0} /dev/sda".format(default_pool), -2)
+
+        self._addPool("my_pool", ['/dev/sdc2', '/dev/sdc3'])
+        self._checkCmd("ssm create", ['-r 0', '-p my_pool', '-s 2.6T', '-I 16',
+            '-i 4', '-n myvolume', '/dev/sda'],
+            "lvm lvcreate my_pool -L 2791728742.40K -n myvolume -I 16 -i 4 /dev/sda")
+        self._cmdEq("lvm vgextend my_pool /dev/sda", -2)
+
+        # Create volume using multiple devices which one of the is in already
+        # in the pool
+        self._checkCmd("ssm create", ['-n myvolume', '/dev/sda /dev/sdb'],
+            "lvm lvcreate {0} -l 100%PVS -n myvolume /dev/sda /dev/sdb". format(default_pool))
+        self._cmdEq("lvm vgextend {0} /dev/sda".format(default_pool), -2)
+
+        self._addPool("my_pool", ['/dev/sdc2', '/dev/sdc3'])
+        self._checkCmd("ssm create", ['-p my_pool', '-n myvolume', '/dev/sdc2 /dev/sda'],
+            "lvm lvcreate my_pool -l 100%PVS -n myvolume /dev/sdc2 /dev/sda")
+        self._cmdEq("lvm vgextend my_pool /dev/sda", -2)
+
+        self._checkCmd("ssm create", ['-n myvolume', '/dev/sda /dev/sdb /dev/sde'],
+            "lvm lvcreate {0} -l 100%PVS -n myvolume /dev/sda /dev/sdb /dev/sde". format(default_pool))
+        self._cmdEq("lvm vgextend {0} /dev/sda /dev/sde".format(default_pool), -2)
 
     def test_lvm_remove(self):
         # Generate some storage data
