@@ -275,3 +275,71 @@ class LvmFunctionCheck(MockSystemDataSource):
             "lvm vgextend default_pool /dev/sdc1 /dev/sde")
         self.assertNotEqual(self.run_data[-2],
             "lvm vgextend default_pool /dev/sdc1")
+
+    def test_lvm_add(self):
+        default_pool = lvm.SSM_LVM_DEFAULT_POOL
+
+        # Adding to non existent pool
+        # Add device into default pool
+        self._checkCmd("ssm add", ['/dev/sda'],
+            "lvm vgcreate {0} /dev/sda".format(default_pool))
+        # Add more devices into default pool
+        self._checkCmd("ssm add", ['/dev/sda /dev/sdc1'],
+            "lvm vgcreate {0} /dev/sda /dev/sdc1".format(default_pool))
+        # Add device into defined pool
+        self._checkCmd("ssm add", ['-p my_pool', '/dev/sda'],
+            "lvm vgcreate my_pool /dev/sda")
+        self._checkCmd("ssm add", ['--pool my_pool', '/dev/sda'],
+            "lvm vgcreate my_pool /dev/sda")
+        # Add more devices into defined pool
+        self._checkCmd("ssm add", ['-p my_pool', '/dev/sda /dev/sdc1'],
+            "lvm vgcreate my_pool /dev/sda /dev/sdc1")
+        self._checkCmd("ssm add", ['--pool my_pool', '/dev/sda /dev/sdc1'],
+            "lvm vgcreate my_pool /dev/sda /dev/sdc1")
+        # Add force
+        self._checkCmd("ssm -f add", ['--pool my_pool', '/dev/sda'],
+            "lvm vgcreate -f my_pool /dev/sda")
+        # Add verbose
+        self._checkCmd("ssm -v add", ['--pool my_pool', '/dev/sda'],
+            "lvm vgcreate -v my_pool /dev/sda")
+        # Add force and verbose
+        self._checkCmd("ssm -v -f add", ['--pool my_pool', '/dev/sda'],
+            "lvm vgcreate -v -f my_pool /dev/sda")
+
+        # Adding to existing default pool
+        self._addPool(default_pool, ['/dev/sdb', '/dev/sdd'])
+        # Add device into default pool
+        self._checkCmd("ssm add", ['/dev/sda'],
+            "lvm vgextend {0} /dev/sda".format(default_pool))
+        # Add more devices into default pool
+        self._checkCmd("ssm add", ['/dev/sda /dev/sdc1'],
+            "lvm vgextend {0} /dev/sda /dev/sdc1".format(default_pool))
+
+        # Adding to existing defined pool
+        self._addPool("my_pool", ['/dev/sdc2', '/dev/sdc3'])
+        # Add device into defined pool
+        self._checkCmd("ssm add", ['-p my_pool', '/dev/sda'],
+            "lvm vgextend my_pool /dev/sda")
+        self._checkCmd("ssm add", ['--pool my_pool', '/dev/sda'],
+            "lvm vgextend my_pool /dev/sda")
+        # Add more devices into defined pool
+        self._checkCmd("ssm add", ['-p my_pool', '/dev/sda /dev/sdc1'],
+            "lvm vgextend my_pool /dev/sda /dev/sdc1")
+        self._checkCmd("ssm add", ['--pool my_pool', '/dev/sda /dev/sdc1'],
+            "lvm vgextend my_pool /dev/sda /dev/sdc1")
+        # Add force
+        self._checkCmd("ssm -f add", ['--pool my_pool', '/dev/sda'],
+            "lvm vgextend -f my_pool /dev/sda")
+        # Add verbose
+        self._checkCmd("ssm -v add", ['--pool my_pool', '/dev/sda'],
+            "lvm vgextend -v my_pool /dev/sda")
+        # Add force and verbose
+        self._checkCmd("ssm -v -f add", ['--pool my_pool', '/dev/sda'],
+            "lvm vgextend -v -f my_pool /dev/sda")
+
+        # Add two devices into existing pool (one of the devices already is in
+        # the pool
+        self._checkCmd("ssm add", ['--pool my_pool', '/dev/sdc2 /dev/sda'],
+            "lvm vgextend my_pool /dev/sda")
+        self._checkCmd("ssm add", ['/dev/sda /dev/sdb'],
+            "lvm vgextend {0} /dev/sda".format(default_pool))
