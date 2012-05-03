@@ -163,11 +163,24 @@ class StorageHandleSanityCheck(BaseStorageHandleInit):
             self.assertIn("filesystems", obj)
             self.assertIn("ptable", obj)
             self.assertIn("set_globals", obj)
+            # Variables
+            self.assertIn("_data", obj)
+            self.assertIn("header", obj)
+            self.assertIn("attrs", obj)
+            self.assertIn("types", obj)
             for bknd in source._data.itervalues():
                 obj = dir(bknd)
                 self.assertIn("__iter__", obj)
                 self.assertIn("__getitem__", obj)
                 self.assertIn("__init__", obj)
+                # Variables
+                self.assertIn("type", obj)
+                self.assertIn("force", obj)
+                self.assertIn("verbose", obj)
+                self.assertIn("yes", obj)
+                # DeviceInfo does not need default_pool_name
+                if bknd.type != "device":
+                    self.assertIn("default_pool_name", obj)
 
     def test_volumes_specific_methods(self):
         for bknd in self.vol._data.itervalues():
