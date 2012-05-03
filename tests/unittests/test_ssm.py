@@ -313,18 +313,6 @@ class SsmFunctionCheck(MockSystemDataSource):
         self._cmdEq("force verbose pool create {0} myvolume /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
         self._cmdEq("force verbose pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -3)
 
-        self._checkCmd("ssm -f create", ['/dev/sda'],
-            "force pool create {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL))
-        self._cmdEq("force pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
-
-        self._checkCmd("ssm -v create", ['/dev/sda'],
-            "verbose pool create {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL))
-        self._cmdEq("verbose pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
-
-        self._checkCmd("ssm -f -v create", ['/dev/sda'],
-            "force verbose pool create {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL))
-        self._cmdEq("force verbose pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
-
         self._checkCmd("ssm create", ['-s 2.6T', '/dev/sda'],
             "pool create {0} 2791728742.40 /dev/sda".format(main.DEFAULT_DEVICE_POOL))
         self._cmdEq("pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
@@ -337,27 +325,10 @@ class SsmFunctionCheck(MockSystemDataSource):
             "pool create {0} 2791728742.40 1 4 16 /dev/sda".format(main.DEFAULT_DEVICE_POOL))
         self._cmdEq("pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
-        self._checkCmd("ssm create", ['-r 10', '-s 2.6T', '-I 16', '-i 4', '-n myvolume',
-            '/dev/sda'],
-            "pool create {0} 2791728742.40 myvolume 10 4 16 /dev/sda".format(main.DEFAULT_DEVICE_POOL))
-        self._cmdEq("pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
-
         # Create volume using single device from non existent my_pool
         self._checkCmd("ssm create", ['--pool my_pool', '/dev/sda'],
             "pool create my_pool /dev/sda")
         self._cmdEq("pool new my_pool /dev/sda", -2)
-
-        self._checkCmd("ssm -f create", ['--pool my_pool', '/dev/sda'],
-            "force pool create my_pool /dev/sda")
-        self._cmdEq("force pool new my_pool /dev/sda", -2)
-
-        self._checkCmd("ssm -v create", ['--pool my_pool', '/dev/sda'],
-            "verbose pool create my_pool /dev/sda")
-        self._cmdEq("verbose pool new my_pool /dev/sda", -2)
-
-        self._checkCmd("ssm -v -f create", ['--pool my_pool', '/dev/sda'],
-            "force verbose pool create my_pool /dev/sda")
-        self._cmdEq("force verbose pool new my_pool /dev/sda", -2)
 
         self._checkCmd("ssm create", ['--pool my_pool', '-s 2.6T', '/dev/sda'],
             "pool create my_pool 2791728742.40 /dev/sda")
@@ -369,11 +340,6 @@ class SsmFunctionCheck(MockSystemDataSource):
 
         self._checkCmd("ssm create", ['-r 0', '-p my_pool', '-s 2.6T', '-I 16',
             '-i 4', '/dev/sda'], "pool create my_pool 2791728742.40 0 4 16 /dev/sda")
-        self._cmdEq("pool new my_pool /dev/sda", -2)
-
-        self._checkCmd("ssm create", ['-r 1', '-p my_pool', '-s 2.6T', '-I 16',
-            '-i 4', '-n myvolume', '/dev/sda'],
-            "pool create my_pool 2791728742.40 myvolume 1 4 16 /dev/sda")
         self._cmdEq("pool new my_pool /dev/sda", -2)
 
         # Create volume using multiple devices
