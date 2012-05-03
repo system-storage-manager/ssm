@@ -90,6 +90,7 @@ class MockSystemDataSource(unittest.TestCase):
         self.assertEqual(self.run_data[index], out)
 
     def _checkCmd(self, command, args, expected=None):
+        self.run_data = []
         for case in itertools.permutations(args):
             cmd = command + " " + " ".join(case)
             main.main(cmd)

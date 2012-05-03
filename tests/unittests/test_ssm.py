@@ -283,6 +283,62 @@ class SsmFunctionCheck(MockSystemDataSource):
             output = None
         return (0, output)
 
+    def test_resize(self):
+        # Generate some storage data
+        self._addPool('default_pool', ['/dev/sda', '/dev/sdb'])
+        self._addPool('my_pool', ['/dev/sdc2', '/dev/sdc3'])
+        self._addVol('vol001', 2982616, 1, 'my_pool', ['/dev/sdc2'],
+                    '/mnt/test1')
+        self._addVol('vol002', 237284225, 1, 'default_pool', ['/dev/sda'])
+        self._addVol('vol003', 1024, 1, 'default_pool', ['/dev/sdd'])
+        self._addDevice('/dev/sde', 11489037516)
+
+        # Extend Volume
+        self._checkCmd("ssm resize", ['--size +4m', '/dev/default_pool/vol003'],
+            "vol resize /dev/default_pool/vol003 5120.0 False");
+
+        # Shrink volume
+        self._checkCmd("ssm resize", ['-s-100G', '/dev/default_pool/vol002'],
+            "vol resize /dev/default_pool/vol002 132426625.0 False");
+
+        # Set volume size
+        self._checkCmd("ssm resize", ['-s 10M', '/dev/my_pool/vol001'],
+            "vol resize /dev/my_pool/vol001 10240.0 False");
+
+        # Set volume and add devices
+        self._checkCmd("ssm resize -s 12T /dev/default_pool/vol003 /dev/sdc1 /dev/sde",
+            [], "vol resize /dev/default_pool/vol003 12884901888.0 False");
+        self.assertEqual(self.run_data[-2],
+            "pool extend default_pool /dev/sdc1 /dev/sde")
+
+        # Set volume in without the need adding more devices
+        self._checkCmd("ssm resize -s 10G /dev/default_pool/vol003 /dev/sdc1 /dev/sde",
+            [], "vol resize /dev/default_pool/vol003 10485760.0 False");
+        self.assertNotEqual(self.run_data[-2],
+            "pool extend default_pool /dev/sdc1 /dev/sde")
+
+        # Extend volume and add devices to cover the size
+        self._checkCmd("ssm resize -s +11T /dev/default_pool/vol003 /dev/sdc1 /dev/sde",
+            [], "vol resize /dev/default_pool/vol003 11811161088.0 False");
+        self.assertEqual(self.run_data[-2],
+            "pool extend default_pool /dev/sdc1")
+
+        # Extend volume in without the need adding more devices
+        self._checkCmd("ssm resize -s +10G /dev/default_pool/vol003 /dev/sdc1 /dev/sde",
+            [], "vol resize /dev/default_pool/vol003 10486784.0 False");
+        self.assertNotEqual(self.run_data[-2],
+            "pool extend default_pool /dev/sdc1 /dev/sde")
+        self.assertNotEqual(self.run_data[-2],
+            "pool extend default_pool /dev/sdc1")
+
+        # Shrink volume with devices provided
+        self._checkCmd("ssm resize -s-10G /dev/default_pool/vol002 /dev/sdc1 /dev/sde",
+            [], "vol resize /dev/default_pool/vol002 226798465.0 False");
+        self.assertNotEqual(self.run_data[-2],
+            "pool extend default_pool /dev/sdc1 /dev/sde")
+        self.assertNotEqual(self.run_data[-2],
+            "pool extend default_pool /dev/sdc1")
+
     def test_create(self):
 
         #out = MyStdout()
@@ -645,6 +701,10 @@ class VolumeInfo(MyInfo):
 
     def remove(self, volume):
         misc.run([self.f, self.v, self.y, 'vol remove', volume])
+
+    def resize(self, lv, size, resize_fs=True):
+        misc.run([self.f, self.v, self.y, 'vol resize', lv, str(size),
+                  str(resize_fs)])
 
     def snapshot(self, volume, destination, name, size, user_set_size):
         misc.run([self.f, self.v, self.y, 'vol snapshot', volume, destination,
