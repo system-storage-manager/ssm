@@ -286,3 +286,59 @@ class BtrfsFunctionCheck(MockSystemDataSource):
             "btrfs device add /dev/sdc1 /dev/sde /tmp/mount")
         self.assertNotEqual(self.run_data[-2],
             "btrfs device add /dev/sdc1 /dev/sde /tmp/mount")
+
+    def test_btrfs_add(self):
+        default_pool = btrfs.SSM_BTRFS_DEFAULT_POOL
+
+        # Adding to non existent pool
+        # Add device into default pool
+        self._checkCmd("ssm add", ['/dev/sda'],
+            "mkfs.btrfs -L {0} /dev/sda".format(default_pool))
+        # Add more devices into default pool
+        self._checkCmd("ssm add", ['/dev/sda /dev/sdc1'],
+            "mkfs.btrfs -L {0} /dev/sda /dev/sdc1".format(default_pool))
+        # Add device into defined pool
+        self._checkCmd("ssm add", ['-p my_pool', '/dev/sda'],
+            "mkfs.btrfs -L my_pool /dev/sda")
+        self._checkCmd("ssm add", ['--pool my_pool', '/dev/sda'],
+            "mkfs.btrfs -L my_pool /dev/sda")
+        # Add more devices into defined pool
+        self._checkCmd("ssm add", ['-p my_pool', '/dev/sda /dev/sdc1'],
+            "mkfs.btrfs -L my_pool /dev/sda /dev/sdc1")
+        self._checkCmd("ssm add", ['--pool my_pool', '/dev/sda /dev/sdc1'],
+            "mkfs.btrfs -L my_pool /dev/sda /dev/sdc1")
+
+        # Adding to existing default pool
+        self._addPool(default_pool, ['/dev/sdb', '/dev/sdd'])
+        # Add device into default pool
+        self._checkCmd("ssm add", ['/dev/sda'],
+            "btrfs device add /dev/sda /tmp/mount")
+        # Add more devices into default pool
+        self._checkCmd("ssm add", ['/dev/sda /dev/sdc1'],
+            "btrfs device add /dev/sda /dev/sdc1 /tmp/mount")
+
+        # Adding to existing defined pool
+        self._addPool('my_pool', ['/dev/sdc2', '/dev/sdc3'])
+        self._addVol('vol001', 2982616, 1, 'my_pool', ['/dev/sdc2'],
+                    '/mnt/test1')
+        # Add device into defined pool
+        self._checkCmd("ssm add", ['-p my_pool', '/dev/sda'],
+            "btrfs device add /dev/sda /mnt/test1")
+        self._checkCmd("ssm add", ['--pool my_pool', '/dev/sda'],
+            "btrfs device add /dev/sda /mnt/test1")
+        # Add more devices into defined pool
+        self._checkCmd("ssm add", ['-p my_pool', '/dev/sda /dev/sdc1'],
+            "btrfs device add /dev/sda /dev/sdc1 /mnt/test1")
+        self._checkCmd("ssm add", ['--pool my_pool', '/dev/sda /dev/sdc1'],
+            "btrfs device add /dev/sda /dev/sdc1 /mnt/test1")
+        # Add verbose
+        self._checkCmd("ssm -v add", ['--pool {0}'.format(default_pool),
+            '/dev/sda /dev/sdc1'],
+            "btrfs -v device add /dev/sda /dev/sdc1 /tmp/mount")
+
+        # Add two devices into existing pool (one of the devices already is in
+        # the pool
+        self._checkCmd("ssm add", ['--pool my_pool', '/dev/sdc2 /dev/sda'],
+            "btrfs device add /dev/sda /mnt/test1")
+        self._checkCmd("ssm add", ['/dev/sda /dev/sdb'],
+            "btrfs device add /dev/sda /tmp/mount")
