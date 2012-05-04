@@ -139,6 +139,9 @@ class MockSystemDataSource(unittest.TestCase):
                 return
         return main.is_bdevice(path)
 
+    def _removeMount(self, device):
+        del self.mount_data[device]
+
     def _addDir(self, dirname):
         self.directories.append(dirname)
 

@@ -45,7 +45,7 @@ class BtrfsFunctionCheck(MockSystemDataSource):
                 output += "Label: {0} uuid: some_random_uuid\n".format(pool)
                 count = 0
                 d_output = ""
-                for dev, d_data in self.dev_data.iteritems():
+                for dev, d_data in sorted(self.dev_data.iteritems()):
                     if 'pool_name' not in d_data or \
                        d_data['pool_name'] != pool:
                            continue
@@ -57,7 +57,7 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         elif cmd[:3] == ['btrfs', 'subvolume', 'list']:
             mpoint = cmd[3]
             for pool, p_data in self.pool_data.iteritems():
-                if p_data['mount'] != mpoint:
+                if 'mount' not in p_data or p_data['mount'] != mpoint:
                     continue
                 count = 0
                 for vol, v_data in self.vol_data.iteritems():
@@ -135,3 +135,55 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         self._checkCmd("ssm create", ['-n myvolume', '/dev/sda /dev/sdb /dev/sde'],
             "btrfs subvolume create /tmp/mount/myvolume")
         self._cmdEq("btrfs device add /dev/sda /dev/sde /tmp/mount", -2)
+
+    def test_btrfs_remove(self):
+        # Generate some storage data
+        self._addPool('default_pool', ['/dev/sda', '/dev/sdb'])
+        self._addPool('my_pool', ['/dev/sdc2', '/dev/sdc3', '/dev/sdc1'])
+
+        # remove volume
+        self._checkCmd("ssm remove default_pool", [], "wipefs -p /dev/sda")
+        self._cmdEq("wipefs -p /dev/sdb", -2)
+
+        self._checkCmd("ssm remove my_pool", [], "wipefs -p /dev/sdc3")
+        self._cmdEq("wipefs -p /dev/sdc1", -2)
+        self._cmdEq("wipefs -p /dev/sdc2", -3)
+
+        # remove subvolume
+        self._addVol('vol001', 117283225, 1, 'default_pool', ['/dev/sda'], '/mnt/test')
+        self._checkCmd("ssm remove default_pool:/dev/default_pool/vol001", [],
+            "btrfs subvolume delete /mnt/test//dev/default_pool/vol001")
+        # remove device
+        self._checkCmd("ssm remove /dev/sdc1", [],
+            "btrfs device delete /dev/sdc1 /tmp/mount")
+        # remove multiple devices
+        self._checkCmd("ssm remove /dev/sdc1 /dev/sdb", [],
+            "btrfs device delete /dev/sdb /mnt/test")
+        self._cmdEq("btrfs device delete /dev/sdc1 /tmp/mount", -2)
+        # remove combination
+        self._addPool('other_pool', ['/dev/sdd', '/dev/sde'])
+        self._checkCmd("ssm remove /dev/sdd /dev/sdb other_pool my_pool default_pool:/dev/default_pool/vol001", [],
+            "btrfs subvolume delete /mnt/test//dev/default_pool/vol001")
+        self._cmdEq("wipefs -p /dev/sdc1", -2)
+        self._cmdEq("wipefs -p /dev/sdc3", -3)
+        self._cmdEq("wipefs -p /dev/sdc2", -4)
+        self._cmdEq("wipefs -p /dev/sde", -5)
+        self._cmdEq("wipefs -p /dev/sdd", -6)
+        self._cmdEq("btrfs device delete /dev/sdb /mnt/test", -7)
+        self._cmdEq("btrfs device delete /dev/sdd /tmp/mount", -8)
+
+        self._removeMount("/dev/sda")
+        # remove all
+        self._checkCmd("ssm remove --all", [],
+            "wipefs -p /dev/sde")
+        self._cmdEq("wipefs -p /dev/sdd", -2)
+        self._cmdEq("wipefs -p /dev/sdc1", -3)
+        self._cmdEq("wipefs -p /dev/sdc3", -4)
+        self._cmdEq("wipefs -p /dev/sdc2", -5)
+        self._cmdEq("wipefs -p /dev/sda", -6)
+        self._cmdEq("wipefs -p /dev/sdb", -7)
+
+        # TODO
+        # remove force
+        # remove verbose
+        # remove verbose + force
