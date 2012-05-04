@@ -70,9 +70,14 @@ class MockSystemDataSource(unittest.TestCase):
         main.is_bdevice = self.mock_is_bdevice
         self.check_create_item_orig = main.StorageHandle.check_create_item
         main.StorageHandle.check_create_item = self.mock_check_create_item
+        self.get_mounts_orig = misc.get_mounts
+        misc.get_mounts = self.mock_get_mounts
+        misc.temp_mount = self.mock_temp_mount
+        self.temp_mount_orig = misc.temp_mount
         self.dev_data = {}
         self.vol_data = {}
         self.pool_data = {}
+        self.mount_data = {}
         self._mpoint = False
 
     def tearDown(self):
@@ -81,10 +86,13 @@ class MockSystemDataSource(unittest.TestCase):
         self.dev_data = {}
         self.pool_data = {}
         self.vol_data = {}
+        self.mount_data = {}
         misc.run = self.run_orig
         misc.get_partitions = self.get_partitions_orig
         main.is_bdevice = self.is_bdevice_orig
+        misc.get_mounts = self.get_mounts_orig
         main.StorageHandle.check_create_item = self.check_create_item_orig
+        misc.temp_mount = self.temp_mount_orig
 
     def _cmdEq(self, out, index=-1):
         self.assertEqual(self.run_data[index], out)
@@ -104,12 +112,18 @@ class MockSystemDataSource(unittest.TestCase):
             output = None
         return (0, output)
 
+    def mock_temp_mount(self, device, options=None):
+        return "/tmp/mount"
+
     def mock_get_partitions(self):
         partitions = []
         for name, data in self.dev_data.iteritems():
             partitions.append([data['major'], data['minor'], data['dev_size'],
                               data['dev_name'].rpartition("/")[2]])
         return partitions
+
+    def mock_get_mounts(self, regex=None):
+        return self.mount_data
 
     def mock_is_bdevice(self, path):
         if path in self.dev_data:
@@ -162,6 +176,10 @@ class MockSystemDataSource(unittest.TestCase):
         pool_data = self.pool_data[pool_name]
         pool_free = float(pool_data['pool_free']) - vol_size
         pool_used = float(pool_data['pool_used']) + vol_size
+        if mount:
+            self.pool_data[pool_name]['mount'] = mount
+            self._addDir(mount)
+            self.mount_data[devices[0]] = {'dev': devices[0], 'mp': mount}
 
         space_per_dev = vol_size / stripes
 
