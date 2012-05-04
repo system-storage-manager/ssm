@@ -187,3 +187,27 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         # remove force
         # remove verbose
         # remove verbose + force
+
+    def test_btrfs_snapshot(self):
+
+        # Generate some storage data
+        self._addPool('default_pool', ['/dev/sda', '/dev/sdb'])
+        self._addPool('my_pool', ['/dev/sdc2', '/dev/sdc3', '/dev/sdc1'])
+        self._addVol('vol001', 117283225, 1, 'default_pool', ['/dev/sda'])
+        self._addVol('vol002', 237284225, 1, 'default_pool', ['/dev/sda'],
+                    '/mnt/mount1')
+        self._addVol('vol003', 1024, 1, 'default_pool', ['/dev/sdd'])
+        self._addVol('vol004', 209715200, 2, 'default_pool', ['/dev/sda',
+                     '/dev/sdb'], '/mnt/mount')
+
+        # Create snapshot
+        self._checkCmd("ssm snapshot --name new_snap", ['default_pool'],
+            "btrfs subvolume snapshot /mnt/mount /mnt/mount/new_snap")
+        self._checkCmd("ssm snapshot --name new_snap", ['default_pool:/dev/default_pool/vol001'],
+            "btrfs subvolume snapshot /mnt/mount//dev/default_pool/vol001 /mnt/mount//dev/default_pool/vol001/new_snap")
+        self._checkCmd("ssm snapshot --name new_snap", ['my_pool'],
+            "btrfs subvolume snapshot /tmp/mount /tmp/mount/new_snap")
+
+        # Create snapshot verbose
+        self._checkCmd("ssm -v snapshot --name new_snap", ['default_pool'],
+            "btrfs -v subvolume snapshot /mnt/mount /mnt/mount/new_snap")
