@@ -313,7 +313,7 @@ class BtrfsPool(Btrfs):
                                 "RAID level {0}".format(raid['level']))
 
         if size:
-            command.extend(['-b', str(float(size) * 1024)])
+            command.extend(['-b', "{0}".format(int(float(size) * 1024))])
         command.extend(devs)
         misc.run(command, stdout=True)
         return name
