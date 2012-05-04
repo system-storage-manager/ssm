@@ -131,6 +131,8 @@ class Btrfs(object):
     def run_btrfs(self, command):
         if not self._binary:
             raise Exception("ERROR: Btrfs is not installed on the system!")
+        if self.verbose:
+            command.insert(0, "-v")
         command.insert(0, "btrfs")
         misc.run(command, stdout=True)
 
