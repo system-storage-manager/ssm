@@ -72,6 +72,19 @@ class StoreAll(argparse._StoreAction):
                 values.remove(val)
         setattr(namespace, self.dest, values)
 
+class SetBackend(argparse._StoreAction):
+    '''
+    Action for the backend parameter, where we want to store provided
+    in SSM_DEFAULT_BACKEND.
+    '''
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        # Set default backend to the provided value. All check should be
+        # already done by argparse.
+        global SSM_DEFAULT_BACKEND
+        SSM_DEFAULT_BACKEND = values[0]
+        setattr(namespace, self.dest, values)
+
 
 class FsInfo(object):
     '''
@@ -1094,6 +1107,10 @@ def main(args=None):
                         action="store_true")
     parser.add_argument('-f', '--force', help="force execution",
                         action="store_true")
+    parser.add_argument('-b', '--backend', nargs=1,
+                        help="choose default backend",
+                        choices= ['lvm', 'btrfs'],
+                        action=SetBackend)
     #parser.add_argument('-y', '--yes', help="yes", action="store_true")
     #parser.add_argument('-c', '--config', help="config", type=file)
 
