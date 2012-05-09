@@ -77,6 +77,15 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         self._checkCmd("ssm create", ['/dev/sda'],
             "mkfs.btrfs -L {0} /dev/sda".format(default_pool))
 
+        # Specify default backend
+        self._checkCmd("ssm -b btrfs create", ['/dev/sda'],
+            "mkfs.btrfs -L {0} /dev/sda".format(default_pool))
+
+        main.SSM_DEFAULT_BACKEND = 'lvm'
+        self._checkCmd("ssm --backend btrfs create", ['/dev/sda'],
+            "mkfs.btrfs -L {0} /dev/sda".format(default_pool))
+        main.SSM_DEFAULT_BACKEND = 'btrfs'
+
         self._checkCmd("ssm -f create", ['/dev/sda'],
             "mkfs.btrfs -L {0} /dev/sda".format(default_pool))
 
@@ -203,6 +212,12 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         # Create snapshot
         self._checkCmd("ssm snapshot --name new_snap", ['default_pool'],
             "btrfs subvolume snapshot /mnt/mount /mnt/mount/new_snap")
+
+        main.SSM_DEFAULT_BACKEND = 'lvm'
+        self._checkCmd("ssm snapshot --name new_snap", ['default_pool'],
+            "btrfs subvolume snapshot /mnt/mount /mnt/mount/new_snap")
+        main.SSM_DEFAULT_BACKEND = 'btrfs'
+
         self._checkCmd("ssm snapshot --name new_snap", ['default_pool:/dev/default_pool/vol001'],
             "btrfs subvolume snapshot /mnt/mount//dev/default_pool/vol001 /mnt/mount//dev/default_pool/vol001/new_snap")
         self._checkCmd("ssm snapshot --name new_snap", ['my_pool'],
@@ -222,6 +237,18 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         # Extend Volume
         self._checkCmd("ssm resize --size +4m", ['default_pool /dev/sde'],
             "btrfs filesystem resize 11723608063K /tmp/mount");
+
+        # Specify backend
+        self._checkCmd("ssm -b btrfs resize --size +4m",
+            ['default_pool /dev/sde'],
+            "btrfs filesystem resize 11723608063K /tmp/mount");
+
+        main.SSM_DEFAULT_BACKEND = 'lvm'
+        self._checkCmd("ssm resize --size +4m",
+            ['default_pool /dev/sde'],
+            "btrfs filesystem resize 11723608063K /tmp/mount");
+        main.SSM_DEFAULT_BACKEND = 'btrfs'
+
         self._cmdEq("btrfs device add /dev/sde /tmp/mount", -2)
         self._checkCmd("ssm resize --size +1g", ['my_pool /dev/sde'],
             "btrfs filesystem resize 1073052017K /mnt/test1");
@@ -294,6 +321,16 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         # Add device into default pool
         self._checkCmd("ssm add", ['/dev/sda'],
             "mkfs.btrfs -L {0} /dev/sda".format(default_pool))
+
+        # Specify backend
+        self._checkCmd("ssm --backend btrfs add", ['/dev/sda'],
+            "mkfs.btrfs -L {0} /dev/sda".format(default_pool))
+
+        main.SSM_DEFAULT_BACKEND = 'lvm'
+        self._checkCmd("ssm -b btrfs add", ['/dev/sda'],
+            "mkfs.btrfs -L {0} /dev/sda".format(default_pool))
+        main.SSM_DEFAULT_BACKEND = 'btrfs'
+
         # Add more devices into default pool
         self._checkCmd("ssm add", ['/dev/sda /dev/sdc1'],
             "mkfs.btrfs -L {0} /dev/sda /dev/sdc1".format(default_pool))

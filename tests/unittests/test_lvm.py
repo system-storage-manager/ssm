@@ -66,6 +66,17 @@ class LvmFunctionCheck(MockSystemDataSource):
             "lvm lvcreate {0} -l 100%PVS -n lvol001 /dev/sda".format(default_pool))
         self._cmdEq("lvm vgcreate {0} /dev/sda".format(default_pool), -2)
 
+        # Specify backnend
+        self._checkCmd("ssm -b lvm create", ['/dev/sda'],
+            "lvm lvcreate {0} -l 100%PVS -n lvol001 /dev/sda".format(default_pool))
+        self._cmdEq("lvm vgcreate {0} /dev/sda".format(default_pool), -2)
+
+        main.SSM_DEFAULT_BACKEND = "btrfs"
+        self._checkCmd("ssm --backend lvm create", ['/dev/sda'],
+            "lvm lvcreate {0} -l 100%PVS -n lvol001 /dev/sda".format(default_pool))
+        self._cmdEq("lvm vgcreate {0} /dev/sda".format(default_pool), -2)
+        main.SSM_DEFAULT_BACKEND = "lvm"
+
         self._checkCmd("ssm create", ['--name myvolume', '--fstype ext4', '/dev/sda'])
         self._cmdEq("mkfs.ext4 /dev/{0}/myvolume".format(default_pool))
         self._cmdEq("lvm lvcreate {0} -l 100%PVS -n myvolume /dev/sda".format(default_pool), -2)
@@ -205,6 +216,12 @@ class LvmFunctionCheck(MockSystemDataSource):
         # Create snapshot
         self._checkCmd("ssm snapshot --name new_snap", ['/dev/default_pool/vol001'],
             "lvm lvcreate --size 23456645.0K --snapshot --name new_snap /dev/default_pool/vol001")
+
+        main.SSM_DEFAULT_BACKEND = "btrfs"
+        self._checkCmd("ssm snapshot --name new_snap", ['/dev/default_pool/vol001'],
+            "lvm lvcreate --size 23456645.0K --snapshot --name new_snap /dev/default_pool/vol001")
+        main.SSM_DEFAULT_BACKEND = "lvm"
+
         # Create snapshot verbose
         self._checkCmd("ssm -v snapshot --name new_snap", ['/dev/default_pool/vol001'],
             "lvm lvcreate -v --size 23456645.0K --snapshot --name new_snap /dev/default_pool/vol001")
@@ -233,6 +250,15 @@ class LvmFunctionCheck(MockSystemDataSource):
         # Extend Volume
         self._checkCmd("ssm resize", ['--size +4m', '/dev/default_pool/vol003'],
             "lvm lvresize -L 5120.0k /dev/default_pool/vol003");
+
+        # Specify backend
+        self._checkCmd("ssm --backend lvm resize", ['--size +4m', '/dev/default_pool/vol003'],
+            "lvm lvresize -L 5120.0k /dev/default_pool/vol003");
+
+        main.SSM_DEFAULT_BACKEND = "btrfs"
+        self._checkCmd("ssm resize", ['--size +4m', '/dev/default_pool/vol003'],
+            "lvm lvresize -L 5120.0k /dev/default_pool/vol003");
+        main.SSM_DEFAULT_BACKEND = "lvm"
 
         # Shrink volume
         self._checkCmd("ssm resize", ['-s-100G', '/dev/default_pool/vol002'],
@@ -283,6 +309,16 @@ class LvmFunctionCheck(MockSystemDataSource):
         # Add device into default pool
         self._checkCmd("ssm add", ['/dev/sda'],
             "lvm vgcreate {0} /dev/sda".format(default_pool))
+
+        # Specify backend
+        self._checkCmd("ssm --backend lvm add", ['/dev/sda'],
+            "lvm vgcreate {0} /dev/sda".format(default_pool))
+
+        main.SSM_DEFAULT_BACKEND = "btrfs"
+        self._checkCmd("ssm --backend lvm add", ['/dev/sda'],
+            "lvm vgcreate {0} /dev/sda".format(default_pool))
+        main.SSM_DEFAULT_BACKEND = "lvm"
+
         # Add more devices into default pool
         self._checkCmd("ssm add", ['/dev/sda /dev/sdc1'],
             "lvm vgcreate {0} /dev/sda /dev/sdc1".format(default_pool))
