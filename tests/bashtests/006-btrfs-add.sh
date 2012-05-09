@@ -40,6 +40,20 @@ pool2=$vg3
 ssm add $TEST_DEVS
 check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count $DEV_COUNT
 ssm -f remove $SSM_BTRFS_DEFAULT_POOL
+
+# Specify backend
+ssm -b btrfs add $TEST_DEVS
+check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count $DEV_COUNT
+ssm -f remove $SSM_BTRFS_DEFAULT_POOL
+
+export SSM_DEFAULT_BACKEND='lvm'
+ssm --backend btrfs add $TEST_DEVS
+check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count $DEV_COUNT
+ssm -f remove $SSM_BTRFS_DEFAULT_POOL
+export SSM_DEFAULT_BACKEND='btrfs'
+
+
+
 ssm add $TEST_DEVS
 check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count $DEV_COUNT
 ssm remove $dev1 $dev2 $dev3

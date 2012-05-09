@@ -33,6 +33,18 @@ pool2=$vg3
 ssm add $TEST_DEVS
 check vg_field $SSM_LVM_DEFAULT_POOL pv_count $DEV_COUNT
 ssm -f remove $SSM_LVM_DEFAULT_POOL
+
+# Specify backend
+ssm -b lvm add $TEST_DEVS
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count $DEV_COUNT
+ssm -f remove $SSM_LVM_DEFAULT_POOL
+
+export SSM_DEFAULT_BACKEND='btrfs'
+ssm --backend lvm add $TEST_DEVS
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count $DEV_COUNT
+ssm -f remove $SSM_LVM_DEFAULT_POOL
+export SSM_DEFAULT_BACKEND='lvm'
+
 ssm add $TEST_DEVS
 check vg_field $SSM_LVM_DEFAULT_POOL pv_count $DEV_COUNT
 ssm remove $dev1 $dev2 $dev3

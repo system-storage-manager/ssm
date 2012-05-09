@@ -49,6 +49,25 @@ not ssm create -s ${DEV_SIZE}M $TEST_DEVS
 check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count $DEV_COUNT
 ssm -f remove $SSM_LVM_DEFAULT_POOL
 
+# Specify backend
+ssm -b lvm create $TEST_DEVS
+not ssm create $TEST_DEVS
+not ssm create $TEST_DEVS -p $pool1
+not ssm create -s ${DEV_SIZE}M $TEST_DEVS
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count $DEV_COUNT
+ssm -f remove $SSM_LVM_DEFAULT_POOL
+
+export SSM_DEFAULT_BACKEND='btrfs'
+ssm --backend lvm create $TEST_DEVS
+not ssm create $TEST_DEVS
+not ssm create $TEST_DEVS -p $pool1
+not ssm create -s ${DEV_SIZE}M $TEST_DEVS
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count $DEV_COUNT
+ssm -f remove $SSM_LVM_DEFAULT_POOL
+export SSM_DEFAULT_BACKEND='lvm'
+
+
+
 # Create the group first and then create volume using the whole group
 ssm add $TEST_DEVS
 ssm create

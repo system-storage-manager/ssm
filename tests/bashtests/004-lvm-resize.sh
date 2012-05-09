@@ -69,9 +69,11 @@ ssm create --size ${size}M $TEST_DEVS
 size=$(align_size_up $size)
 check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
 
+export SSM_DEFAULT_BACKEND='btrfs'
 ssm -f resize --size +$(($TEST_MAX_SIZE/3))M ${DM_DEV_DIR}/$DEFAULT_VOLUME
 size=$(align_size_up $(($size+($TEST_MAX_SIZE/3))))
 check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+export SSM_DEFAULT_BACKEND='lvm'
 
 ssm -f resize -s-$(($TEST_MAX_SIZE/2))M $DEFAULT_VOLUME
 size=$(align_size_up $(($size-($TEST_MAX_SIZE/2))))

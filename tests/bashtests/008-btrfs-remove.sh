@@ -87,7 +87,9 @@ check btrfs_vol_field $mnt3 subvolume $vol2
 
 ssm list
 
+export SSM_DEFAULT_BACKEND='lvm'
 ssm -f remove $pool1 ${pool2}:$vol1 $mnt3/$vol2 $dev9
+export SSM_DEFAULT_BACKEND='btrfs'
 
 not check btrfs_fs_field $pool1 label $pool1
 not check btrfs_vol_field $mnt1 subvolume $vol1

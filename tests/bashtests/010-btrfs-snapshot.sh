@@ -47,8 +47,10 @@ snap5="snap5"
 ssm create $TEST_DEVS $mnt1
 
 # Take a snapshot with the default params
+export SSM_DEFAULT_BACKEND='lvm'
 ssm snapshot $mnt1
 check btrfs_vol_field $mnt1 vol_count 1
+export SSM_DEFAULT_BACKEND='btrfs'
 
 umount $mnt1
 # Remove entire pool

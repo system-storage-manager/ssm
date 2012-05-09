@@ -45,8 +45,10 @@ size=$(($DEV_SIZE*6))
 ssm create --size ${size}M $TEST_DEVS
 
 # Take a snapshot with the default params
+export SSM_DEFAULT_BACKEND='btrfs'
 ssm snapshot $SSM_LVM_DEFAULT_POOL/$lvol1
 check vg_field $SSM_LVM_DEFAULT_POOL lv_count 2
+export SSM_DEFAULT_BACKEND='lvm'
 
 # Remove entire pool
 ssm -f remove $SSM_LVM_DEFAULT_POOL

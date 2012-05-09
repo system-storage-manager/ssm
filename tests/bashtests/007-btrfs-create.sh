@@ -54,6 +54,17 @@ ssm create $dev1
 not ssm create $dev1 -p $pool1
 ssm -f remove $SSM_BTRFS_DEFAULT_POOL
 
+# Specify backend
+ssm --backend btrfs create $dev1
+not ssm create $dev1 -p $pool1
+ssm -f remove $SSM_BTRFS_DEFAULT_POOL
+
+export SSM_DEFAULT_BACKEND='lvm'
+ssm -b btrfs create $dev1
+not ssm create $dev1 -p $pool1
+ssm -f remove $SSM_BTRFS_DEFAULT_POOL
+export SSM_DEFAULT_BACKEND='btrfs'
+
 # Create raid 0 volume with just one device
 ssm create -r 0 $dev1 $dev2 $dev3 $dev4
 not ssm create $dev1 -p $pool1
