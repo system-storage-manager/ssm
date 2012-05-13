@@ -72,6 +72,7 @@ class StoreAll(argparse._StoreAction):
                 values.remove(val)
         setattr(namespace, self.dest, values)
 
+
 class SetBackend(argparse._StoreAction):
     '''
     Action for the backend parameter, where we want to store provided
@@ -837,9 +838,9 @@ class StorageHandle(object):
             self.vol.ptable(more_data=self.dev.filesystems(), cond="fs_only")
         elif args.type in ['dev', 'devices']:
             self.dev.ptable()
-        elif args.type == "volumes":
+        elif args.type in ["volumes", "vol"]:
             self.vol.ptable(more_data=self.dev.filesystems())
-        elif args.type == "pool":
+        elif args.type in ["pool", "pools"]:
             self.pool.ptable()
         elif args.type in ['snap', 'snapshots']:
             self.snap.ptable()
@@ -997,7 +998,8 @@ class StorageHandle(object):
             err = "'{0}' is not valid volume nor mount point.".format(string)
             raise argparse.ArgumentTypeError(err)
         else:
-            err = "Backend for '{0}' does not support snapshotting.".format(string)
+            err = "Backend for '{0}' ".format(string) + \
+                  "does not support snapshotting."
             try:
                 if not getattr(vol, "snapshot"):
                     raise argparse.ArgumentTypeError(err)
@@ -1092,161 +1094,219 @@ def is_supported_fs(fs):
     raise argparse.ArgumentTypeError(err)
 
 
+class SsmParser(object):
+    """
+    This class is used to generate argparse parser and run the actual
+    parsing.
+    """
+
+    def __init__(self, storage, prog=None):
+        self.storage = storage
+        self.parser = self._get_parser_global(prog)
+        self.subcommands = self.parser.add_subparsers(title="Commands")
+        self.parser_check = self._get_parser_check()
+        self.parser_resize = self._get_parser_resize()
+        self.parser_create = self._get_parser_create()
+        self.parser_list = self._get_parser_list()
+        self.parser_add = self._get_parser_add()
+        self.parser_remove = self._get_parser_remove()
+        self.parser_snapshot = self._get_parser_snapshot()
+        self.args = None
+
+    def parse(self):
+        self.args = self.parser.parse_args()
+        return self.args
+
+    def _get_parser_global(self, prog):
+        """
+        General ssm options
+        """
+        parser = argparse.ArgumentParser(
+                description="System Storage Manager", prog=prog,
+                epilog='''To get help for particular command please specify
+                       \'%(prog)s [command] -h\'.''')
+        parser.add_argument('--version', action='version',
+                version='%(prog)s 0.1dev')
+        parser.add_argument('-v', '--verbose', help="verbose execution",
+                action="store_true")
+        parser.add_argument('-f', '--force', help="force execution",
+                action="store_true")
+        parser.add_argument('-b', '--backend', nargs=1,
+                help="choose default backend",
+                choices= ['lvm', 'btrfs'],
+                action=SetBackend)
+        return parser
+
+    def _get_parser_check(self):
+        """
+        Check command
+        """
+        parser_check = self.subcommands.add_parser("check",
+                help="check consistency of the file system on the device")
+        parser_check.add_argument('device', nargs='+',
+                help="Device with file system to check.",
+                type=self.storage.is_fs)
+        parser_check.set_defaults(func=self.storage.check)
+        return parser_check
+
+    def _get_parser_resize(self):
+        """
+        Resize command
+        """
+        parser_resize = self.subcommands.add_parser("resize",
+                help="change or set the volume and file system size")
+        parser_resize.add_argument("volume", help="Volume to resize.",
+                type=self.storage.is_volume)
+        parser_resize.add_argument('-s', '--size',
+                help='''New size of the volume. With the + or - sign the
+                     value is added to or subtracted from the actual size of
+                     the volume and without it, the value will be set as the
+                     new volume size. A size suffix of [k|K] for kilobytes,
+                     [m|M] for megabytes, [g|G] for gigabytes, [t|T] for
+                     terabytes or [p|P] for petabytes is optional. If no unit
+                     is provided the default is kilobytes.''',
+                type=valid_resize_size)
+        parser_resize.add_argument("device", nargs='*',
+                help='''Devices to use for extending the volume. If the
+                     device is not in any pool, it is added into the
+                     volume's pool prior to the extension. Note that only
+                     really needed number of devices are added into the pool
+                     prior the resize.''')
+        parser_resize.set_defaults(func=self.storage.resize)
+        return parser_resize
+
+    def _get_parser_create(self):
+        """
+        Create command
+        """
+        parser_create = self.subcommands.add_parser("create",
+                help="create a new volume with defined parameters")
+        parser_create.add_argument('-s', '--size',
+                help='''Gives the size to allocate for the new logical volume
+                     A size suffix K|k, M|m, G|g, T|t, P|p, E|e can be used
+                     to define 'power of two' units. If no unit is provided, it
+                     defaults to kilobytes. This is optional if if
+                     not given maximum possible size will be used.''')
+        parser_create.add_argument('-n', '--name',
+                help='''The name for the new logical volume. This is optional
+                     and if omitted, name will be generated by the
+                     corresponding backend.''')
+        parser_create.add_argument('--fstype',
+                help='''Gives the file system type to create on the new
+                     logical volume. Supported file systems are (ext3,
+                     ext4, xfs, btrfs). This is optional and if not given
+                     file system will not be created.''',
+                type=is_supported_fs)
+        parser_create.add_argument('-r', '--raid', choices=SUPPORTED_RAID,
+                help='''Specify a RAID level you want to use when creating a new
+                     volume. Note that some backends might not implement all
+                     supported RAID levels. This is optional and if no specified,
+                     linear volume will be created.''')
+        parser_create.add_argument('-I', '--stripesize',
+                help='''Gives the number of kilobytes for the granularity
+                        of stripes. This is optional and if not given, backend
+                        default will be used. Note that you have to specify RAID
+                        level as well.''')
+        parser_create.add_argument('-i', '--stripes',
+                help='''Gives the number of stripes. This is equal to the
+                     number of physical volumes to scatter the logical
+                     volume. This is optional and if stripesize is set
+                     and multiple devices are provided stripes is
+                     determined automatically from the number of devices. Note
+                     that you have to specify RAID level as well.''')
+        parser_create.add_argument('-p', '--pool', default="",
+                help="Pool to use to create the new volume.",
+                type=self.storage.is_pool)
+        parser_create.add_argument('device', nargs='*',
+                help='''Devices to use for creating the volume. If the device
+                     is not in any pool, it is added into the pool prior the
+                     volume creation.''',
+                type=self.storage.check_create_item,
+                action=StoreAll)
+        parser_create.add_argument('mount', nargs='?',
+                help='''Directory to mount the newly create volume to.''')
+        parser_create.set_defaults(func=self.storage.create)
+        return parser_create
+
+    def _get_parser_list(self):
+        """
+        List command
+        """
+        parser_list = self.subcommands.add_parser("list",
+                help='''list information about
+                     all detected, devices, pools, volumes and snapshots
+                     in the system''')
+        parser_list.add_argument('type', nargs='?',
+                choices=["volumes", "vol", "dev", "devices", "pool", "pools",
+                    "fs", "filesystems", "snap", "snapshots"])
+        parser_list.set_defaults(func=self.storage.list)
+        return parser_list
+
+    def _get_parser_add(self):
+        """
+        Add command
+        """
+        parser_add = self.subcommands.add_parser("add",
+                help='''add one or more devices into the pool''')
+        parser_add.add_argument('-p', '--pool', default="",
+                help='''Pool to add device into. If not specified the default
+                     pool is used.''', type=self.storage.is_pool)
+        parser_add.add_argument('device', nargs='+',
+                help="Devices to add into the pool",
+                type=self.storage.get_bdevice)
+        parser_add.set_defaults(func=self.storage.add)
+        return parser_add
+
+    def _get_parser_remove(self):
+        """
+        Remove command
+        """
+        parser_remove = self.subcommands.add_parser("remove",
+                help='''remove devices from the pool, volumes or pools''')
+        parser_remove.add_argument('-a', '--all', action="store_true",
+                help="Remove all pools")
+        parser_remove.add_argument('items', nargs='*',
+                help="Items to remove. Item could be device, pool, or volume.",
+                type=self.storage.check_remove_item)
+        parser_remove.set_defaults(func=self.storage.remove)
+        return parser_remove
+
+    def _get_parser_snapshot(self):
+        """
+        Snapshot command
+        """
+        parser_snapshot = self.subcommands.add_parser("snapshot", help='''take a
+                snapshot of the existing volume''')
+        parser_snapshot.add_argument('-s', '--size',
+                help='''Gives the size to allocate for the new snapshot volume
+                     A size suffix K|k, M|m, G|g, T|t, P|p, E|e can be used
+                     to define 'power of two' units. If no unit is provided, it
+                     defaults to kilobytes. This is option and if not give,
+                     the size will be determined automatically.''')
+        group = parser_snapshot.add_mutually_exclusive_group()
+        group.add_argument('-d', '--dest',
+                help='''Destination of the snapshot specified with absolute
+                     path to be used for the new snapshot. This is optional
+                     and if not specified default backend policy will be
+                     performed.''')
+        group.add_argument('-n', '--name',
+                help='''Name of the new snapshot. This is optional and if not
+                     specified  default backend policy will be performed.''')
+
+        parser_snapshot.add_argument('volume',
+                help="Volume, or mount point to take a snapshot of.",
+                type=self.storage.can_snapshot)
+        parser_snapshot.set_defaults(func=self.storage.snapshot)
+        return parser_snapshot
+
+
 def main(args=None):
     if args:
         sys.argv = args.split()
 
     storage = StorageHandle()
-
-    parser = argparse.ArgumentParser(description="System Storage Manager",
-                epilog='''To get help for particular command please specify
-                       \'%(prog)s [command] -h\'.''')
-    parser.add_argument('--version', action='version',
-                        version='%(prog)s 0.1dev')
-    parser.add_argument('-v', '--verbose', help="verbose execution",
-                        action="store_true")
-    parser.add_argument('-f', '--force', help="force execution",
-                        action="store_true")
-    parser.add_argument('-b', '--backend', nargs=1,
-                        help="choose default backend",
-                        choices= ['lvm', 'btrfs'],
-                        action=SetBackend)
-    #parser.add_argument('-y', '--yes', help="yes", action="store_true")
-    #parser.add_argument('-c', '--config', help="config", type=file)
-
-    subcommands = parser.add_subparsers(title="Commands")
-
-    # check command
-    parser_check = subcommands.add_parser("check",
-            help="check consistency of the file system on the device")
-    parser_check.add_argument('device', nargs='+',
-            help="Device with file system to check.", type=storage.is_fs)
-    parser_check.set_defaults(func=storage.check)
-
-    # resize command
-    parser_resize = subcommands.add_parser("resize",
-            help="change or set the volume and file system size")
-    parser_resize.add_argument("volume", help="Volume to resize.",
-            type=storage.is_volume)
-    parser_resize.add_argument('-s', '--size',
-            help='''New size of the volume. With the + or - sign the value is
-                    added to or subtracted from the actual size of the volume
-                    and without it, the value will be set as the new volume
-                    size. A size suffix of [k|K] for kilobytes, [m|M] for
-                    megabytes, [g|G] for gigabytes, [t|T] for terabytes or
-                    [p|P] for petabytes is optional. If no unit is provided
-                    the default is kilobytes.''',
-            type=valid_resize_size)
-    parser_resize.add_argument("device", nargs='*',
-            help='''Devices to use for extending the volume. If the
-                    device is not in any pool, it is added into the
-                    volume's pool prior to the extension. Note that only really
-                    needed number of devices are added into the pool prior the
-                    resize.''')
-    parser_resize.set_defaults(func=storage.resize)
-
-    # create command
-    parser_create = subcommands.add_parser("create",
-            help="create a new volume with defined parameters")
-    parser_create.add_argument('-s', '--size',
-            help='''Gives the size to allocate for the new logical volume
-                    A size suffix K|k, M|m, G|g, T|t, P|p, E|e can be used
-                    to define 'power of two' units. If no unit is provided, it
-                    defaults to kilobytes. This is optional if if
-                    not given maximum possible size will be used.''')
-    parser_create.add_argument('-n', '--name',
-            help='''The name for the new logical volume. This is optional and
-                    if omitted, name will be generated by the corresponding
-                    backend.''')
-    parser_create.add_argument('--fstype',
-            help='''Gives the file system type to create on the new
-                    logical volume. Supported file systems are (ext3,
-                    ext4, xfs, btrfs). This is optional and if not given
-                    file system will not be created.''',
-                    type=is_supported_fs)
-    parser_create.add_argument('-r', '--raid', choices=SUPPORTED_RAID,
-            help='''Specify a RAID level you want to use when creating a new
-                 volume. Note that some backends might not implement all
-                 supported RAID levels. This is optional and if no specified,
-                 linear volume will be created.''')
-    parser_create.add_argument('-I', '--stripesize',
-            help='''Gives the number of kilobytes for the granularity
-                    of stripes. This is optional and if not given, backend
-                    default will be used. Note that you have to specify RAID
-                    level as well.''')
-    parser_create.add_argument('-i', '--stripes',
-            help='''Gives the number of stripes. This is equal to the
-                    number of physical volumes to scatter the logical
-                    volume. This is optional and if stripesize is set
-                    and multiple devices are provided stripes is
-                    determined automatically from the number of devices. Note
-                    that you have to specify RAID level as well.''')
-    parser_create.add_argument('-p', '--pool', default="",
-            help="Pool to use to create the new volume.", type=storage.is_pool)
-    parser_create.add_argument('device', nargs='*',
-            help='''Devices to use for creating the volume. If the device is
-                 not in any pool, it is added into the pool prior the volume
-                 creation.''',
-            type=storage.check_create_item,
-            action=StoreAll)
-    parser_create.add_argument('mount', nargs='?', help='''Directory to mount
-                                the newly create volume to.''')
-    parser_create.set_defaults(func=storage.create)
-
-    # list command
-    parser_list = subcommands.add_parser("list", help='''list information about
-                    all detected, devices, pools, volumes and snapshots
-                    in the system''')
-    parser_list.add_argument('type', nargs='?',
-            choices=["volumes", "dev", "devices", "pool", "fs",
-                     "filesystems", "snap", "snapshots"])
-    parser_list.set_defaults(func=storage.list)
-
-    # add command
-    parser_add = subcommands.add_parser("add", help='''add one or more devices
-                                        into the pool''')
-    parser_add.add_argument('-p', '--pool', default="",
-            help='''Pool to add device into. If not specified the default
-                 pool is used.''', type=storage.is_pool)
-    parser_add.add_argument('device', nargs='+',
-            help="Devices to add into the pool",
-            type=storage.get_bdevice)
-    parser_add.set_defaults(func=storage.add)
-
-    # remove command
-    parser_remove = subcommands.add_parser("remove", help='''remove devices
-            from the pool, volumes or pools''')
-    parser_remove.add_argument('-a', '--all', action="store_true",
-            help="Remove all pools")
-    parser_remove.add_argument('items', nargs='*',
-            help="Items to remove. Item could be device, pool, or volume.",
-            type=storage.check_remove_item)
-    parser_remove.set_defaults(func=storage.remove)
-
-    # snapshot command
-    parser_snapshot = subcommands.add_parser("snapshot", help='''take a
-            snapshot of the existing volume''')
-    parser_snapshot.add_argument('-s', '--size',
-            help='''Gives the size to allocate for the new snapshot volume
-                    A size suffix K|k, M|m, G|g, T|t, P|p, E|e can be used
-                    to define 'power of two' units. If no unit is provided, it
-                    defaults to kilobytes. This is option and if not give,
-                    the size will be determined automatically.''')
-    group = parser_snapshot.add_mutually_exclusive_group()
-    group.add_argument('-d', '--dest',
-            help='''Destination of the snapshot specified with absolute path
-                    to be used for the new snapshot. This is optional and if
-                    not specified default backend policy will be performed.''')
-    group.add_argument('-n', '--name',
-            help='''Name of the new snapshot. This is optional and if not
-                specified  default backend policy will be performed.''')
-
-    parser_snapshot.add_argument('volume',
-            help="Volume, or mount point to take a snapshot of.",
-            type=storage.can_snapshot)
-    parser_snapshot.set_defaults(func=storage.snapshot)
-
-    args = parser.parse_args()
+    ssm_parser = SsmParser(storage)
+    args = ssm_parser.parse()
 
     # Check create command dependency
     if args.func == storage.create:
@@ -1254,11 +1314,11 @@ def main(args=None):
             if (args.stripesize):
                 err = "You can not specify --stripesize without specifying" + \
                       " RAID level!"
-                parser_create.error(err)
+                ssm_parser.parser_create.error(err)
             if (args.stripes):
                 err = "You can not specify --stripes without specifying" + \
                       " RAID level!"
-                parser_create.error(err)
+                ssm_parser.parser_create.error(err)
 
     #storage.set_globals(args.force, args.verbose, args.yes, args.config)
     storage.set_globals(args.force, args.verbose, False, None)
@@ -1269,7 +1329,7 @@ def main(args=None):
     try:
         args.func(args)
     except argparse.ArgumentTypeError, ex:
-        parser.error(ex)
+        ssm_parser.parser.error(ex)
 
     return 0
 

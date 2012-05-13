@@ -359,7 +359,8 @@ class BtrfsPool(Btrfs):
                     "pool name can be specified when creating btrfs " + \
                     "subvolume, the rest will be ignored."
             if 'mount' not in self._pool[pool]:
-                tmp = misc.temp_mount("UUID={0}".format(self._pool[pool]['uuid']))
+                tmp = misc.temp_mount(
+                        "UUID={0}".format(self._pool[pool]['uuid']))
                 self._pool[pool]['mount'] = tmp
 
             if not name:

@@ -305,7 +305,8 @@ class SnapInfo(LvmInfo):
         super(SnapInfo, self).__init__(*args, **kwargs)
         command = ["lvm", "lvs", "--separator", "|", "--noheadings",
                 "--nosuffix", "--units", "k", "-o",
-                "vg_name,lv_size,stripes,stripesize,segtype,lv_path,origin,snap_percent"]
+                "vg_name,lv_size,stripes,stripesize,segtype," + \
+                "lv_path,origin,snap_percent"]
         self.attrs = ['pool_name', 'vol_size', 'stripes',
                 'stripesize', 'type', 'dev_name', 'origin', 'snap_size']
         self.handle_fs = True
