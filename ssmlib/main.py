@@ -1334,8 +1334,11 @@ def main(args=None):
     return 0
 
 if __name__ == "__main__":
-    if not os.geteuid() == 0:
-        sys.exit("\nRoot privileges required to run this script!\n")
+    noroot = ['-h', '--help', '--version']
+    if (len(sys.argv) >= 2 and sys.argv[1] not in noroot) and \
+       (len(sys.argv) >= 3 and sys.argv[2] not in noroot):
+        if not os.geteuid() == 0:
+            sys.exit("\nRoot privileges required to run this script!\n")
     try:
         sys.exit(main())
     except RuntimeError, ERR:
