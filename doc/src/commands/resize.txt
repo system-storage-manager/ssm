@@ -1,0 +1,8 @@
+Change size of the **volume** and file system. If there is no file system only
+the **volume** itself will be resized. You can specify **device** to add into
+the **volume** pool prior the resize, but only so many devices will be added
+to cover the new size. It meas, that if the resize will fit into the existing
+pool, no devices will be added into the pool.
+
+In some cases file system has to be mounted in order to resize. This will be
+handled by **ssm** automatically by mounting the **volume** temporarily.

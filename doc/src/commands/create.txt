@@ -1,0 +1,20 @@
+This command creates a new volume with defined parameters. If **device** is
+provided it will be used to create a volume, hence it will be added into the
+**pool** prior the volume creation (See :ref:`Add command section
+<add-command>`). More devices can be used to create a volume.
+
+*POOL* name can be specified as well. If the pool exists new volume will be
+created from that pool (optionally adding **device** into the pool). However
+if the *POOL* does not exist **ssm** will attempt to create a new pool with
+provided **device** and then create a new volume from this pool. If
+**--backend** argument is omitted, the default **ssm** backend will be used.
+Default backend is *lvm*.
+
+**ssm** also supports creating RAID configuration, however some back-ends
+might not support all the levels, or it might not support RAID at all. In
+this case, volume creation will fail.
+
+If **mount** point is provided **ssm** will attempt to mount the volume after
+it is created. However it will fail if mountable file system is not present
+on the volume.
+

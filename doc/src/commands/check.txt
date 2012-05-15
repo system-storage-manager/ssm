@@ -1,0 +1,8 @@
+Check the file system consistency on the **volume**. You can specify multiple
+volumes to check. If there is no file system on the **volume**, this **volume**
+will be skipped.
+
+In some cases file system has to be mounted in order to check the file system
+This will be handled by **ssm** automatically by mounting the **volume**
+temporarily.
+

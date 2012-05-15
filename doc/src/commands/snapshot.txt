@@ -1,0 +1,9 @@
+Take a snapshot of existing **volume**. This operation will fail if back-end
+which the **volume** belongs to does not support snapshotting. Note that
+you can not specify both *NAME* and *DESC* since those options are mutually
+exclusive.
+
+In some cases file system has to be mounted in order to take a snapshot of
+the **volume**. This will be handled by **ssm** automatically by mounting the
+**volume** temporarily.
+
