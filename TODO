@@ -1,36 +1,11 @@
 TODO
 ----
 
- D Fix create so the 'size' argument is recalculated to be in Kilobytes
- - Figure out how to create better pool names so it is unique in the system and
-   between the systems.
- - Use wipefs -a before using the device in add()
- - Consider using wipefs -a after removing the device
- - Remove the physical volume after it is removed from the group
- D Parse subvolumes on mounted btrfs
- D Create subvolumes on btrfs on 'create'
- - Create btrfs unittests
- - Document python classes and add more documentation into the code
- - Extend python unittests to other backends
- D Write-up dependencies
- D Reorganise File structure of the project
- - Add mirror support
- - Add snapshots support
- - Add raid support
- D Licence and licence notice in the source files
- D Create readme
- - Better table alignment when the output spans multiple lines
- - Better error handling - not just plain Exception, but rather named exception
-   and handle it as main() in ssm module
- D Wire in bash tests into the test_ssm.py
- D Create a way to exclude "real" system devices,pools,volumes from the ssm
-   consideration for testing purposes
- - Create btrfs bash tests
- D Create a way to exclude "real" system devices,pools,volumes from the ssm
-   consideration for testing purposes
- - Update readme
- - Add more documentation into the code
-
+ D Add more documentation into the code
+ - Create btrfs resize bash test
+ - use lsblk and blkid to get information
+ - Allow fs specific mkfs options to be specified
+ - Umount when force specified ?? (absolutely painful with btrfs)
 
 Until public repo release (Alpha):
 ----------------------------------
@@ -46,26 +21,36 @@ Until public repo release (Alpha):
    consideration for testing purposes
  D Reorganise File structure of the project
 
-
 Until Beta release:
 -------------------
- - Create btrfs bash tests
- - Create btrfs unittests
- - Extend python unittests to other backends
- - Use wipefs -a before using the device in add()
- - Consider using wipefs -a after removing the device
- - Remove the physical volume after it is removed from the group
+ D Create btrfs bash tests
+ D Create btrfs unittests
+ D Add snapshots support
+ D Add raid support
+ D Add more documentation into the code
+ D Add snapshot command description into README
+ - Make it possible to run locally without install (tmarek)
+ D Update readme
+ D Add options to choose backend
+
+Until Full release:
+-------------------
+ - Better error handling - not just plain Exception, but rather named exception
+   and handle it as main() in ssm module (tmarek)
+ - Argaprse for python < 2.7 (tmarek)
+ - Update readme
+ - Create man page
  - Figure out how to create better pool names so it is unique in the system and
    between the systems.
- - Add mirror support
- - Add snapshots support
- - Add raid support
- - use lsblk and blkid to get information
+ - Add list command tests
+ - Make it work on with python (2.4)
+ - Make it worn on older systems in general (rhel 5)
+ - Better, more user friendly output.
+ - Revisit and update dependencies
  - Better table alignment when the output spans multiple lines
- - Better error handling - not just plain Exception, but rather named exception
-   and handle it as main() in ssm module
- - Update readme
- - Add more documentation into the code
+ - Allow help to be shown even if not root (tmarek)
+ - Create ssm configuration file
+ - Unify checks for all the commands
 
 
 (D = DONE)
