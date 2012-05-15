@@ -1127,13 +1127,18 @@ class SsmParser(object):
                        \'%(prog)s [command] -h\'.''')
         parser.add_argument('--version', action='version',
                 version='%(prog)s 0.1-alpha')
-        parser.add_argument('-v', '--verbose', help="verbose execution",
+        parser.add_argument('-v', '--verbose',
+                help="Show aditional information while executing.",
                 action="store_true")
-        parser.add_argument('-f', '--force', help="force execution",
+        parser.add_argument('-f', '--force',
+                help="Force execution in the case where ssm has some " +\
+                     "doubts or questions.",
                 action="store_true")
         parser.add_argument('-b', '--backend', nargs=1,
-                help="choose default backend",
-                choices= ['lvm', 'btrfs'],
+                metavar='BACKEND',
+                help="Choose backend to use. Currently you can choose from " +\
+                     "({0}).".format(",".join(SUPPORTED_BACKENDS)),
+                choices = SUPPORTED_BACKENDS,
                 action=SetBackend)
         return parser
 
@@ -1142,7 +1147,7 @@ class SsmParser(object):
         Check command
         """
         parser_check = self.subcommands.add_parser("check",
-                help="check consistency of the file system on the device")
+                help="Check consistency of the file system on the device.")
         parser_check.add_argument('device', nargs='+',
                 help="Device with file system to check.",
                 type=self.storage.is_fs)
@@ -1154,7 +1159,7 @@ class SsmParser(object):
         Resize command
         """
         parser_resize = self.subcommands.add_parser("resize",
-                help="change or set the volume and file system size")
+                help="Change or set the volume and file system size.")
         parser_resize.add_argument("volume", help="Volume to resize.",
                 type=self.storage.is_volume)
         parser_resize.add_argument('-s', '--size',
@@ -1180,7 +1185,7 @@ class SsmParser(object):
         Create command
         """
         parser_create = self.subcommands.add_parser("create",
-                help="create a new volume with defined parameters")
+                help="Create a new volume with defined parameters.")
         parser_create.add_argument('-s', '--size',
                 help='''Gives the size to allocate for the new logical volume
                      A size suffix K|k, M|m, G|g, T|t, P|p, E|e can be used
@@ -1198,10 +1203,13 @@ class SsmParser(object):
                      file system will not be created.''',
                 type=is_supported_fs)
         parser_create.add_argument('-r', '--raid', choices=SUPPORTED_RAID,
+                metavar="LEVEL",
                 help='''Specify a RAID level you want to use when creating a new
                      volume. Note that some backends might not implement all
                      supported RAID levels. This is optional and if no specified,
-                     linear volume will be created.''')
+                     linear volume will be created. You can choose from the
+                     following list of supported levels
+                     ({0}).'''.format(",".join(SUPPORTED_RAID)))
         parser_create.add_argument('-I', '--stripesize',
                 help='''Gives the number of kilobytes for the granularity
                         of stripes. This is optional and if not given, backend
@@ -1233,9 +1241,9 @@ class SsmParser(object):
         List command
         """
         parser_list = self.subcommands.add_parser("list",
-                help='''list information about
+                help='''List information about
                      all detected, devices, pools, volumes and snapshots
-                     in the system''')
+                     in the system.''')
         parser_list.add_argument('type', nargs='?',
                 choices=["volumes", "vol", "dev", "devices", "pool", "pools",
                     "fs", "filesystems", "snap", "snapshots"])
@@ -1247,12 +1255,12 @@ class SsmParser(object):
         Add command
         """
         parser_add = self.subcommands.add_parser("add",
-                help='''add one or more devices into the pool''')
+                help='''Add one or more devices into the pool.''')
         parser_add.add_argument('-p', '--pool', default="",
                 help='''Pool to add device into. If not specified the default
                      pool is used.''', type=self.storage.is_pool)
         parser_add.add_argument('device', nargs='+',
-                help="Devices to add into the pool",
+                help="Devices to add into the pool.",
                 type=self.storage.get_bdevice)
         parser_add.set_defaults(func=self.storage.add)
         return parser_add
@@ -1262,9 +1270,9 @@ class SsmParser(object):
         Remove command
         """
         parser_remove = self.subcommands.add_parser("remove",
-                help='''remove devices from the pool, volumes or pools''')
+                help='''Remove devices from the pool, volumes or pools.''')
         parser_remove.add_argument('-a', '--all', action="store_true",
-                help="Remove all pools")
+                help="Remove all pools in the system.")
         parser_remove.add_argument('items', nargs='*',
                 help="Items to remove. Item could be device, pool, or volume.",
                 type=self.storage.check_remove_item)
@@ -1275,8 +1283,8 @@ class SsmParser(object):
         """
         Snapshot command
         """
-        parser_snapshot = self.subcommands.add_parser("snapshot", help='''take a
-                snapshot of the existing volume''')
+        parser_snapshot = self.subcommands.add_parser("snapshot",
+                help='''Take a snapshot of the existing volume.''')
         parser_snapshot.add_argument('-s', '--size',
                 help='''Gives the size to allocate for the new snapshot volume
                      A size suffix K|k, M|m, G|g, T|t, P|p, E|e can be used
