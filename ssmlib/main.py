@@ -1126,7 +1126,7 @@ class SsmParser(object):
                 epilog='''To get help for particular command please specify
                        \'%(prog)s [command] -h\'.''')
         parser.add_argument('--version', action='version',
-                version='%(prog)s 0.1dev')
+                version='%(prog)s 0.1-alpha')
         parser.add_argument('-v', '--verbose', help="verbose execution",
                 action="store_true")
         parser.add_argument('-f', '--force', help="force execution",
