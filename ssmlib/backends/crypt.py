@@ -90,12 +90,10 @@ class DmCryptVolume(object):
                 dm['crypt_device'] = array[1]
 
     def remove(self, dm):
-        print "Removing crypt {0}".format(dm)
         command = ['cryptsetup', 'remove', dm]
         misc.run(command, stdout=True)
 
     def resize(self, dm, size, resize_fs=True):
-        print "resize dm {0}".format(dm)
         size = str(int(size) * 2)
         command = ['cryptsetup', 'resize', '--size', size, dm]
         misc.run(command, stdout=True)
