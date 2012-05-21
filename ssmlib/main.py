@@ -23,6 +23,7 @@ import sys
 import stat
 import argparse
 from ssmlib import misc
+from ssmlib import problem
 from itertools import chain, compress
 
 # Import backends
@@ -34,6 +35,19 @@ SUPPORTED_BACKENDS = ['lvm', 'btrfs']
 SUPPORTED_RAID = ['0', '1', '10']
 os.environ['LANG'] = "C"
 
+# Should the script be run in interactive or non interactive mode ?
+try:
+    SSM_NONINTERACTIVE = os.environ['SSM_NONINTERACTIVE']
+    if SSM_NONINTERACTIVE.upper() in ['YES', 'TRUE', '1']:
+        SSM_NONINTERACTIVE = True
+    elif SSM_NONINTERACTIVE.upper() in ['NO', 'FALSE', '0']:
+        SSM_NONINTERACTIVE = False
+except KeyError:
+    SSM_NONINTERACTIVE = not os.isatty(sys.stdout.fileno())
+
+# Initialize problem set
+PR = problem.ProblemSet(interactive=not SSM_NONINTERACTIVE)
+
 # Name of the default pool
 try:
     DEFAULT_DEVICE_POOL = os.environ['DEFAULT_DEVICE_POOL']
@@ -44,7 +58,9 @@ except KeyError:
 try:
     SSM_DEFAULT_BACKEND = os.environ['SSM_DEFAULT_BACKEND']
     if SSM_DEFAULT_BACKEND not in SUPPORTED_BACKENDS:
-        raise KeyError
+        if PR.check(PR.BAD_ENV_VARIABLE,
+                    ['SSM_DEFAULT_BACKEND', SSM_DEFAULT_BACKEND]):
+            SSM_DEFAULT_BACKEND = 'lvm'
 except KeyError:
     SSM_DEFAULT_BACKEND = 'lvm'
 
@@ -54,10 +70,14 @@ except KeyError:
 # useful for testing.
 try:
     SSM_PREFIX_FILTER = os.environ['SSM_PREFIX_FILTER']
-    print >> sys.stderr, "WARNING: SSM_PREFIX_FILTER is set to " + \
-        "\'{0}\'".format(SSM_PREFIX_FILTER)
+    PR.warn("SSM_PREFIX_FILTER is set to \'{0}\'".format(SSM_PREFIX_FILTER))
 except KeyError:
     SSM_PREFIX_FILTER = None
+
+
+class Struct(object):
+    def __init__(self):
+        pass
 
 
 class StoreAll(argparse._StoreAction):
@@ -316,8 +336,6 @@ class Item(object):
 
     def __getattr__(self, func_name):
         func = getattr(self.obj, func_name)
-        if not func:
-            raise AttributeError
 
         def _new_func(*args, **kwargs):
             if args and kwargs:
@@ -432,14 +450,16 @@ class Storage(object):
     def get_backend(self, name):
         return self._data[name]
 
-    def set_globals(self, force, verbose, yes):
+    def set_globals(self, force, verbose, yes, interactive):
         self.force = force
         self.verbose = verbose
         self.yes = yes
+        self.interactive = interactive
         for source in self._data.itervalues():
             source.force = force
             source.verbose = verbose
             source.yes = yes
+            source.interactive = interactive
 
     def filesystems(self):
         for item in self:
@@ -611,13 +631,14 @@ class StorageHandle(object):
         self.verbose = False
         self.yes = False
         self.config = None
+        self.interactive = False
         self._mpoint = None
         self._dev = None
         self._pool = None
         self._volumes = None
         self._snapshots = None
 
-    def set_globals(self, force, verbose, yes, config):
+    def set_globals(self, force, verbose, yes, config, interactive):
         '''
         Set global parameters (force,verbose,yes,config) and propagate it into
         the backends.
@@ -626,14 +647,15 @@ class StorageHandle(object):
         self.verbose = verbose
         self.yes = yes
         self.config = config
+        self.interactive = interactive
         if self._dev:
-            self.dev.set_globals(force, verbose, yes)
+            self.dev.set_globals(force, verbose, yes, interactive)
         if self._volumes:
-            self.vol.set_globals(force, verbose, yes)
+            self.vol.set_globals(force, verbose, yes, interactive)
         if self._pool:
-            self.pool.set_globals(force, verbose, yes)
+            self.pool.set_globals(force, verbose, yes, interactive)
         if self._snapshots:
-            self.snap.set_globals(force, verbose, yes)
+            self.snap.set_globals(force, verbose, yes, interactive)
 
     @property
     def dev(self):
@@ -710,15 +732,67 @@ class StorageHandle(object):
         '''
         err = 0
         for fs in args.device:
-            print "Checking {0} file system on device {1}:".format(fs.fstype,
-                                                                 fs.device),
+            print "Checking {0} file system on \'{1}\':".format(fs.fstype,
+                                                                fs.device),
             if fs.mounted:
-                print "MOUNTED - skipping"
-                continue
-            err += fs.fsck()
+                try:
+                    print
+                    if PR.check(PR.FS_MOUNTED, [fs.device, fs.mounted]):
+                        misc.do_umount(fs.device)
+                except Exception:
+                    continue
+            ret = fs.fsck()
+            err += ret
+            if ret:
+                print "FAIL"
+            else:
+                print "OK"
         if err > 0:
-            print "\nWarning: Some file system(s) contains errors.",
-            print "Please run the appropriate fsck utility"
+            PR.warn("Some file system(s) contains errors. Please run " + \
+                    "the appropriate fsck utility")
+
+    def _filter_device_list(self, args, have_size=None, new_size=None):
+
+        if have_size is None:
+            have_size = 0.0
+        else:
+            have_size = float(have_size)
+        if new_size is None:
+            new_size = 0.0
+        else:
+            new_size = float(new_size)
+
+        changed = False
+
+        devices = args.device
+        args.device = []
+
+        for dev in devices[:]:
+            if have_size > new_size:
+                break
+            if self.dev[dev] and 'pool_name' in self.dev[dev] and \
+               self.dev[dev]['pool_name'] != args.pool.name:
+                if PR.check(PR.DEVICE_USED, [dev, self.dev[dev]['pool_name']]):
+                    remove_args = Struct()
+                    remove_args.all = False
+                    remove_args.items = [self.dev[dev]]
+                    if self.remove(remove_args):
+                        args.device.append(dev)
+                        have_size += float(self.dev[dev]['dev_size'])
+                        changed = True
+                    else:
+                        continue
+                else:
+                    continue
+            if not self.dev[dev] or 'pool_name' not in self.dev[dev]:
+                args.device.append(dev)
+                have_size += float(self.dev[dev]['dev_size'])
+
+        if changed:
+            self.reinit_dev()
+
+        return have_size
+
 
     def resize(self, args):
         '''
@@ -742,27 +816,13 @@ class StorageHandle(object):
 
         fs = True if 'fs_type' in args.volume else False
 
-        have_size = float(args.pool['pool_size'])
-        devices = args.device
-        args.device = []
-
-        for dev in devices[:]:
-            if have_size > float(new_size):
-                break
-            if self.dev[dev] and 'pool_name' in self.dev[dev] and \
-               self.dev[dev]['pool_name'] != args.pool.name:
-                err = "Device '{0}' is already used in ".format(dev) + \
-                      "the pool '{0}'.".format(self.dev[dev]['pool_name'])
-                raise argparse.ArgumentTypeError(err)
-            if not self.dev[dev] or 'pool_name' not in self.dev[dev]:
-                args.device.append(dev)
-            have_size += float(self.dev[dev]['dev_size'])
+        have_size = self._filter_device_list(args,
+                                             float(args.pool['pool_free']),
+                                             new_size)
 
         if have_size < new_size:
-            raise Exception("There is not enough space " +
-                            "in the pool {0} ".format(args.pool.name) +
-                            "to grow volume {0} ".format(args.volume.name) +
-                            "to size {0} KB".format(new_size))
+            PR.check(PR.RESIZE_NOT_ENOUGH_SPACE,
+                     [args.pool.name, args.volume.name, new_size])
         else:
             self.add(args)
 
@@ -774,9 +834,7 @@ class StorageHandle(object):
             if fs:
                 args.volume['fs_info'].resize()
             else:
-                raise Exception("'{0}' volume is already {1}".format(
-                    args.volume.name, new_size) + \
-                    "KBytes long, there is nothing to resize")
+                PR.check(PR.RESIZE_ALREADY_MATCH, [args.volume.name, new_size])
 
     def create(self, args):
         '''
@@ -784,27 +842,36 @@ class StorageHandle(object):
         provided as arguments. If the device is not in the selected pool, then
         add() is called on the pool prior to create().
         '''
-        devices = args.device
-        args.device = []
         # Get the size in kilobytes
         if args.size:
             args.size = misc.get_real_size(args.size)
 
         if self._mpoint and not (args.fstype or args.pool.type == 'btrfs'):
-            raise Exception("Mount point specified, but no file" + \
-                            "system provided!\n")
+            if PR.check(PR.CREATE_MOUNT_NOFS, self._mpoint):
+                self._mpoint = None
 
-        for dev in devices[:]:
-            if self.dev[dev] and 'pool_name' in self.dev[dev] and \
-               self.dev[dev]['pool_name'] != args.pool.name:
-                err = "Device '{0}' is already used in ".format(dev) + \
-                      "the pool '{0}'.".format(self.dev[dev]['pool_name'])
-                raise argparse.ArgumentTypeError(err)
-            if not self.dev[dev] or 'pool_name' not in self.dev[dev]:
-                args.device.append(dev)
+        devices = args.device
+        if args.pool.exists():
+            pool_free = float(args.pool['pool_free'])
+        else:
+            pool_free = 0.0
 
-        if len(args.device) > 0 and not \
-           (not args.pool.exists() and args.pool.type == 'btrfs'):
+        have_size = self._filter_device_list(args, pool_free, args.size)
+
+        # Currently we do not allow setting subvolume size with btrfs. This
+        # should change in the future (quotas maybe) so the check should
+        # be removed or pushed to the backend itself.
+        if have_size < args.size and \
+           not (args.pool.exists() and args.pool.type == 'btrfs'):
+            if PR.check(PR.CREATE_NOT_ENOUGH_SPACE,
+                        [have_size, args.pool.name]):
+                args.size = None
+
+        # If we want btrfs pool and it does not exist yet, we do not
+        # want to call add since it would create it. Note that when
+        # btrfs pool is created the new btrfs volume is created as well
+        # because it is actually the same thing
+        if not (not args.pool.exists() and args.pool.type == 'btrfs'):
             self.add(args)
 
         if args.raid:
@@ -854,21 +921,30 @@ class StorageHandle(object):
             if item and 'pool_name' in item:
                 if item['pool_name'] == args.pool.name:
                     args.device.remove(dev)
+                    continue
+                if PR.check(PR.DEVICE_USED, [item.name, item['pool_name']]):
+                    remove_args = Struct()
+                    remove_args.all = False
+                    remove_args.items = [item]
+                    if not self.remove(remove_args):
+                        args.device.remove(item.name)
                 else:
-                    err = "Device '{0}' is already used in ".format(dev) + \
-                          "the pool '{0}'.".format(item['pool_name'])
-                    raise argparse.ArgumentTypeError(err)
+                    args.device.remove(dev)
         if args.pool.exists():
             if len(args.device) > 0:
                 args.pool.extend(args.device)
         else:
-            args.pool.new(args.device)
+            if len(args.device) > 0:
+                args.pool.new(args.device)
+            else:
+                PR.check(PR.ADD_NO_DEVICE, args.pool.name)
 
     def remove(self, args):
         '''
         Remove the all the items, or all pools if all argument is specified.
         Items could be the devices, pools or volumes.
         '''
+        ret = True
         if args.all:
             for pool in self.pool:
                 pool.remove()
@@ -884,13 +960,14 @@ class StorageHandle(object):
                         pool.reduce(item.name)
                         continue
                     else:
-                        raise Exception("It is not clear what do you want " +
-                                        "to achieve by removing " +
-                                        "{0}".format(item.name))
+                        PR.error("It is not clear what do you want " +
+                                 "to achieve by removing " +
+                                 "{0}!".format(item.name))
                 item.remove()
             except (Exception, RuntimeError), ex:
-                print ex
-                print >> sys.stderr, "Unable to remove '{0}'".format(item.name)
+                PR.info("Unable to remove '{0}'".format(item.name))
+                ret = False
+        return ret
 
     def snapshot(self, args):
         '''
@@ -912,10 +989,6 @@ class StorageHandle(object):
             snap_size = pool_size
 
         args.volume.snapshot(args.dest, args.name, snap_size, user_set_size)
-
-    def mirror(self, args):
-        print "mirror"
-        print args
 
     def is_fs(self, device):
         real = misc.get_real_device(device)
@@ -1309,6 +1382,7 @@ class SsmParser(object):
 
 
 def main(args=None):
+
     if args:
         sys.argv = args.split()
 
@@ -1328,8 +1402,12 @@ def main(args=None):
                       " RAID level!"
                 ssm_parser.parser_create.error(err)
 
+    # Set the interactive option
+    interactive = not SSM_NONINTERACTIVE
+
     #storage.set_globals(args.force, args.verbose, args.yes, args.config)
-    storage.set_globals(args.force, args.verbose, False, None)
+    storage.set_globals(args.force, args.verbose, False, None, interactive)
+    PR.set_options(args.verbose, False, args.force, interactive)
 
     # Register clean-up function on exit
     sys.exitfunc = misc.do_cleanup
