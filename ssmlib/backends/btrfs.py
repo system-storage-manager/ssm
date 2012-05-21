@@ -212,13 +212,13 @@ class Btrfs(object):
             return self.data[key]
 
     def _remove_filesystem(self, name):
+        if 'mount' in self._vol[name]:
+            if self.problem.check(self.problem.FS_MOUNTED,
+                    [name, self._vol[name]['mount']]):
+                misc.do_umount(self._vol[name]['mount'])
         for dev in self._dev.itervalues():
             if dev['pool_name'] != name:
                 continue
-            if 'mount' in self._vol[name]:
-                if self.problem.check(self.problem.FS_MOUNTED,
-                        [name, self._vol[name]['mount']]):
-                    misc.do_umount(self._vol[name]['mount'])
             misc.wipefs(dev['dev_name'], 'btrfs')
 
 
