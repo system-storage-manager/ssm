@@ -28,7 +28,6 @@ import subprocess
 # before exiting
 TMP_MOUNTED = []
 
-
 def get_unit_size(string):
     """
     Check the last character of the string for the unit and return the unit
@@ -282,8 +281,6 @@ def wipefs(device, typ):
             continue
         array = line.split(",")
         if array[-1] == typ:
-            print "Wiping {0} signature from ".format(typ) + \
-                  "the device {0}".format(device)
             command = ['wipefs', '--offset', array[0], device]
             run(command)
 
@@ -340,10 +337,6 @@ def humanize_size(arg):
 
 def run(cmd, show_cmd=False, stdout=False, stderr=True, can_fail=False,
         stdin_data=None, return_stdout=True):
-    command = "{delim}\nCOMMAND: \"{command}\"\n{delim}\n".format(
-              command=" ".join(cmd), delim=("-" * (len(cmd) + 9)))
-    if stdout:
-        print command,
 
     stdin = None
     if stdin_data is not None:
@@ -359,14 +352,8 @@ def run(cmd, show_cmd=False, stdout=False, stderr=True, can_fail=False,
     else:
         stdout = subprocess.PIPE
 
-    try:
-        proc = subprocess.Popen(cmd, stdout=stdout,
+    proc = subprocess.Popen(cmd, stdout=stdout,
                             stderr=stderr, stdin=stdin)
-    except OSError, ex:
-        print >> sys.stderr, \
-            "Failure while executing \"{0}\"".format(" ".join(cmd))
-        print >> sys.stderr, ex
-        raise ex
 
     if stdin_data is not None:
 
