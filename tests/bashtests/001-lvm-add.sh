@@ -25,6 +25,7 @@ aux prepare_devs $DEV_COUNT 10
 TEST_DEVS=$(cat DEVICES)
 export SSM_DEFAULT_BACKEND='lvm'
 export SSM_LVM_DEFAULT_POOL=$vg1
+export SSM_NONINTERACTIVE='1'
 
 pool1=$vg2
 pool2=$vg3

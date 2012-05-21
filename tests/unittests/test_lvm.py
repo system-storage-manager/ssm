@@ -274,33 +274,38 @@ class LvmFunctionCheck(MockSystemDataSource):
         self.assertEqual(self.run_data[-2],
             "lvm vgextend default_pool /dev/sdc1 /dev/sde")
 
-        # Set volume in without the need adding more devices
+        # Set volume size
         self._checkCmd("ssm resize -s 10G /dev/default_pool/vol003 /dev/sdc1 /dev/sde",
             [], "lvm lvresize -L 10485760.0k /dev/default_pool/vol003");
-        self.assertNotEqual(self.run_data[-2],
+        self.assertEqual(self.run_data[-2],
             "lvm vgextend default_pool /dev/sdc1 /dev/sde")
 
-        # Extend volume and add devices to cover the size
+        # Extend volume and add devices
         self._checkCmd("ssm resize -s +11T /dev/default_pool/vol003 /dev/sdc1 /dev/sde",
             [], "lvm lvresize -L 11811161088.0k /dev/default_pool/vol003");
         self.assertEqual(self.run_data[-2],
-            "lvm vgextend default_pool /dev/sdc1")
+            "lvm vgextend default_pool /dev/sdc1 /dev/sde")
 
-        # Extend volume in without the need adding more devices
+        # Extend volume
         self._checkCmd("ssm resize -s +10G /dev/default_pool/vol003 /dev/sdc1 /dev/sde",
             [], "lvm lvresize -L 10486784.0k /dev/default_pool/vol003");
-        self.assertNotEqual(self.run_data[-2],
+        self.assertEqual(self.run_data[-2],
             "lvm vgextend default_pool /dev/sdc1 /dev/sde")
-        self.assertNotEqual(self.run_data[-2],
-            "lvm vgextend default_pool /dev/sdc1")
 
         # Shrink volume with devices provided
         self._checkCmd("ssm resize -s-10G /dev/default_pool/vol002 /dev/sdc1 /dev/sde",
             [], "lvm lvresize -L 226798465.0k /dev/default_pool/vol002");
         self.assertNotEqual(self.run_data[-2],
             "lvm vgextend default_pool /dev/sdc1 /dev/sde")
-        self.assertNotEqual(self.run_data[-2],
-            "lvm vgextend default_pool /dev/sdc1")
+
+        # Test that we do not use devices which are already used in different
+        # pool
+        self.assertRaises(Exception, main.main, "ssm resize -s +1.5T /dev/my_pool/vol001 /dev/sdb /dev/sda")
+
+        # If the device we are able to use can cover the size, then
+        # it will be resized successfully
+        self._checkCmd("ssm resize -s +1.5T /dev/my_pool/vol001 /dev/sdb /dev/sda /dev/sdc1",
+            [], "lvm lvresize -L 1613595352.0k /dev/my_pool/vol001");
 
     def test_lvm_add(self):
         default_pool = lvm.SSM_LVM_DEFAULT_POOL

@@ -29,6 +29,7 @@ TEST_DEVS=$(cat DEVICES)
 export SSM_DEFAULT_BACKEND='lvm'
 export SSM_LVM_DEFAULT_POOL=$vg1
 export LVOL_PREFIX="lvol"
+export SSM_NONINTERACTIVE='1'
 lvol1=${LVOL_PREFIX}001
 lvol2=${LVOL_PREFIX}002
 lvol3=${LVOL_PREFIX}003
@@ -86,31 +87,27 @@ ssm -f remove $SSM_LVM_DEFAULT_POOL
 
 ssm create $dev1
 check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 1
-devs=${TEST_DEVS##*$dev1 }
-ssm resize --size +$((TEST_MAX_SIZE/2))M $DEFAULT_VOLUME $devs
-count=$(((TEST_MAX_SIZE/2/($DEV_SIZE-4))+1))
-check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count $count
+ssm resize --size +$((TEST_MAX_SIZE/2))M $DEFAULT_VOLUME $TEST_DEVS
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count $DEV_COUNT
 ssm -f remove $SSM_LVM_DEFAULT_POOL
 
 ssm create $dev1
 check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 1
-devs=${TEST_DEVS##*$dev1 }
-ssm resize --size $((TEST_MAX_SIZE/2))M ${DM_DEV_DIR}/$DEFAULT_VOLUME $devs
-count=$((TEST_MAX_SIZE/2/($DEV_SIZE-4)))
-check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count $count
+ssm resize --size $((TEST_MAX_SIZE/2))M ${DM_DEV_DIR}/$DEFAULT_VOLUME $TEST_DEVS
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count $DEV_COUNT
 ssm -f remove $SSM_LVM_DEFAULT_POOL
 
 ssm create --size $((DEV_SIZE/2))M $dev1
 check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 1
 ssm resize --size +$((DEV_SIZE/3))M $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2
-check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 1
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 2
 ssm -f resize -s-$((DEV_SIZE/3))M $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2 $dev3
 ssm resize --size +$((DEV_SIZE/3))M $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2 $dev3
-check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 1
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 3
 ssm -f resize -s-$((DEV_SIZE/3))M $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2 $dev3
-check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 1
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 3
 ssm resize --size +${DEV_SIZE}M $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2 $dev3
-check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 2
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 3
 ssm -f remove $SSM_LVM_DEFAULT_POOL
 
 [ ! -d $TEST_MNT ] && mkdir $TEST_MNT &> /dev/null

@@ -17,6 +17,7 @@
 
 # Common classes for unit testing
 
+import os
 import sys
 import unittest
 import argparse
@@ -44,6 +45,7 @@ class BaseStorageHandleInit(unittest.TestCase):
         self.run_data = []
         self.run_orig = misc.run
         misc.run = self.mock_run
+        main.SSM_NONINTERACTIVE = True
 
     def mock_run(self, cmd, *args, **kwargs):
         self.run_data.append(" ".join(cmd))
@@ -56,6 +58,7 @@ class BaseStorageHandleInit(unittest.TestCase):
         self.storage = None
         self.run_data = []
         misc.run = self.run_orig
+        main.SSM_NONINTERACTIVE = False
 
 
 class MockSystemDataSource(unittest.TestCase):
@@ -79,6 +82,7 @@ class MockSystemDataSource(unittest.TestCase):
         self.pool_data = {}
         self.mount_data = {}
         self._mpoint = False
+        main.SSM_NONINTERACTIVE = True
 
     def tearDown(self):
         self.directories = []
@@ -93,6 +97,7 @@ class MockSystemDataSource(unittest.TestCase):
         misc.get_mounts = self.get_mounts_orig
         main.StorageHandle.check_create_item = self.check_create_item_orig
         misc.temp_mount = self.temp_mount_orig
+        main.SSM_NONINTERACTIVE = False
 
     def _cmdEq(self, out, index=-1):
         self.assertEqual(self.run_data[index], out)

@@ -276,7 +276,7 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         self._checkCmd("ssm resize -s 1T my_pool /dev/sdc1 /dev/sde",
             [], "btrfs filesystem resize 1073741824K /mnt/test1");
         self.assertEqual(self.run_data[-2],
-            "btrfs device add /dev/sdc1 /mnt/test1")
+            "btrfs device add /dev/sdc1 /dev/sde /mnt/test1")
         self._checkCmd("ssm resize -s 1T my_pool /dev/sde /dev/sdc2",
             [], "btrfs filesystem resize 1073741824K /mnt/test1");
         self.assertEqual(self.run_data[-2],
@@ -292,11 +292,11 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         self.assertNotEqual(self.run_data[-2],
             "btrfs device add /dev/sdc1 /dev/sde /mnt/test1")
 
-        # Extend volume and add devices to cover the size
+        # Extend volume and add devices
         self._checkCmd("ssm resize -s +500G default_pool /dev/sdc1 /dev/sde",
             [], "btrfs filesystem resize 12247891967K /tmp/mount");
         self.assertEqual(self.run_data[-2],
-            "btrfs device add /dev/sdc1 /tmp/mount")
+            "btrfs device add /dev/sdc1 /dev/sde /tmp/mount")
 
         # Extend volume in without the need adding more devices
         self._checkCmd("ssm resize -s 1k default_pool /dev/sdc1 /dev/sde",

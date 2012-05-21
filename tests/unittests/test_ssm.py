@@ -38,43 +38,63 @@ class SimpleStorageHandleSanityCheck(BaseStorageHandleInit):
 
     def test_constructor(self):
         # Check initial variables
-        self.assertFalse(self.storage.force)
-        self.assertFalse(self.storage.verbose)
-        self.assertFalse(self.storage.yes)
-        self.assertIsNone(self.storage.config)
+        self.assertFalse(self.storage.options.force)
+        self.assertFalse(self.storage.options.verbose)
+        self.assertFalse(self.storage.options.yes)
+        self.assertFalse(self.storage.options.interactive)
+        self.assertFalse(self.storage.options.debug)
+        self.assertIsNone(self.storage.options.config)
         self.assertIsNone(self.storage._mpoint)
         self.assertIsNone(self.storage._dev)
         self.assertIsNone(self.storage._pool)
         self.assertIsNone(self.storage._volumes)
 
     def test_create_fs(self):
+        options = main.Options()
         for fs in main.EXTN:
-            self.storage.set_globals(True, True, False, "my_new_config")
+            options.force = True
+            options.verbose = True
+            options.yes = False
+            options.config = "my_new_config"
+            options.interactive = False
+            self.storage.set_globals(options)
             self.storage._create_fs(fs, "/dev/foo/bar")
             self.assertEqual('mkfs.{0} -v -F /dev/foo/bar'.format(fs),
                     self.run_data[-1])
-            self.storage.set_globals(False, False, False, "my_new_config")
+            options.force = False
+            options.verbose = False
+            self.storage.set_globals(options)
             self.storage._create_fs(fs, "/dev/foo/bar")
             self.assertEqual('mkfs.{0} /dev/foo/bar'.format(fs),
                     self.run_data[-1])
-            self.storage.set_globals(True, False, False, "my_new_config")
+            options.force = True
+            self.storage.set_globals(options)
             self.storage._create_fs(fs, "/dev/foo/bar")
             self.assertEqual('mkfs.{0} -F /dev/foo/bar'.format(fs),
                     self.run_data[-1])
-            self.storage.set_globals(False, True, False, "my_new_config")
+            options.force = False
+            options.verbose = True
+            self.storage.set_globals(options)
             self.storage._create_fs(fs, "/dev/foo/bar")
             self.assertEqual('mkfs.{0} -v /dev/foo/bar'.format(fs),
                     self.run_data[-1])
-        self.storage.set_globals(True, True, False, "my_new_config")
+        options.force = True
+        options.verbose = True
+        self.storage.set_globals(options)
         self.storage._create_fs("xfs", "/dev/foo/bar")
         self.assertEqual('mkfs.xfs -f /dev/foo/bar', self.run_data[-1])
-        self.storage.set_globals(False, False, False, "my_new_config")
+        options.force = False
+        options.verbose = False
+        self.storage.set_globals(options)
         self.storage._create_fs("xfs", "/dev/foo/bar")
         self.assertEqual('mkfs.xfs /dev/foo/bar', self.run_data[-1])
-        self.storage.set_globals(True, False, False, "my_new_config")
+        options.force = True
+        self.storage.set_globals(options)
         self.storage._create_fs("xfs", "/dev/foo/bar")
         self.assertEqual('mkfs.xfs -f /dev/foo/bar', self.run_data[-1])
-        self.storage.set_globals(False, True, False, "my_new_config")
+        options.force = False
+        options.verbose = True
+        self.storage.set_globals(options)
         self.storage._create_fs("xfs", "/dev/foo/bar")
         self.assertEqual('mkfs.xfs /dev/foo/bar', self.run_data[-1])
 
@@ -87,7 +107,14 @@ class StorageHandleSanityCheck(BaseStorageHandleInit):
 
     def setUp(self):
         super(StorageHandleSanityCheck, self).setUp()
-        self.storage.set_globals(True, True, True, "my_config")
+        options = main.Options()
+        options.force = True
+        options.verbose = True
+        options.yes = True
+        options.config = "my_config"
+        options.interactive = True
+        options.debug = True
+        self.storage.set_globals(options)
         self.dev = self.storage.dev
         self.vol = self.storage.vol
         self.pool = self.storage.pool
@@ -100,10 +127,12 @@ class StorageHandleSanityCheck(BaseStorageHandleInit):
 
     def test_storage_constructor(self):
         # Check initial variables
-        self.assertTrue(self.storage.force)
-        self.assertTrue(self.storage.verbose)
-        self.assertTrue(self.storage.yes)
-        self.assertEqual(self.storage.config, "my_config")
+        self.assertTrue(self.storage.options.force)
+        self.assertTrue(self.storage.options.verbose)
+        self.assertTrue(self.storage.options.yes)
+        self.assertTrue(self.storage.options.interactive)
+        self.assertTrue(self.storage.options.debug)
+        self.assertEqual(self.storage.options.config, "my_config")
 
         # Check if we have right instances
         self.assertIsInstance(self.dev, main.Devices)
@@ -112,9 +141,12 @@ class StorageHandleSanityCheck(BaseStorageHandleInit):
 
         # Check initial variables
         for source in self.dev, self.vol, self.pool:
-            self.assertTrue(source.force)
-            self.assertTrue(source.verbose)
-            self.assertTrue(source.yes)
+            self.assertTrue(source.options.force)
+            self.assertTrue(source.options.verbose)
+            self.assertTrue(source.options.yes)
+            self.assertTrue(source.options.interactive)
+            self.assertTrue(source.options.debug)
+            self.assertEqual(source.options.config, "my_config")
             self.assertIsInstance(source._data, dict)
             self.assertGreater(len(source._data), 0)
             self.assertIsInstance(source.header, list)
@@ -124,23 +156,38 @@ class StorageHandleSanityCheck(BaseStorageHandleInit):
             self.assertIsInstance(source.types, list)
             self.assertGreater(len(source.types), 0)
             for item  in source._data.itervalues():
-                self.assertTrue(item.force)
-                self.assertTrue(item.verbose)
-                self.assertTrue(item.yes)
+                self.assertTrue(item.options.force)
+                self.assertTrue(item.options.verbose)
+                self.assertTrue(item.options.yes)
+                self.assertTrue(item.options.interactive)
+                self.assertTrue(item.options.debug)
+                self.assertEqual(item.options.config, "my_config")
 
     def test_set_globals_propagation(self):
-        self.storage.set_globals(False, False, False, "my_new_config")
+        options = main.Options()
+        options.force = False
+        options.verbose = False
+        options.yes = False
+        options.config = "my_config"
+        options.interactive = False
+        options.debug = False
+        self.storage.set_globals(options)
         # Check initial variables
-        self.assertFalse(self.storage.force)
-        self.assertFalse(self.storage.verbose)
-        self.assertFalse(self.storage.yes)
-        self.assertEqual(self.storage.config, "my_new_config")
+        self.assertFalse(self.storage.options.force)
+        self.assertFalse(self.storage.options.verbose)
+        self.assertFalse(self.storage.options.yes)
+        self.assertEqual(self.storage.options.config, "my_config")
+        self.assertFalse(self.storage.options.interactive)
+        self.assertFalse(self.storage.options.debug)
 
         # Check initial variables
         for source in self.dev, self.vol, self.pool:
-            self.assertFalse(source.force)
-            self.assertFalse(source.verbose)
-            self.assertFalse(source.yes)
+            self.assertFalse(source.options.force)
+            self.assertFalse(source.options.verbose)
+            self.assertFalse(source.options.yes)
+            self.assertFalse(source.options.interactive)
+            self.assertFalse(source.options.debug)
+            self.assertEqual(source.options.config, "my_config")
             self.assertIsInstance(source._data, dict)
             self.assertGreater(len(source._data), 0)
             self.assertIsInstance(source.header, list)
@@ -150,9 +197,12 @@ class StorageHandleSanityCheck(BaseStorageHandleInit):
             self.assertIsInstance(source.types, list)
             self.assertGreater(len(source.types), 0)
             for item  in source._data.itervalues():
-                self.assertFalse(item.force)
-                self.assertFalse(item.verbose)
-                self.assertFalse(item.yes)
+                self.assertFalse(item.options.force)
+                self.assertFalse(item.options.verbose)
+                self.assertFalse(item.options.yes)
+                self.assertFalse(item.options.interactive)
+                self.assertFalse(item.options.debug)
+                self.assertEqual(item.options.config, "my_config")
 
     def test_backend_generic_methods(self):
         for source in self.dev, self.vol, self.pool:
@@ -175,9 +225,7 @@ class StorageHandleSanityCheck(BaseStorageHandleInit):
                 self.assertIn("__init__", obj)
                 # Variables
                 self.assertIn("type", obj)
-                self.assertIn("force", obj)
-                self.assertIn("verbose", obj)
-                self.assertIn("yes", obj)
+                self.assertIn("options", obj)
                 # DeviceInfo does not need default_pool_name
                 if bknd.type != "device":
                     self.assertIn("default_pool_name", obj)
@@ -235,7 +283,6 @@ class SimpleSsmSanityCheck(unittest.TestCase):
         self.assertIn("list", obj)
         self.assertIn("add", obj)
         self.assertIn("remove", obj)
-        self.assertIn("mirror", obj)
         self.assertIn("snapshot", obj)
         self.assertIn("set_globals", obj)
 
@@ -311,25 +358,17 @@ class SsmFunctionCheck(MockSystemDataSource):
         self.assertEqual(self.run_data[-2],
             "pool extend default_pool /dev/sdc1 /dev/sde")
 
-        # Set volume in without the need adding more devices
+        # Set volume size
         self._checkCmd("ssm resize -s 10G /dev/default_pool/vol003 /dev/sdc1 /dev/sde",
             [], "vol resize /dev/default_pool/vol003 10485760.0 False");
-        self.assertNotEqual(self.run_data[-2],
+        self.assertEqual(self.run_data[-2],
             "pool extend default_pool /dev/sdc1 /dev/sde")
 
-        # Extend volume and add devices to cover the size
-        self._checkCmd("ssm resize -s +11T /dev/default_pool/vol003 /dev/sdc1 /dev/sde",
-            [], "vol resize /dev/default_pool/vol003 11811161088.0 False");
-        self.assertEqual(self.run_data[-2],
-            "pool extend default_pool /dev/sdc1")
-
-        # Extend volume in without the need adding more devices
+        # Extend volume size with adding more devices
         self._checkCmd("ssm resize -s +10G /dev/default_pool/vol003 /dev/sdc1 /dev/sde",
             [], "vol resize /dev/default_pool/vol003 10486784.0 False");
-        self.assertNotEqual(self.run_data[-2],
+        self.assertEqual(self.run_data[-2],
             "pool extend default_pool /dev/sdc1 /dev/sde")
-        self.assertNotEqual(self.run_data[-2],
-            "pool extend default_pool /dev/sdc1")
 
         # Shrink volume with devices provided
         self._checkCmd("ssm resize -s-10G /dev/default_pool/vol002 /dev/sdc1 /dev/sde",
@@ -339,8 +378,16 @@ class SsmFunctionCheck(MockSystemDataSource):
         self.assertNotEqual(self.run_data[-2],
             "pool extend default_pool /dev/sdc1")
 
-    def test_create(self):
+        # Test that we do not use devices which are already used in different
+        # pool
+        self.assertRaises(Exception, main.main, "ssm resize -s +1.5T /dev/my_pool/vol001 /dev/sdb /dev/sda")
 
+        # If the device we are able to use can cover the size, then
+        # it will be resized successfully
+        self._checkCmd("ssm resize -s +1.5T /dev/my_pool/vol001 /dev/sdb /dev/sda /dev/sdc1",
+            [], "vol resize /dev/my_pool/vol001 1613595352.0 False");
+
+    def test_create(self):
         #out = MyStdout()
         #sys.stdout = out
 
@@ -432,6 +479,15 @@ class SsmFunctionCheck(MockSystemDataSource):
             '-i 4', '-n myvolume', '/dev/sdc2 /dev/sda'],
             "pool create my_pool 2791728742.40 myvolume 10 4 16 /dev/sdc2 /dev/sda")
         self._cmdEq("pool extend my_pool /dev/sda", -2)
+
+        # Test that we do not use devices which are already used in different
+        # pool
+        self.assertRaises(Exception, main.main, "ssm create -p new_pool /dev/sdc2 /dev/sdc3")
+        self.assertRaises(Exception, main.main, "ssm create -p new_pool /dev/sdc2 /dev/sdc3 /dev/sda")
+        # If the device we are able to use can cover the size, then
+        # it will be created
+        self._checkCmd("ssm create", ['-s 100M', '-p new_pool', '/dev/sdc2 /dev/sdc3 /dev/sda'],
+            "pool create new_pool 102400.00 /dev/sda")
 
         #sys.stdout = out.stdout
 
@@ -619,24 +675,22 @@ class SsmFunctionCheck(MockSystemDataSource):
 
 
 class MyInfo(object):
-    def __init__(self, data=None, force=False, verbose=False, yes=False):
+    def __init__(self, options, data=None):
         self.data = data or {}
-        self.force = force
-        self.verbose = verbose
-        self.yes = yes
+        self.options = options
         self.type = 'backend'
 
     @property
     def y(self):
-        return 'yes' if self.yes else ''
+        return 'yes' if self.options.yes else ''
 
     @property
     def f(self):
-        return 'force' if self.force else ''
+        return 'force' if self.options.force else ''
 
     @property
     def v(self):
-        return 'verbose' if self.verbose else ''
+        return 'verbose' if self.options.verbose else ''
 
     def __iter__(self):
         for item in sorted(self.data.iterkeys()):
@@ -728,8 +782,7 @@ class DevInfo(MyInfo):
 class Pool(main.Storage):
     def __init__(self, *args, **kwargs):
         super(Pool, self).__init__(*args, **kwargs)
-        _default_backend = PoolInfo(force=self.force, verbose=self.verbose,
-                                   yes=self.yes)
+        _default_backend = PoolInfo(options=self.options)
         self._data = {'test': _default_backend}
         self.default = main.Item(_default_backend, main.DEFAULT_DEVICE_POOL)
         self.header = ['Pool', 'Devices', 'Free', 'Used', 'Total']
@@ -740,8 +793,7 @@ class Pool(main.Storage):
 class Volumes(main.Storage):
     def __init__(self, *args, **kwargs):
         super(Volumes, self).__init__(*args, **kwargs)
-        self._data = {'test': VolumeInfo(force=self.force, verbose=self.verbose,
-                             yes=self.yes)}
+        self._data = {'test': VolumeInfo(options=self.options)}
         self.header = ['Volume', 'Volume size', 'FS', 'Free',
                        'Used', 'FS size', 'Type', 'Mount point']
         self.attrs = ['dev_name', 'dev_size', 'fs_type',
@@ -752,8 +804,8 @@ class Volumes(main.Storage):
 class Devices(main.Storage):
     def __init__(self, *args, **kwargs):
         super(Devices, self).__init__(*args, **kwargs)
-        self._data = {'dev': main.DeviceInfo(data=DevInfo().data,
-                        force=self.force, verbose=self.verbose, yes=self.yes)}
+        self._data = {'dev': main.DeviceInfo(options=self.options,
+                                data=DevInfo(options=self.options).data)}
         self.header = ['Device', 'Free', 'Used',
                        'Total', 'Pool', 'Mount point']
         self.attrs = ['dev_name', 'dev_free', 'dev_used', 'dev_size',
