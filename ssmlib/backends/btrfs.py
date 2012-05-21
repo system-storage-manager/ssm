@@ -22,6 +22,7 @@ import os
 import sys
 import datetime
 from ssmlib import misc
+from ssmlib import problem
 
 __all__ = ["BtrfsVolume", "BtrfsPool", "BtrfsDev"]
 
@@ -45,7 +46,8 @@ def get_real_number(string):
 
 class Btrfs(object):
 
-    def __init__(self, data=None, force=False, verbose=False, yes=False):
+    def __init__(self, data=None, force=False, verbose=False,
+                 yes=False, interactive=True):
         self.type = 'btrfs'
         self.data = data or {}
         self.force = force
@@ -58,6 +60,7 @@ class Btrfs(object):
         self._snap = {}
         self._subvolumes = {}
         self._binary = misc.check_binary('btrfs')
+        self.problem = problem.ProblemSet(verbose, False, force, interactive)
 
         if not self._binary:
             return
@@ -130,7 +133,7 @@ class Btrfs(object):
 
     def run_btrfs(self, command):
         if not self._binary:
-            raise Exception("ERROR: Btrfs is not installed on the system!")
+            self.problem.check(self.problem.TOOL_MISSING, 'btrfs')
         if self.verbose:
             command.insert(0, "-v")
         command.insert(0, "btrfs")
@@ -216,7 +219,9 @@ class Btrfs(object):
             if dev['pool_name'] != name:
                 continue
             if 'mount' in self._vol[name]:
-                raise Exception("'{0}' is mounted!".format(name))
+                if self.problem.check(self.problem.FS_MOUNTED,
+                        [name, self._vol[name]['mount']]):
+                    misc.do_umount(self._vol[name]['mount'])
             misc.wipefs(dev['dev_name'], 'btrfs')
 
 
@@ -268,7 +273,8 @@ class BtrfsVolume(Btrfs):
             destination = vol['mount'] + "/" + name
 
         if user_set_size:
-            print "Warning: Btrfs doesn't allow setting a size of a subvolume"
+            self.problem.warn("Btrfs doesn't allow setting a size of " + \
+                              "subvolumes")
 
         command = ['subvolume', 'snapshot', vol['mount'], destination]
         self.run_btrfs(command)
@@ -355,9 +361,9 @@ class BtrfsPool(Btrfs):
         if pool in self._pool:
             vol = None
             if size or raid:
-                print >> sys.stderr, "WARNING: Only name, volume name and " + \
-                    "pool name can be specified when creating btrfs " + \
-                    "subvolume, the rest will be ignored."
+                self.problem.warn("Only name, volume name and pool name " + \
+                                  "can be specified when creating btrfs " + \
+                                  "subvolume, the rest will be ignored")
             if 'mount' not in self._pool[pool]:
                 tmp = misc.temp_mount(
                         "UUID={0}".format(self._pool[pool]['uuid']))
@@ -375,11 +381,10 @@ class BtrfsPool(Btrfs):
             vol = "{0}:{1}".format(pool, name)
         else:
             if len(devs) == 0:
-                raise Exception("No devices specified when creating btrfs" + \
-                                " volume")
+                self.problem.check(self.problem.NO_DEVICES, pool)
             if name:
-                print >> sys.stderr, "WARNING: Creating new pool, (--name " + \
-                                     "{0}) will be ignored!".format(name)
+                self.problem.warn("Creating new pool. Argument (--name " + \
+                                  "{0}) will be ignored!".format(name))
             vol = self._create_filesystem(pool, pool, devs, size, raid)
         return vol
 
