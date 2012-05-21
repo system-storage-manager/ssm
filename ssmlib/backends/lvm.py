@@ -21,6 +21,7 @@ import os
 import stat
 import datetime
 from ssmlib import misc
+from ssmlib import problem
 
 __all__ = ["PvsInfo", "VgsInfo", "LvsInfo"]
 
@@ -48,10 +49,11 @@ class LvmInfo(object):
         self.yes = yes
         self.binary = misc.check_binary('lvm')
         self.default_pool_name = SSM_LVM_DEFAULT_POOL
+        self.problem = problem.ProblemSet()
 
     def run_lvm(self, command, noforce=False):
         if not self.binary:
-            raise Exception("ERROR: Lvm is not installed on the system!")
+            self.problem.check(self.problem.TOOL_MISSING, 'lvm')
         if self.force and not noforce:
             command.insert(1, "-f")
         if self.verbose:
