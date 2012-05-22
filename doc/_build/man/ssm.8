@@ -1,4 +1,4 @@
-.TH "SSM" "8" "May 15, 2012" "0.1-alpha" "System Storage Manager"
+.TH "SSM" "8" "May 22, 2012" "0.1-alpha" "System Storage Manager"
 .SH NAME
 ssm \- System Storage Manager: a single tool to manage your storage
 .
@@ -96,6 +96,13 @@ arguments, but global ssm arguments are propagated to all commands.
 This command creates a new volume with defined parameters. If \fBdevice\fP is
 provided it will be used to create a volume, hence it will be added into the
 \fBpool\fP prior the volume creation (See \fIAdd command section\fP). More devices can be used to create a volume.
+.sp
+If the \fBdevice\fP is already used in the different pool, then \fBssm\fP will
+ask you whether you want to remove it from the original pool. If you decline,
+or the removal fails, then the \fBvolume\fP creation fails if the \fISIZE\fP was
+not provided. On the other hand, if the \fISIZE\fP is provided and some devices
+can not be added to the \fBpool\fP the volume creation might succeed if there
+is enough space in the \fBpool\fP.
 .sp
 \fIPOOL\fP name can be specified as well. If the pool exists new volume will be
 created from that pool (optionally adding \fBdevice\fP into the pool). However
@@ -236,9 +243,11 @@ Remove all pools in the system.
 .sp
 Change size of the \fBvolume\fP and file system. If there is no file system only
 the \fBvolume\fP itself will be resized. You can specify \fBdevice\fP to add into
-the \fBvolume\fP pool prior the resize, but only so many devices will be added
-to cover the new size. It meas, that if the resize will fit into the existing
-pool, no devices will be added into the pool.
+the \fBvolume\fP pool prior the resize. Note that \fBdevice\fP will only be added
+into the pool if the \fBvolume\fP size is going to grow.
+.sp
+If the \fBdevice\fP is already used in the different pool, then \fBssm\fP will
+ask you whether you want to remove it from the original pool.
 .sp
 In some cases file system has to be mounted in order to resize. This will be
 handled by \fBssm\fP automatically by mounting the \fBvolume\fP temporarily.
@@ -436,7 +445,7 @@ Lvm requires \fIphysical device\fP to be created on the device, but with
 .SS Crypt backend
 .sp
 Crypt backend in \fBssm\fP is currently limited to only gather the information
-about encrypted volumes in the system. You can not create or remove encrypted
+about encrypted volumes in the system. You can not create or manage encrypted
 volumes or pools, but it will be extended in the future.
 .SH EXAMPLES
 .sp

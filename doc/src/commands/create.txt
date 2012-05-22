@@ -3,6 +3,13 @@ provided it will be used to create a volume, hence it will be added into the
 **pool** prior the volume creation (See :ref:`Add command section
 <add-command>`). More devices can be used to create a volume.
 
+If the **device** is already used in the different pool, then **ssm** will
+ask you whether you want to remove it from the original pool. If you decline,
+or the removal fails, then the **volume** creation fails if the *SIZE* was
+not provided. On the other hand, if the *SIZE* is provided and some devices
+can not be added to the **pool** the volume creation might succeed if there
+is enough space in the **pool**.
+
 *POOL* name can be specified as well. If the pool exists new volume will be
 created from that pool (optionally adding **device** into the pool). However
 if the *POOL* does not exist **ssm** will attempt to create a new pool with
