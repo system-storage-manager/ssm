@@ -46,13 +46,10 @@ def get_real_number(string):
 
 class Btrfs(object):
 
-    def __init__(self, data=None, force=False, verbose=False,
-                 yes=False, interactive=True):
+    def __init__(self, options, data=None):
         self.type = 'btrfs'
         self.data = data or {}
-        self.force = force
-        self.verbose = verbose
-        self.yes = yes
+        self.options = options
         self.default_pool_name = SSM_BTRFS_DEFAULT_POOL
         self._vol = {}
         self._pool = {}
@@ -60,7 +57,7 @@ class Btrfs(object):
         self._snap = {}
         self._subvolumes = {}
         self._binary = misc.check_binary('btrfs')
-        self.problem = problem.ProblemSet(verbose, False, force, interactive)
+        self.problem = problem.ProblemSet(options)
 
         if not self._binary:
             return
@@ -134,7 +131,7 @@ class Btrfs(object):
     def run_btrfs(self, command):
         if not self._binary:
             self.problem.check(self.problem.TOOL_MISSING, 'btrfs')
-        if self.verbose:
+        if self.options.verbose:
             command.insert(0, "-v")
         command.insert(0, "btrfs")
         misc.run(command, stdout=True)

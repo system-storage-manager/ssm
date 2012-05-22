@@ -45,8 +45,19 @@ try:
 except KeyError:
     SSM_NONINTERACTIVE = not os.isatty(sys.stdout.fileno())
 
+
+class Options(object):
+    def __init__(self):
+        self.interactive = not SSM_NONINTERACTIVE
+        self.verbose = False
+        self.debug = False
+        self.force = False
+        self.yes = False
+        self.config = None
+
+
 # Initialize problem set
-PR = problem.ProblemSet(interactive=not SSM_NONINTERACTIVE)
+PR = problem.ProblemSet(Options())
 
 # Name of the default pool
 try:
@@ -113,8 +124,9 @@ class FsInfo(object):
     each file system should be part of this class
     '''
 
-    def __init__(self, dev, force=False, verbose=False):
+    def __init__(self, dev, options):
         self.data = {}
+        self.options = options
         fstype = misc.get_fs_type(dev)
         if fstype in SUPPORTED_FS and \
            fstype != 'btrfs':
@@ -129,8 +141,6 @@ class FsInfo(object):
             self.xfs_get_info(dev)
         self.fstype = fstype
         self.device = dev
-        self.force = force
-        self.verbose = verbose
         self.mounted = False
 
     def _get_fs_func(self, func, *args, **kwargs):
@@ -168,18 +178,18 @@ class FsInfo(object):
 
     def extN_fsck(self):
         command = ['fsck.{0}'.format(self.fstype), '-f']
-        if self.force:
+        if self.options.force:
             command.append('-f')
-        if self.verbose:
+        if self.options.verbose:
             command.append('-v')
         command.append(self.device)
         return misc.run(command, stdout=True, can_fail=True)[0]
 
     def extN_resize(self, new_size=None):
         command = ['resize2fs', self.device]
-        if self.force:
+        if self.options.force:
             command.insert(1, "-f")
-        if self.verbose:
+        if self.options.verbose:
             command.insert(1, "-p")
         if new_size:
             command.append(new_size)
@@ -220,7 +230,7 @@ class FsInfo(object):
 
     def xfs_fsck(self):
         command = ['xfs_check']
-        if self.verbose:
+        if self.options.verbose:
             command.append('-v')
         command.append(self.device)
         return misc.run(command, stdout=True, can_fail=True)[0]
@@ -251,13 +261,11 @@ class DeviceInfo(object):
     listed as device or not simply by setting 'hide' to True/False.
     '''
 
-    def __init__(self, data=None, force=False, verbose=False, yes=False):
+    def __init__(self, options, data=None):
         self.type = 'device'
         self.data = data or {}
         self.attrs = ['major', 'minor', 'dev_size', 'dev_name']
-        self.force = force
-        self.verbose = verbose
-        self.yes = yes
+        self.options=options
 
         hide_dmnumbers = []
         for name in ['device-mapper', 'sr']:
@@ -306,6 +314,9 @@ class DeviceInfo(object):
             if part > 0:
                 dev['mount'] = "PARTITIONED"
                 dev['type'] = 'disk'
+
+    def set_globals(self, options):
+        self.options=options
 
     def __iter__(self):
         for item in sorted(self.data.iterkeys()):
@@ -372,7 +383,7 @@ class Item(object):
             name = self.data['real_dev']
         else:
             name = self.data['dev_name']
-        fs = FsInfo(name, self.obj.force, self.obj.verbose)
+        fs = FsInfo(name, self.obj.options)
         try:
             fs.mounted = self.data['mount']
         except KeyError:
@@ -395,14 +406,12 @@ class Storage(object):
     for us.
     '''
 
-    def __init__(self, force=False, verbose=False, yes=False):
-        self.force = force
-        self.verbose = verbose
-        self.yes = yes
+    def __init__(self, options):
         self._data = None
         self.header = None
         self.attrs = None
         self.types = None
+        self.set_globals(options)
 
     def __iter__(self):
         for source in self._data.itervalues():
@@ -423,7 +432,7 @@ class Storage(object):
         return None
 
     def reinitialize(self):
-        self.__init__(self.force, self.verbose, self.yes)
+        self.__init__(self.options)
 
     def _apply_prefix_filter(self):
         '''
@@ -450,16 +459,12 @@ class Storage(object):
     def get_backend(self, name):
         return self._data[name]
 
-    def set_globals(self, force, verbose, yes, interactive):
-        self.force = force
-        self.verbose = verbose
-        self.yes = yes
-        self.interactive = interactive
+    def set_globals(self, options):
+        self.options=options
+        if self._data is None:
+            return
         for source in self._data.itervalues():
-            source.force = force
-            source.verbose = verbose
-            source.yes = yes
-            source.interactive = interactive
+            source.options = options
 
     def filesystems(self):
         for item in self:
@@ -538,12 +543,8 @@ class Pool(Storage):
 
     def __init__(self, *args, **kwargs):
         super(Pool, self).__init__(*args, **kwargs)
-        self._data = {'lvm':
-                        lvm.VgsInfo(force=self.force, verbose=self.verbose,
-                        yes=self.yes),
-                     'btrfs': \
-                        btrfs.BtrfsPool(force=self.force, verbose=self.verbose,
-                        yes=self.yes)}
+        self._data = {'lvm': lvm.VgsInfo(options=self.options),
+                     'btrfs': btrfs.BtrfsPool(options=self.options)}
         backend = self.get_backend(SSM_DEFAULT_BACKEND)
         self.default = Item(backend, backend.default_pool_name)
         self.header = ['Pool', 'Type', 'Devices', 'Free', 'Used', 'Total']
@@ -567,8 +568,10 @@ class Devices(Storage):
     def __init__(self, *args, **kwargs):
         super(Devices, self).__init__(*args, **kwargs)
         self._data = {'dev': \
-            DeviceInfo(data=lvm.PvsInfo(btrfs.BtrfsDev().data).data,
-            force=self.force, verbose=self.verbose, yes=self.yes)}
+            DeviceInfo(
+                data=lvm.PvsInfo(options=self.options,
+                    data=btrfs.BtrfsDev(options=self.options).data).data,
+                    options=self.options)}
         self.header = ['Device', 'Free', 'Used',
                        'Total', 'Pool', 'Mount point']
         self.attrs = ['dev_name', 'dev_free', 'dev_used', 'dev_size',
@@ -585,12 +588,9 @@ class Volumes(Storage):
 
     def __init__(self, *args, **kwargs):
         super(Volumes, self).__init__(*args, **kwargs)
-        self._data = {'lvm': lvm.LvsInfo(force=self.force,
-                        verbose=self.verbose, yes=self.yes),
-                     'crypt': crypt.DmCryptVolume(force=self.force,
-                        verbose=self.verbose, yes=self.yes),
-                     'btrfs': btrfs.BtrfsVolume(force=self.force,
-                        verbose=self.verbose, yes=self.yes)}
+        self._data = {'lvm': lvm.LvsInfo(options=self.options),
+                     'crypt': crypt.DmCryptVolume(options=self.options),
+                     'btrfs': btrfs.BtrfsVolume(options=self.options)}
         self.header = ['Volume', 'Pool', 'Volume size', 'FS', 'FS size',
                        'Free', 'Type', 'Mount point']
         self.attrs = ['dev_name', 'pool_name', 'vol_size', 'fs_type',
@@ -608,10 +608,8 @@ class Snapshots(Storage):
 
     def __init__(self, *args, **kwargs):
         super(Snapshots, self).__init__(*args, **kwargs)
-        self._data = {'lvm': lvm.SnapInfo(force=self.force,
-                        verbose=self.verbose, yes=self.yes),
-                     'btrfs': btrfs.BtrfsSnap(force=self.force,
-                        verbose=self.verbose, yes=self.yes)}
+        self._data = {'lvm': lvm.SnapInfo(options=self.options),
+                     'btrfs': btrfs.BtrfsSnap(options=self.options)}
         self.header = ['Snapshot', 'Origin', 'Volume size', 'Size',
                        'Type', 'Mount point']
         self.attrs = ['snap_name', 'origin', 'vol_size', 'snap_size',
@@ -626,43 +624,31 @@ class StorageHandle(object):
     ssm have its appropriate functions here which are then called by argparse.
     '''
 
-    def __init__(self):
-        self.force = False
-        self.verbose = False
-        self.yes = False
-        self.config = None
-        self.interactive = False
+    def __init__(self, options=Options()):
         self._mpoint = None
         self._dev = None
         self._pool = None
         self._volumes = None
         self._snapshots = None
+        self.set_globals(options)
+        self.options = options
 
-    def set_globals(self, force, verbose, yes, config, interactive):
-        '''
-        Set global parameters (force,verbose,yes,config) and propagate it into
-        the backends.
-        '''
-        self.force = force
-        self.verbose = verbose
-        self.yes = yes
-        self.config = config
-        self.interactive = interactive
+    def set_globals(self, options):
         if self._dev:
-            self.dev.set_globals(force, verbose, yes, interactive)
+            self.dev.set_globals(options)
         if self._volumes:
-            self.vol.set_globals(force, verbose, yes, interactive)
+            self.vol.set_globals(options)
         if self._pool:
-            self.pool.set_globals(force, verbose, yes, interactive)
+            self.pool.set_globals(options)
         if self._snapshots:
-            self.snap.set_globals(force, verbose, yes, interactive)
+            self.snap.set_globals(options)
+        self.options = options
 
     @property
     def dev(self):
         if self._dev:
             return self._dev
-        self._dev = Devices(force=self.force, verbose=self.verbose,
-                            yes=self.yes)
+        self._dev = Devices(options=self.options)
         return self._dev
 
     def reinit_dev(self):
@@ -673,7 +659,7 @@ class StorageHandle(object):
     def pool(self):
         if self._pool:
             return self._pool
-        self._pool = Pool(force=self.force, verbose=self.verbose, yes=self.yes)
+        self._pool = Pool(options=self.options)
         return self._pool
 
     def reinit_pool(self):
@@ -684,8 +670,7 @@ class StorageHandle(object):
     def vol(self):
         if self._volumes:
             return self._volumes
-        self._volumes = Volumes(force=self.force, verbose=self.verbose,
-                                yes=self.yes)
+        self._volumes = Volumes(options=self.options)
         return self._volumes
 
     def reinit_vol(self):
@@ -696,8 +681,7 @@ class StorageHandle(object):
     def snap(self):
         if self._snapshots:
             return self._snapshots
-        self._snapshots = Snapshots(force=self.force, verbose=self.verbose,
-                                    yes=self.yes)
+        self._snapshots = Snapshots(options=self.options)
         return self._snapshots
 
     def reinit_snap(self):
@@ -709,12 +693,12 @@ class StorageHandle(object):
         Create a file system 'fstype' on the 'volume'.
         """
         command = ["mkfs.{0}".format(fstype), volume]
-        if self.force:
+        if self.options.force:
             if fstype == 'xfs':
                 command.insert(1, '-f')
             if fstype in EXTN:
                 command.insert(1, '-F')
-        if self.verbose:
+        if self.options.verbose:
             if fstype in EXTN:
                 command.insert(1, '-v')
         misc.run(command, stdout=True)
@@ -1386,7 +1370,8 @@ def main(args=None):
     if args:
         sys.argv = args.split()
 
-    storage = StorageHandle()
+    options = Options()
+    storage = StorageHandle(options)
     ssm_parser = SsmParser(storage)
     args = ssm_parser.parse()
 
@@ -1402,12 +1387,12 @@ def main(args=None):
                       " RAID level!"
                 ssm_parser.parser_create.error(err)
 
-    # Set the interactive option
-    interactive = not SSM_NONINTERACTIVE
+    options.verbose = args.verbose
+    options.force = args.force
 
     #storage.set_globals(args.force, args.verbose, args.yes, args.config)
-    storage.set_globals(args.force, args.verbose, False, None, interactive)
-    PR.set_options(args.verbose, False, args.force, interactive)
+    storage.set_globals(options)
+    PR.set_options(options)
 
     # Register clean-up function on exit
     sys.exitfunc = misc.do_cleanup

@@ -39,24 +39,22 @@ MAX_LVS = 999
 
 class LvmInfo(object):
 
-    def __init__(self, data=None, force=False, verbose=False, yes=False):
+    def __init__(self, options, data=None):
         self.type = 'lvm'
         self.data = data or {}
         self.attrs = []
         self.output = None
-        self.force = force
-        self.verbose = verbose
-        self.yes = yes
+        self.options = options
         self.binary = misc.check_binary('lvm')
         self.default_pool_name = SSM_LVM_DEFAULT_POOL
-        self.problem = problem.ProblemSet()
+        self.problem = problem.ProblemSet(options)
 
     def run_lvm(self, command, noforce=False):
         if not self.binary:
             self.problem.check(self.problem.TOOL_MISSING, 'lvm')
-        if self.force and not noforce:
+        if self.options.force and not noforce:
             command.insert(1, "-f")
-        if self.verbose:
+        if self.options.verbose:
             command.insert(1, "-v")
         command.insert(0, "lvm")
         misc.run(command, stdout=True)

@@ -25,6 +25,8 @@ import time
 import doctest
 import unittest
 
+os.environ['SSM_NONINTERACTIVE'] = "1"
+
 from ssmlib import main
 from ssmlib import misc
 from ssmlib.backends import lvm, crypt, btrfs

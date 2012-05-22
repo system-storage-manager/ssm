@@ -36,13 +36,11 @@ except KeyError:
 
 class DmCryptVolume(object):
 
-    def __init__(self, data=None, force=False, verbose=False, yes=False):
+    def __init__(self, options, data=None):
         self.type = 'crypt'
         self.data = data or {}
         self.output = None
-        self.force = force
-        self.verbose = verbose
-        self.yes = yes
+        self.options = options
         self.mounts = misc.get_mounts('{0}/mapper'.format(DM_DEV_DIR))
         self.default_pool_name = SSM_CRYPT_DEFAULT_POOL
 
