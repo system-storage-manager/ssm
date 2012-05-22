@@ -140,6 +140,15 @@ def get_real_size(size):
             "size \'{}\' argument.".format(size))
 
 
+def get_file_size(path):
+    '''
+    Get size of the file (even block device) by seeking to the end of the
+    file and returning offset. The returning size is in kilobytes.
+    '''
+    with open(path, 'r') as f:
+        return os.lseek(f.fileno(), os.SEEK_SET, os.SEEK_END) / 1024
+
+
 def check_binary(name):
     command = ['which', name]
     if run(command, can_fail=True)[0]:

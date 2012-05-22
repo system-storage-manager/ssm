@@ -736,15 +736,20 @@ class StorageHandle(object):
                     "the appropriate fsck utility")
 
     def _filter_device_list(self, args, have_size=None, new_size=None):
+        '''
+        Filter the args.device list. Only items which have to be added to
+        pool are left in the args.device list. Function returns touple
+        (have_size, devices) where have_size is the size of the devices which
+        will be added to the pool (args.device) plus optional have_size
+        argument. Devices is the list of devices which can be used for volume
+        creation, it means that it does not contain devices which are used
+        in other pools and are not removed from it in this function.
+        '''
 
         if have_size is None:
             have_size = 0.0
         else:
             have_size = float(have_size)
-        if new_size is None:
-            new_size = 0.0
-        else:
-            new_size = float(new_size)
 
         changed = False
 
@@ -752,8 +757,6 @@ class StorageHandle(object):
         args.device = []
 
         for dev in devices[:]:
-            if have_size > new_size:
-                break
             if self.dev[dev] and 'pool_name' in self.dev[dev] and \
                self.dev[dev]['pool_name'] != args.pool.name:
                 if PR.check(PR.DEVICE_USED, [dev, self.dev[dev]['pool_name']]):
@@ -764,18 +767,34 @@ class StorageHandle(object):
                         args.device.append(dev)
                         have_size += float(self.dev[dev]['dev_size'])
                         changed = True
+                    elif new_size is None:
+                        PR.error("Device \'{0}\' can not be used!".format(dev))
                     else:
+                        devices.remove(dev)
                         continue
+                # This is tricky. We are going to create or resize a device
+                # so we might actually need the device for create (or resize)
+                # to finish successfully. Create and resize should check
+                # whether is has enough space and fail if it does not. The
+                # problem is, when the size was not specified, then the result
+                # would be different than what user expected, so we should fail
+                # right away.
+                elif new_size is None:
+                    PR.error("Device \'{0}\' can not be used!".format(dev))
                 else:
+                    devices.remove(dev)
                     continue
             if not self.dev[dev] or 'pool_name' not in self.dev[dev]:
                 args.device.append(dev)
-                have_size += float(self.dev[dev]['dev_size'])
+                if not self.dev[dev]:
+                    have_size += misc.get_file_size(dev)
+                else:
+                    have_size += float(self.dev[dev]['dev_size'])
 
         if changed:
             self.reinit_dev()
 
-        return have_size
+        return have_size, devices
 
 
     def resize(self, args):
@@ -797,17 +816,18 @@ class StorageHandle(object):
             new_size = vol_size + float(args.size)
         else:
             new_size = float(args.size)
+        size_change = new_size - vol_size
 
         fs = True if 'fs_type' in args.volume else False
 
-        have_size = self._filter_device_list(args,
+        have_size, devices = self._filter_device_list(args,
                                              float(args.pool['pool_free']),
                                              new_size)
 
-        if have_size < new_size:
+        if have_size < size_change:
             PR.check(PR.RESIZE_NOT_ENOUGH_SPACE,
                      [args.pool.name, args.volume.name, new_size])
-        else:
+        elif len(args.device) > 0 and new_size > vol_size:
             self.add(args)
 
         if new_size != vol_size:
@@ -840,22 +860,30 @@ class StorageHandle(object):
         else:
             pool_free = 0.0
 
-        have_size = self._filter_device_list(args, pool_free, args.size)
+        have_size, devices = self._filter_device_list(args, pool_free,
+                                                      args.size)
 
         # Currently we do not allow setting subvolume size with btrfs. This
         # should change in the future (quotas maybe) so the check should
         # be removed or pushed to the backend itself.
-        if have_size < args.size and \
+        if args.size and have_size < float(args.size) and \
            not (args.pool.exists() and args.pool.type == 'btrfs'):
             if PR.check(PR.CREATE_NOT_ENOUGH_SPACE,
                         [have_size, args.pool.name]):
                 args.size = None
 
+        # When the pool does not exist and there is no device usable
+        # for creating the new pool, then there is no point of trying to
+        # create a volume, since it would fail in the backend anyway.
+        if not args.pool.exists() and len(devices) == 0:
+            PR.check(PR.NO_DEVICES, args.pool.name)
+
         # If we want btrfs pool and it does not exist yet, we do not
         # want to call add since it would create it. Note that when
         # btrfs pool is created the new btrfs volume is created as well
         # because it is actually the same thing
-        if not (not args.pool.exists() and args.pool.type == 'btrfs'):
+        if len(args.device) > 0 and \
+           not (not args.pool.exists() and args.pool.type == 'btrfs'):
             self.add(args)
 
         if args.raid:
@@ -917,11 +945,13 @@ class StorageHandle(object):
         if args.pool.exists():
             if len(args.device) > 0:
                 args.pool.extend(args.device)
+            else:
+                PR.check(PR.NO_DEVICES, args.pool.name)
         else:
             if len(args.device) > 0:
                 args.pool.new(args.device)
             else:
-                PR.check(PR.ADD_NO_DEVICE, args.pool.name)
+                PR.check(PR.NO_DEVICES, args.pool.name)
 
     def remove(self, args):
         '''
