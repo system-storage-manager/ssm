@@ -19,7 +19,10 @@
 
 import sys
 
-__all__ = ["ProblemSet"]
+__all__ = ["ProblemSet", "SsmError", "GeneralError", "ProgrammingError",
+           "BadEnvVariable", "NotEnoughSpace", "ResizeMatch", "FsNotSpecified",
+           "DeviceUsed", "NoDevices", "ToolMissing", "CanNotRun",
+           "CommandFailed", "UserInterrupted"]
 
 # Define prompt codes
 PROMPT_NONE =           0
@@ -50,6 +53,81 @@ FL_EXIT_ON_YES =        128
 FL_FATAL =              256
 
 
+class SsmError(Exception):
+    '''Base exception class for the ssm.'''
+    def __init__(self, msg, errcode=None):
+        self.msg = msg
+        self.errcode = errcode
+
+    def __str__(self):
+        return repr("Error ({0}): {1}".format(self.errcode, self.msg))
+
+
+class GeneralError(SsmError):
+    def __init__(self, msg, errcode=2001):
+        super(GeneralError, self).__init__(msg, errcode)
+
+
+class ProgrammingError(SsmError):
+    def __init__(self, msg, errcode=2002):
+        super(ProgrammingError, self).__init__(msg, errcode)
+
+
+class FsMounted(SsmError):
+    def __init__(self, msg, errcode=2003):
+        super(FsMounted, self).__init__(msg, errcode)
+
+
+class BadEnvVariable(SsmError):
+    def __init__(self, msg, errcode=2004):
+        super(BadEnvVariable, self).__init__(msg, errcode)
+
+
+class NotEnoughSpace(SsmError):
+    def __init__(self, msg, errcode=2005):
+        super(NotEnoughSpace, self).__init__(msg, errcode)
+
+
+class ResizeMatch(SsmError):
+    def __init__(self, msg, errcode=2006):
+        super(ResizeMatch, self).__init__(msg, errcode)
+
+
+class FsNotSpecified(SsmError):
+    def __init__(self, msg, errcode=2007):
+        super(FsNotSpecified, self).__init__(msg, errcode)
+
+
+class DeviceUsed(SsmError):
+    def __init__(self, msg, errcode=2008):
+        super(DeviceUsed, self).__init__(msg, errcode)
+
+
+class NoDevices(SsmError):
+    def __init__(self, msg, errcode=2009):
+        super(NoDevice, self).__init__(msg, errcode)
+
+
+class ToolMissing(SsmError):
+    def __init__(self, msg, errcode=2010):
+        super(ToolMissing, self).__init__(msg, errcode)
+
+
+class CanNotRun(SsmError):
+    def __init__(self, msg, errcode=2011):
+        super(CanNotRun, self).__init__(msg, errcode)
+
+
+class CommandFailed(SsmError):
+    def __init__(self, msg, errcode=2012):
+        super(CommandFailed, self).__init__(msg, errcode)
+
+
+class UserInterrupted(SsmError):
+    def __init__(self, msg, errcode=2013):
+        super(UserInterrupted, self).__init__(msg, errcode)
+
+
 class ProblemSet(object):
 
     def __init__(self, options):
@@ -62,62 +140,63 @@ class ProblemSet(object):
     def init_problem_set(self):
         self.PROGRAMMING_ERROR = \
             ['Programming error detected! {0}',
-             PROMPT_NONE, FL_FATAL]
+             PROMPT_NONE, FL_FATAL, ProgrammingError]
 
         self.GENERAL_ERROR = \
-            ['ERROR: {0}!', PROMPT_NONE, FL_FATAL]
+            ['{0}!', PROMPT_NONE, FL_FATAL, GeneralError]
 
         self.GENERAL_INFO = \
-            ['INFO: {0}', PROMPT_NONE, FL_NONE]
+            ['Info: {0}', PROMPT_NONE, FL_NONE, None]
 
         self.GENERAL_WARNING = \
-            ['WARNING: {0}!', PROMPT_NONE, FL_NONE]
+            ['Warning: {0}!', PROMPT_NONE, FL_NONE, None]
 
         self.FS_MOUNTED = \
             ['Device \'{0}\' is mounted on \'{1}\'',
-             PROMPT_UNMOUNT, FL_DEFAULT_NO | FL_EXIT_ON_NO]
+             PROMPT_UNMOUNT, FL_DEFAULT_NO | FL_EXIT_ON_NO, FsMounted]
 
         self.BAD_ENV_VARIABLE = \
             ['Environment variable \'{0}\' contains unsupported value \'{1}\'!',
-             PROMPT_SET_DEFAULT, FL_EXIT_ON_NO]
+             PROMPT_SET_DEFAULT, FL_EXIT_ON_NO, BadEnvVariable]
 
         self.RESIZE_NOT_ENOUGH_SPACE = \
             ['There is not enough space in the pool \'{0}\' to grow volume' + \
              ' \'{1}\' to size {2} KB!',
-             PROMPT_NONE, FL_FATAL]
+             PROMPT_NONE, FL_FATAL, NotEnoughSpace]
 
         self.CREATE_NOT_ENOUGH_SPACE = \
             ['Not enough space ({0} KB) in the pool \'{1}\' to create ' + \
-             'volume!', PROMPT_ADJUST, FL_DEFAULT_NO | FL_EXIT_ON_NO]
+             'volume!', PROMPT_ADJUST, FL_DEFAULT_NO | FL_EXIT_ON_NO,
+             NotEnoughSpace]
 
         self.RESIZE_ALREADY_MATCH = \
             ['\'{0}\' is already {1} KB long, there is nothing ' + \
              'to resize!',
-             PROMPT_NONE, FL_FATAL]
+             PROMPT_NONE, FL_FATAL, ResizeMatch]
 
         self.CREATE_MOUNT_NOFS = \
             ['Mount point \'{0}\' specified, but no file system provided!',
-            PROMPT_IGNORE, FL_EXIT_ON_NO]
+            PROMPT_IGNORE, FL_EXIT_ON_NO, FsNotSpecified]
 
         self.DEVICE_USED = \
             ['Device \'{0}\' is already used in the \'{1}\'!',
-             PROMPT_REMOVE, FL_DEFAULT_NO]
+             PROMPT_REMOVE, FL_DEFAULT_NO, DeviceUsed]
 
         self.NO_DEVICES = \
             ['No devices available to use for the \'{0}\' pool!',
-             PROMPT_NONE, FL_FATAL]
+             PROMPT_NONE, FL_FATAL, NoDevices]
 
         self.TOOL_MISSING = \
             ['\'{0}\' is not installed on the system!',
-             PROMPT_NONE, FL_FATAL]
+             PROMPT_NONE, FL_FATAL, ToolMissing]
 
         self.CAN_NOT_RUN = \
             ['Can not run command \'{0}\'',
-             PROMPT_NONE, FL_FATAL]
+             PROMPT_NONE, FL_FATAL, CanNotRun]
 
         self.COMMAND_FAILED = \
             ['Error while running command \'{0}\'',
-             PROMPT_NONE, FL_FATAL]
+             PROMPT_NONE, FL_FATAL, CommandFailed]
 
     def _can_print_message(self, flags):
         if (flags & FL_DEBUG_ONLY):
@@ -165,7 +244,7 @@ class ProblemSet(object):
             return False
         elif ch == 'Q':
             err = "Terminated by user!"
-            raise Exception(err)
+            raise UserInterrupted(err)
 
     def check(self, problem, args):
         if type(args) is not list:
@@ -173,6 +252,7 @@ class ProblemSet(object):
         message = problem[0].format(*args)
         prompt_msg = PROMPT_MSG[problem[1]]
         flags = problem[2]
+        exc = problem[3]
 
         if (flags & FL_DEFAULT_NO):
             res = False
@@ -190,13 +270,18 @@ class ProblemSet(object):
         else:
             print >> sys.stderr
 
-        err = "Unrecoverable problem! Exitting!"
         if (flags & FL_FATAL):
-            raise Exception(err)
+            if exc:
+                raise exc(message)
+            else:
+                raise Exception(message)
 
         if ((flags & FL_EXIT_ON_NO) and (not res)) or \
            ((flags & FL_EXIT_ON_YES) and res):
-            raise Exception(err)
+            if exc:
+                raise exc(message)
+            else:
+                raise Exception(message)
 
         return res
 
