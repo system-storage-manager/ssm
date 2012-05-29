@@ -517,13 +517,15 @@ class Storage(object):
         header = [item for item in misc.compress(self.header, columns)]
         width = sum(misc.compress(alignment, columns)) + 2 * len(header) - 2
 
+        pos = 0
         for i, t in enumerate(self.types):
             if not columns[i]:
                 continue
             if t in (float, int):
-                fmt += "{{:>{0}}}  ".format(alignment[i])
+                fmt += "{{{0}:>{1}}}  ".format(pos, alignment[i])
             else:
-                fmt += "{{:{0}}}  ".format(alignment[i])
+                fmt += "{{{0}:{1}}}  ".format(pos, alignment[i])
+            pos += 1
 
         print "-" * width
         print fmt.format(*tuple(header))
