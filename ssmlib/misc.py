@@ -273,6 +273,7 @@ def get_mounts(regex=".*"):
 
 def get_dmnumber(name):
     reg = re.compile(" {0}$".format(name))
+    dmnumber = None
     with open('/proc/devices', 'r') as f:
         for line in f:
             m = reg.search(line)
