@@ -25,7 +25,6 @@ import time
 import doctest
 import unittest
 import argparse
-import itertools
 from ssmlib import main
 from ssmlib import misc
 

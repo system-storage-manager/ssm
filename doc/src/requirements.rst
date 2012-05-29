@@ -19,7 +19,6 @@ Python modules
 * stat
 * argparse
 * datetime
-* itertools
 * threading
 * subprocess
 

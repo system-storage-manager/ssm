@@ -395,3 +395,73 @@ def run(cmd, show_cmd=False, stdout=False, stderr=True, can_fail=False,
         output = None
 
     return (proc.returncode, output)
+
+
+def chain(*iterables):
+    """
+    Make an iterator that returns elements from the first iterable until
+    it is exhausted, then proceeds to the next iterable, until all of the
+    iterables are exhausted. Used for treating consecutive sequences as a
+    single sequence. This code has been taken from itertools python module.
+
+    chain('ABC', 'DEF') --> A B C D E F
+    """
+    for it in iterables:
+        for element in it:
+            yield element
+
+def izip(*iterables):
+    """
+    Make an iterator that aggregates elements from each of the iterables.
+    Like zip() except that it returns an iterator instead of a list. Used
+    for lock-step iteration over several iterables at a time. This code has
+    been taken from itertools python module.
+
+    izip('ABCD', 'xy') --> Ax By
+    """
+    iterators = map(iter, iterables)
+    while iterators:
+        yield tuple(map(next, iterators))
+
+
+def compress(data, selectors):
+    """
+    Make an iterator that filters elements from data returning only those
+    that have a corresponding element in selectors that evaluates to True.
+    Stops when either the data or selectors iterables has been exhausted.
+    This code has been taken from itertools python module.
+
+    compress('ABCDEF', [1,0,1,0,1,1]) --> A C E F
+    """
+    return (d for d, s in izip(data, selectors) if s)
+
+
+def permutations(iterable, r=None):
+    """
+    Return successive r length permutations of elements in the iterable.
+    This code has been taken from itertools python module.
+
+    permutations('ABCD', 2) --> AB AC AD BA BC BD CA CB CD DA DB DC
+    permutations(range(3)) --> 012 021 102 120 201 210
+    """
+    pool = tuple(iterable)
+    n = len(pool)
+    r = n if r is None else r
+    if r > n:
+        return
+    indices = range(n)
+    cycles = range(n, n-r, -1)
+    yield tuple(pool[i] for i in indices[:r])
+    while n:
+        for i in reversed(range(r)):
+            cycles[i] -= 1
+            if cycles[i] == 0:
+                indices[i:] = indices[i+1:] + indices[i:i+1]
+                cycles[i] = n - i
+            else:
+                j = cycles[i]
+                indices[i], indices[-j] = indices[-j], indices[i]
+                yield tuple(pool[i] for i in indices[:r])
+                break
+        else:
+            return

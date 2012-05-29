@@ -41,8 +41,6 @@ Python modules
 
 * datetime
 
-* itertools
-
 * threading
 
 * subprocess

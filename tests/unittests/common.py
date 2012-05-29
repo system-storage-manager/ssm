@@ -21,7 +21,6 @@ import os
 import sys
 import unittest
 import argparse
-import itertools
 from ssmlib import main
 from ssmlib import misc
 
@@ -104,7 +103,7 @@ class MockSystemDataSource(unittest.TestCase):
 
     def _checkCmd(self, command, args, expected=None):
         self.run_data = []
-        for case in itertools.permutations(args):
+        for case in misc.permutations(args):
             cmd = command + " " + " ".join(case)
             main.main(cmd)
             if expected:

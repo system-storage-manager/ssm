@@ -24,7 +24,6 @@ import stat
 import argparse
 from ssmlib import misc
 from ssmlib import problem
-from itertools import chain, compress
 
 # Import backends
 from ssmlib.backends import lvm, crypt, btrfs
@@ -495,7 +494,7 @@ class Storage(object):
         # values.
         columns = [False] * len(self.attrs)
 
-        for data in chain(iterator, more_data or []):
+        for data in misc.chain(iterator, more_data or []):
             if (cond_func and not cond_func(data)) or 'hide' in data:
                 continue
             line = ()
@@ -515,8 +514,8 @@ class Storage(object):
         if len(lines) == 0:
             return
 
-        header = [item for item in compress(self.header, columns)]
-        width = sum(compress(alignment, columns)) + 2 * len(header) - 2
+        header = [item for item in misc.compress(self.header, columns)]
+        width = sum(misc.compress(alignment, columns)) + 2 * len(header) - 2
 
         for i, t in enumerate(self.types):
             if not columns[i]:
@@ -530,7 +529,7 @@ class Storage(object):
         print fmt.format(*tuple(header))
         print "-" * width
         for line in lines:
-            line = compress(line, columns)
+            line = misc.compress(line, columns)
             print fmt.format(*line)
         print "-" * width
 
