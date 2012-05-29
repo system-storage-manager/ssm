@@ -20,6 +20,7 @@
 import re
 import os
 from ssmlib import misc
+from ssmlib import problem
 
 __all__ = ["DmCryptVolume"]
 
@@ -43,6 +44,7 @@ class DmCryptVolume(object):
         self.options = options
         self.mounts = misc.get_mounts('{0}/mapper'.format(DM_DEV_DIR))
         self.default_pool_name = SSM_CRYPT_DEFAULT_POOL
+        self.problem = problem.ProblemSet(options)
 
         if not misc.check_binary('dmsetup') or \
            not misc.check_binary('cryptsetup'):
@@ -76,6 +78,12 @@ class DmCryptVolume(object):
             self._parse_cryptsetup(command, dm)
             self.data[dm['dev_name']] = dm
 
+    def run_cryptsetup(self, command, stdout=True):
+        if not self._binary:
+            self.problem.check(self.problem.TOOL_MISSING, 'cryptsetup')
+        command.insert(0, "cryptsetup")
+        return misc.run(command, stdout=stdout)
+
     def _parse_cryptsetup(self, cmd, dm):
         self.output = misc.run(cmd, stderr=False)[1]
         for line in self.output.split("\n"):
@@ -90,13 +98,13 @@ class DmCryptVolume(object):
                 dm['crypt_device'] = array[1]
 
     def remove(self, dm):
-        command = ['cryptsetup', 'remove', dm]
-        misc.run(command, stdout=True)
+        command = ['remove', dm]
+        self.run_cryptsetup(command)
 
     def resize(self, dm, size, resize_fs=True):
         size = str(int(size) * 2)
-        command = ['cryptsetup', 'resize', '--size', size, dm]
-        misc.run(command, stdout=True)
+        command = ['resize', '--size', size, dm]
+        self.run_cryptsetup(command)
 
     def __iter__(self):
         for item in sorted(self.data.iterkeys()):
