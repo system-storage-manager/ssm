@@ -225,7 +225,7 @@ class BtrfsFunctionCheck(MockSystemDataSource):
 
         # Create snapshot verbose
         self._checkCmd("ssm -v snapshot --name new_snap", ['default_pool'],
-            "btrfs -v subvolume snapshot /mnt/mount /mnt/mount/new_snap")
+            "btrfs subvolume snapshot /mnt/mount /mnt/mount/new_snap")
 
     def test_btrfs_resize(self):
         # Generate some storage data
@@ -371,7 +371,7 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         # Add verbose
         self._checkCmd("ssm -v add", ['--pool {0}'.format(default_pool),
             '/dev/sda /dev/sdc1'],
-            "btrfs -v device add /dev/sda /dev/sdc1 /tmp/mount")
+            "btrfs device add /dev/sda /dev/sdc1 /tmp/mount")
 
         # Add two devices into existing pool (one of the devices already is in
         # the pool

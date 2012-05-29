@@ -131,10 +131,8 @@ class Btrfs(object):
     def run_btrfs(self, command):
         if not self._binary:
             self.problem.check(self.problem.TOOL_MISSING, 'btrfs')
-        if self.options.verbose:
-            command.insert(0, "-v")
         command.insert(0, "btrfs")
-        misc.run(command, stdout=True)
+        return misc.run(command, stdout=True)
 
     def _fill_subvolumes(self):
         if not self._binary:
@@ -304,6 +302,9 @@ class BtrfsPool(Btrfs):
         if not devs:
             raise Exception("To create btrfs volume, some devices must be " + \
                             "provided")
+        self._binary = misc.check_binary('mkfs.btrfs')
+        if not self._binary:
+            self.problem.check(self.problem.TOOL_MISSING, 'mkfs.btrfs')
         command = ['mkfs.btrfs', '-L', name]
 
         if raid:
