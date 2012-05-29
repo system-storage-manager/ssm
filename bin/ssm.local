@@ -1,0 +1,27 @@
+#!/bin/bash
+#
+# (C)2012 Red Hat, Inc., Lukas Czerner <lczerner@redhat.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# ssm.local - Invoke system storage manager with the local version of modules
+
+
+# Add ../ directory to the PYTHONPATH so when python starts looking for
+# modules it will be the first location to search as we want local modules
+# to be imported
+SSMDIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )/../" && pwd )"
+export PYTHONPATH="$SSMDIR"
+
+python $SSMDIR/bin/ssm $@

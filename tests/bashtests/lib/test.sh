@@ -16,7 +16,7 @@ TZ=UTC
 unset CDPATH
 export HERE=$(pwd)
 export PATH=$HERE/lib:$PATH
-export SSM="$HERE/../../bin/ssm"
+export SSM="$HERE/../../bin/ssm.local"
 chmod +x $SSM
 
 # grab some common utilities
