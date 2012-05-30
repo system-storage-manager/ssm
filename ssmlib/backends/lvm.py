@@ -224,14 +224,16 @@ class LvsInfo(LvmInfo):
         super(LvsInfo, self).__init__(*args, **kwargs)
         command = ["lvm", "lvs", "--separator", "|", "--noheadings",
                 "--nosuffix", "--units", "k", "-o",
-                "vg_name,lv_size,stripes,stripesize,segtype,lv_path,origin"]
+                "vg_name,lv_size,stripes,stripesize,segtype,lv_name,origin"]
         self.attrs = ['pool_name', 'vol_size', 'stripes',
-                'stripesize', 'type', 'dev_name', 'origin']
+                'stripesize', 'type', 'lv_name', 'origin']
         self.handle_fs = True
         self.mounts = misc.get_mounts('{0}/mapper'.format(DM_DEV_DIR))
         self._parse_data(command)
 
     def _fill_aditional_info(self, lv):
+        lv['dev_name'] = "{0}/{1}/{2}".format(DM_DEV_DIR, lv['pool_name'],
+                                              lv['lv_name'])
         if lv['origin']:
             lv['hide'] = True
         lv['real_dev'] = misc.get_real_device(lv['dev_name'])
@@ -306,9 +308,9 @@ class SnapInfo(LvmInfo):
         command = ["lvm", "lvs", "--separator", "|", "--noheadings",
                 "--nosuffix", "--units", "k", "-o",
                 "vg_name,lv_size,stripes,stripesize,segtype," + \
-                "lv_path,origin,snap_percent"]
+                "lv_name,origin,snap_percent"]
         self.attrs = ['pool_name', 'vol_size', 'stripes',
-                'stripesize', 'type', 'dev_name', 'origin', 'snap_size']
+                'stripesize', 'type', 'lv_name', 'origin', 'snap_size']
         self.handle_fs = True
         self.mounts = misc.get_mounts('{0}/mapper'.format(DM_DEV_DIR))
         self._parse_data(command)
@@ -323,6 +325,8 @@ class SnapInfo(LvmInfo):
         return misc.get_real_device(row['dev_name'])
 
     def _fill_aditional_info(self, snap):
+        snap['dev_name'] = "{0}/{1}/{2}".format(DM_DEV_DIR, snap['pool_name'],
+                                              snap['lv_name'])
         snap['hide'] = False
         snap['snap_name'] = snap['dev_name']
         snap['snap_path'] = snap['dev_name']
