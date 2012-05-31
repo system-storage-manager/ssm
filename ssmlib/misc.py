@@ -383,13 +383,17 @@ def run(cmd, show_cmd=False, stdout=False, stderr=True, can_fail=False,
 
     err_msg = "ERROR running command: \"{0}\"".format(" ".join(cmd))
     if proc.returncode != 0 and show_cmd:
-        if output:
-            print output, error
+        if output is not None:
+            print output
+        if error is not None:
+            print error
         print >> sys.stderr, err_msg
 
     if proc.returncode != 0 and not can_fail:
-        if output:
-            print output, error
+        if output is not None:
+            print output
+        if error is not None:
+            print error
         raise RuntimeError(err_msg)
 
     if not return_stdout:

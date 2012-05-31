@@ -58,12 +58,12 @@ def run_bash_tests():
             os.remove(bad_file)
         ret, out = misc.run(['./' + script], stdout=False, can_fail=True)
         if ret:
-            print "[FAILED]"
+            print "\033[91m[FAILED]\033[0m"
             failed.append(script)
             with open(bad_file, 'w') as f:
                 f.write(out)
         else:
-            print "[PASSED]"
+            print "\033[92m[PASSED]\033[0m"
             passed.append(script)
     t1 = time.time() - t0
     print "Ran {0} tests in {1} seconds.".format(count, round(t1, 2))
