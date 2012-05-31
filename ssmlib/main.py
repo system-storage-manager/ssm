@@ -740,6 +740,10 @@ class StorageHandle(object):
         Create a file system 'fstype' on the 'volume'.
         """
         command = ["mkfs.{0}".format(fstype), volume]
+        if not misc.check_binary(command[0]):
+            PR.warn("\'{0}\' tool does not exist. ".format(command[0]) + \
+                    "File system will not be created")
+            return 1
         if self.options.force:
             if fstype == 'xfs':
                 command.insert(1, '-f')
@@ -748,7 +752,7 @@ class StorageHandle(object):
         if self.options.verbose:
             if fstype in EXTN:
                 command.insert(1, '-v')
-        misc.run(command, stdout=True)
+        return misc.run(command, stdout=True)[0]
 
     def _do_mount(self, volume, options=None):
         try:
@@ -946,7 +950,8 @@ class StorageHandle(object):
                                   name=args.name)
 
         if args.fstype and args.pool.type != 'btrfs':
-            self._create_fs(args.fstype, lvname)
+            if self._create_fs(args.fstype, lvname) != 0:
+                self._mpoint = None
         if self._mpoint:
             self.reinit_vol()
             self._do_mount(self.vol[lvname])

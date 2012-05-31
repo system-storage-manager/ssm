@@ -74,8 +74,10 @@ class MockSystemDataSource(unittest.TestCase):
         main.StorageHandle.check_create_item = self.mock_check_create_item
         self.get_mounts_orig = misc.get_mounts
         misc.get_mounts = self.mock_get_mounts
-        misc.temp_mount = self.mock_temp_mount
         self.temp_mount_orig = misc.temp_mount
+        misc.temp_mount = self.mock_temp_mount
+        self.check_binary_orig = misc.check_binary
+        misc.check_binary = self.mock_check_binary
         self.dev_data = {}
         self.vol_data = {}
         self.pool_data = {}
@@ -96,6 +98,7 @@ class MockSystemDataSource(unittest.TestCase):
         misc.get_mounts = self.get_mounts_orig
         main.StorageHandle.check_create_item = self.check_create_item_orig
         misc.temp_mount = self.temp_mount_orig
+        misc.check_binary = self.check_binary_orig
         main.SSM_NONINTERACTIVE = False
 
     def _cmdEq(self, out, index=-1):
@@ -115,6 +118,9 @@ class MockSystemDataSource(unittest.TestCase):
         if 'return_stdout' in kwargs and not kwargs['return_stdout']:
             output = None
         return (0, output)
+
+    def mock_check_binary(self, name):
+        return True
 
     def mock_temp_mount(self, device, options=None):
         return "/tmp/mount"
