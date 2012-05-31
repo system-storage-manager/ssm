@@ -406,7 +406,7 @@ class Storage(object):
     '''
 
     def __init__(self, options):
-        self._data = None
+        self._data = {}
         self.header = None
         self.attrs = None
         self.types = None
@@ -544,8 +544,18 @@ class Pool(Storage):
 
     def __init__(self, *args, **kwargs):
         super(Pool, self).__init__(*args, **kwargs)
-        self._data = {'lvm': lvm.VgsInfo(options=self.options),
-                     'btrfs': btrfs.BtrfsPool(options=self.options)}
+
+        try:
+            self._data['lvm'] = lvm.VgsInfo(options=self.options)
+        except RuntimeError, err:
+            PR.warn(err)
+            PR.warn("Can not get information about LVM pools")
+        try:
+            self._data['btrfs'] = btrfs.BtrfsPool(options=self.options)
+        except RuntimeError, err:
+            PR.warn(err)
+            PR.warn("Can not get information about btrfs pools")
+
         backend = self.get_backend(SSM_DEFAULT_BACKEND)
         self.default = Item(backend, backend.default_pool_name)
         self.header = ['Pool', 'Type', 'Devices', 'Free', 'Used', 'Total']
@@ -568,11 +578,23 @@ class Devices(Storage):
 
     def __init__(self, *args, **kwargs):
         super(Devices, self).__init__(*args, **kwargs)
-        self._data = {'dev': \
-            DeviceInfo(
-                data=lvm.PvsInfo(options=self.options,
-                    data=btrfs.BtrfsDev(options=self.options).data).data,
-                    options=self.options)}
+
+        try:
+            my_lvm = lvm.PvsInfo(options=self.options)
+        except RuntimeError, err:
+            PR.warn(err)
+            PR.warn("Can not get information about LVM physical volumes")
+        try:
+            my_btrfs = btrfs.BtrfsDev(options=self.options)
+        except RuntimeError, err:
+            PR.warn(err)
+            PR.warn("Can not get information about btrfs devices")
+            my_btrfs = Struct()
+            my_btrfs.data = {}
+
+        self._data['dev'] = DeviceInfo(data=dict(my_lvm.data.items() + \
+                                            my_btrfs.data.items()),
+                                       options=self.options)
         self.header = ['Device', 'Free', 'Used',
                        'Total', 'Pool', 'Mount point']
         self.attrs = ['dev_name', 'dev_free', 'dev_used', 'dev_size',
@@ -589,9 +611,23 @@ class Volumes(Storage):
 
     def __init__(self, *args, **kwargs):
         super(Volumes, self).__init__(*args, **kwargs)
-        self._data = {'lvm': lvm.LvsInfo(options=self.options),
-                     'crypt': crypt.DmCryptVolume(options=self.options),
-                     'btrfs': btrfs.BtrfsVolume(options=self.options)}
+
+        try:
+            self._data['lvm'] = lvm.LvsInfo(options=self.options)
+        except RuntimeError, err:
+            PR.warn(err)
+            PR.warn("Can not get information about LVM volumes")
+        try:
+            self._data['crypt'] = crypt.DmCryptVolume(options=self.options)
+        except RuntimeError, err:
+            PR.warn(err)
+            PR.warn("Can not get information about crypt volumes")
+        try:
+            self._data['btrfs'] = btrfs.BtrfsVolume(options=self.options)
+        except RuntimeError, err:
+            PR.warn(err)
+            PR.warn("Can not get information about btrfs volumes")
+
         self.header = ['Volume', 'Pool', 'Volume size', 'FS', 'FS size',
                        'Free', 'Type', 'Mount point']
         self.attrs = ['dev_name', 'pool_name', 'vol_size', 'fs_type',
@@ -609,8 +645,18 @@ class Snapshots(Storage):
 
     def __init__(self, *args, **kwargs):
         super(Snapshots, self).__init__(*args, **kwargs)
-        self._data = {'lvm': lvm.SnapInfo(options=self.options),
-                     'btrfs': btrfs.BtrfsSnap(options=self.options)}
+
+        try:
+            self._data['lvm'] = lvm.SnapInfo(options=self.options)
+        except RuntimeError, err:
+            PR.warn(err)
+            PR.warn("Can not get information about LVM snapshots")
+        try:
+            self._data['btrfs'] = btrfs.BtrfsSnap(options=self.options)
+        except RuntimeError, err:
+            PR.warn(err)
+            PR.warn("Can not get information about btrfs snapshots")
+
         self.header = ['Snapshot', 'Origin', 'Volume size', 'Size',
                        'Type', 'Mount point']
         self.attrs = ['snap_name', 'origin', 'vol_size', 'snap_size',
