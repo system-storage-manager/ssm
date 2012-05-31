@@ -1030,7 +1030,7 @@ class StorageHandle(object):
                                  "to achieve by removing " +
                                  "{0}!".format(item.name))
                 item.remove()
-            except (Exception, RuntimeError), ex:
+            except (RuntimeError, problem.SsmError), ex:
                 PR.info("Unable to remove '{0}'".format(item.name))
                 ret = False
         return ret

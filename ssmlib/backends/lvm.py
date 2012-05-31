@@ -278,6 +278,11 @@ class LvsInfo(LvmInfo):
             return lv
 
     def remove(self, lv):
+        vol = self[lv]
+        if 'mount' in vol:
+            if self.problem.check(self.problem.FS_MOUNTED,
+                                  [vol['dev_name'], vol['mount']]):
+                misc.do_umount(vol['mount'])
         lv = self._get_dev_name(lv)
         command = ['lvremove', lv]
         self.run_lvm(command)
