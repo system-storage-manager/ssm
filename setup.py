@@ -1,9 +1,11 @@
 import os
 import sys
 from distutils.core import setup
+from ssmlib import main
 
-VERSION='0.1-alpha'
+VERSION=main.VERSION
 DOC_BUILD='doc/_build/'
+NAME="system-storage-manager"
 
 if sys.version < '2.6':
     print "Python version 2.6 or higher is required " + \
@@ -11,7 +13,7 @@ if sys.version < '2.6':
     sys.exit(1)
 
 setup(
-    name='system-storage-manager',
+    name=NAME,
     version=VERSION,
     author='Lukas Czerner',
     author_email='lczerner@redhat.com',
@@ -27,7 +29,7 @@ setup(
               'datetime', 're', 'os', 'sys', 'stat'],
     platforms=['Linux'],
     data_files=[('/usr/share/man/man8', ['doc/_build/man/ssm.8']),
-                ('/usr/share/doc/ssm-{0}'.format(VERSION),
+                ('/usr/share/doc/{0}-{1}'.format(NAME, VERSION),
                     ['README', 'CHANGES', 'COPYING', 'AUTHORS', 'INSTALL'])]
 )
 

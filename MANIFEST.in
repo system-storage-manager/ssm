@@ -1,1 +1,1 @@
-include COPYING CHANGES
+include bin/ssm.local

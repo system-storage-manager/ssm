@@ -26,7 +26,6 @@ endif
 
 clean:
 	@python setup.py clean
-	@make clean -C doc
 	rm -f MANIFEST
 	find . -\( -name "*.pyc" -o -name '*.pyo' -o -name "*~" -\) -delete
 

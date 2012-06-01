@@ -34,6 +34,9 @@ SUPPORTED_BACKENDS = ['lvm', 'btrfs']
 SUPPORTED_RAID = ['0', '1', '10']
 os.environ['LC_NUMERIC'] = "C"
 
+# If you change this please change doc/conf.py as well
+VERSION='0.2'
+
 # Should the script be run in interactive or non interactive mode ?
 try:
     SSM_NONINTERACTIVE = os.environ['SSM_NONINTERACTIVE']
@@ -1264,7 +1267,7 @@ class SsmParser(object):
                 epilog='''To get help for particular command please specify
                        \'%(prog)s [command] -h\'.''')
         parser.add_argument('--version', action='version',
-                version='%(prog)s 0.1-alpha')
+                version='%(prog)s {0}'.format(VERSION))
         parser.add_argument('-v', '--verbose',
                 help="Show aditional information while executing.",
                 action="store_true")
