@@ -11,12 +11,13 @@ if sys.version < '2.6':
     sys.exit(1)
 
 setup(
-    name='SystemStorageManager',
+    name='system-storage-manager',
     version=VERSION,
     author='Lukas Czerner',
     author_email='lczerner@redhat.com',
     maintainer='Lukas Czerner',
     maintainer_email='lczerner@redhat.com',
+    url='http://storagemanager.sf.net',
     packages=['ssmlib', 'ssmlib.backends'],
     scripts=['bin/ssm'],
     description='System Storage Manager - A single tool to manage your storage',
