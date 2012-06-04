@@ -32,7 +32,7 @@ EXTN = ['ext2', 'ext3', 'ext4']
 SUPPORTED_FS = ['xfs', 'btrfs'] + EXTN
 SUPPORTED_BACKENDS = ['lvm', 'btrfs']
 SUPPORTED_RAID = ['0', '1', '10']
-os.environ['LANG'] = "C"
+os.environ['LC_NUMERIC'] = "C"
 
 # Should the script be run in interactive or non interactive mode ?
 try:
