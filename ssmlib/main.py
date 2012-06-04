@@ -127,8 +127,7 @@ class FsInfo(object):
         self.data = {}
         self.options = options
         fstype = misc.get_fs_type(dev)
-        if fstype in SUPPORTED_FS and \
-           fstype != 'btrfs':
+        if fstype not in [None, 'btrfs']:
             self.data['fs_type'] = fstype
         else:
             return

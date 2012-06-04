@@ -193,7 +193,7 @@ def do_cleanup():
 
 
 def get_fs_type(dev):
-    command = ["blkid", "-c", "/dev/null", "-s", "TYPE", dev]
+    command = ["blkid", "-p", "-u", "filesystem", "-s", "TYPE", dev]
     output = run(command, can_fail=True)[1]
 
     m = re.search(r"TYPE=\"(?P<fstyp>\w+)\"", output)
@@ -201,7 +201,7 @@ def get_fs_type(dev):
         fstype = m.group('fstyp')
         return fstype
     else:
-        return ""
+        return None
 
 
 def get_real_device(device):
