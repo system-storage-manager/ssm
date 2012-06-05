@@ -28,6 +28,6 @@ setup(
     platforms=['Linux'],
     data_files=[('/usr/share/man/man8', ['doc/_build/man/ssm.8']),
                 ('/usr/share/doc/ssm-{0}'.format(VERSION),
-                    ['README', 'TODO', 'CHANGES', 'COPYING'])]
+                    ['README', 'CHANGES', 'COPYING', 'AUTHORS', 'INSTALL'])]
 )
 
