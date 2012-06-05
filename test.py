@@ -103,7 +103,8 @@ def quick_test():
 if __name__ == '__main__':
     quick_test()
     if not os.geteuid() == 0:
-        sys.exit("\nRoot privileges required to run more tests!\n")
+        print "\nRoot privileges required to run more tests!\n"
+        sys.exit(0)
     print "[+] Running bash tests"
     result = run_bash_tests()
     sys.exit(result)
