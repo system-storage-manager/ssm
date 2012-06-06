@@ -470,3 +470,33 @@ def permutations(iterable, r=None):
                 break
         else:
             return
+
+
+def terminal_size(default=(25, 80)):
+    """
+    Returns running terminal size. If size cannot be found out default size
+    is returned.
+    """
+    def _ioctl_GWINSZ(fd):
+        try:
+            import fcntl, termios, struct
+            cr = struct.unpack('hh', fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234'))
+        except:
+            return None
+        return cr
+
+    cr = _ioctl_GWINSZ(0) or _ioctl_GWINSZ(1) or _ioctl_GWINSZ(2)
+    if not cr:
+        try:
+            fd = os.open(os.ctermid(), os.O_RDONLY)
+            cr = _ioctl_GWINSZ(fd)
+            os.close(fd)
+        except:
+            pass
+    if not cr:
+        try:
+            env = os.environ
+            cr = (env['LINES'], env['COLUMNS'])
+        except:
+            cr = (25, 80)
+    return int(cr[1]), int(cr[0])
