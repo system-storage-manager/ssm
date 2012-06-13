@@ -96,8 +96,11 @@ def quick_test():
             raise_on_error=True, optionflags=doctest_flags)
     print "[+] Running unittests"
     test_loader = unittest.TestLoader()
-    tests = test_loader.discover('tests/unittests')
-    test_runner = unittest.runner.TextTestRunner(verbosity=2, failfast=True)
+    tests_lvm = test_loader.loadTestsFromModule(test_lvm)
+    tests_btrfs = test_loader.loadTestsFromModule(test_btrfs)
+    tests_ssm = test_loader.loadTestsFromModule(test_ssm)
+    tests = unittest.TestSuite([tests_lvm, tests_btrfs, tests_ssm])
+    test_runner = unittest.TextTestRunner(verbosity=2)
     test_runner.run(tests)
 
 

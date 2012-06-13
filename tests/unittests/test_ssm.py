@@ -42,11 +42,11 @@ class SimpleStorageHandleSanityCheck(BaseStorageHandleInit):
         self.assertFalse(self.storage.options.yes)
         self.assertFalse(self.storage.options.interactive)
         self.assertFalse(self.storage.options.debug)
-        self.assertIsNone(self.storage.options.config)
-        self.assertIsNone(self.storage._mpoint)
-        self.assertIsNone(self.storage._dev)
-        self.assertIsNone(self.storage._pool)
-        self.assertIsNone(self.storage._volumes)
+        self.assert_(self.storage.options.config is None)
+        self.assert_(self.storage._mpoint is None)
+        self.assert_(self.storage._dev is None)
+        self.assert_(self.storage._pool is None)
+        self.assert_(self.storage._volumes is None)
 
     def test_create_fs(self):
         options = main.Options()
@@ -134,9 +134,9 @@ class StorageHandleSanityCheck(BaseStorageHandleInit):
         self.assertEqual(self.storage.options.config, "my_config")
 
         # Check if we have right instances
-        self.assertIsInstance(self.dev, main.Devices)
-        self.assertIsInstance(self.vol, main.Volumes)
-        self.assertIsInstance(self.pool, main.Pool)
+        self.assert_(isinstance(self.dev, main.Devices))
+        self.assert_(isinstance(self.vol, main.Volumes))
+        self.assert_(isinstance(self.pool, main.Pool))
 
         # Check initial variables
         for source in self.dev, self.vol, self.pool:
@@ -146,14 +146,14 @@ class StorageHandleSanityCheck(BaseStorageHandleInit):
             self.assertTrue(source.options.interactive)
             self.assertTrue(source.options.debug)
             self.assertEqual(source.options.config, "my_config")
-            self.assertIsInstance(source._data, dict)
-            self.assertGreater(len(source._data), 0)
-            self.assertIsInstance(source.header, list)
-            self.assertGreater(len(source.header), 0)
-            self.assertIsInstance(source.attrs, list)
-            self.assertGreater(len(source.attrs), 0)
-            self.assertIsInstance(source.types, list)
-            self.assertGreater(len(source.types), 0)
+            self.assert_(isinstance(source._data, dict))
+            self.assert_(len(source._data) >  0)
+            self.assert_(isinstance(source.header, list))
+            self.assert_(len(source.header) >  0)
+            self.assert_(isinstance(source.attrs, list))
+            self.assert_(len(source.attrs) >  0)
+            self.assert_(isinstance(source.types, list))
+            self.assert_(len(source.types) >  0)
             for item  in source._data.itervalues():
                 self.assertTrue(item.options.force)
                 self.assertTrue(item.options.verbose)
@@ -187,14 +187,14 @@ class StorageHandleSanityCheck(BaseStorageHandleInit):
             self.assertFalse(source.options.interactive)
             self.assertFalse(source.options.debug)
             self.assertEqual(source.options.config, "my_config")
-            self.assertIsInstance(source._data, dict)
-            self.assertGreater(len(source._data), 0)
-            self.assertIsInstance(source.header, list)
-            self.assertGreater(len(source.header), 0)
-            self.assertIsInstance(source.attrs, list)
-            self.assertGreater(len(source.attrs), 0)
-            self.assertIsInstance(source.types, list)
-            self.assertGreater(len(source.types), 0)
+            self.assert_(isinstance(source._data, dict))
+            self.assert_(len(source._data) > 0)
+            self.assert_(isinstance(source.header, list))
+            self.assert_(len(source.header) > 0)
+            self.assert_(isinstance(source.attrs, list))
+            self.assert_(len(source.attrs) > 0)
+            self.assert_(isinstance(source.types, list))
+            self.assert_(len(source.types) > 0)
             for item  in source._data.itervalues():
                 self.assertFalse(item.options.force)
                 self.assertFalse(item.options.verbose)
@@ -206,42 +206,42 @@ class StorageHandleSanityCheck(BaseStorageHandleInit):
     def test_backend_generic_methods(self):
         for source in self.dev, self.vol, self.pool:
             obj = dir(source)
-            self.assertIn("__iter__", obj)
-            self.assertIn("__contains__", obj)
-            self.assertIn("__getitem__", obj)
-            self.assertIn("filesystems", obj)
-            self.assertIn("ptable", obj)
-            self.assertIn("set_globals", obj)
+            self.assert_("__iter__" in obj)
+            self.assert_("__contains__" in obj)
+            self.assert_("__getitem__" in obj)
+            self.assert_("filesystems" in obj)
+            self.assert_("ptable" in obj)
+            self.assert_("set_globals" in obj)
             # Variables
-            self.assertIn("_data", obj)
-            self.assertIn("header", obj)
-            self.assertIn("attrs", obj)
-            self.assertIn("types", obj)
+            self.assert_("_data" in obj)
+            self.assert_("header" in obj)
+            self.assert_("attrs" in obj)
+            self.assert_("types" in obj)
             for bknd in source._data.itervalues():
                 obj = dir(bknd)
-                self.assertIn("__iter__", obj)
-                self.assertIn("__getitem__", obj)
-                self.assertIn("__init__", obj)
+                self.assert_("__iter__" in obj)
+                self.assert_("__getitem__" in obj)
+                self.assert_("__init__" in obj)
                 # Variables
-                self.assertIn("type", obj)
-                self.assertIn("options", obj)
+                self.assert_("type" in obj)
+                self.assert_("options" in obj)
                 # DeviceInfo does not need default_pool_name
                 if bknd.type != "device":
-                    self.assertIn("default_pool_name", obj)
+                    self.assert_("default_pool_name" in obj)
 
     def test_volumes_specific_methods(self):
         for bknd in self.vol._data.itervalues():
             obj = dir(bknd)
-            self.assertIn("remove", obj)
+            self.assert_("remove" in obj)
 
     def test_pool_specific_methods(self):
         for bknd in self.pool._data.itervalues():
             obj = dir(bknd)
-            self.assertIn("reduce", obj)
-            self.assertIn("remove", obj)
-            self.assertIn("create", obj)
-            self.assertIn("new", obj)
-            self.assertIn("extend", obj)
+            self.assert_("reduce" in obj)
+            self.assert_("remove" in obj)
+            self.assert_("create" in obj)
+            self.assert_("new" in obj)
+            self.assert_("extend" in obj)
 
 
 class SimpleSsmSanityCheck(unittest.TestCase):
@@ -251,39 +251,39 @@ class SimpleSsmSanityCheck(unittest.TestCase):
 
     def test_existing_objects(self):
         obj = dir(main)
-        self.assertIn("StorageHandle", obj)
-        self.assertIn("FsInfo", obj)
-        self.assertIn("DeviceInfo", obj)
-        self.assertIn("SUPPORTED_FS", obj)
-        self.assertIn("DEFAULT_DEVICE_POOL", obj)
-        self.assertIn("Storage", obj)
-        self.assertIn("Pool", obj)
-        self.assertIn("Devices", obj)
-        self.assertIn("Volumes", obj)
+        self.assert_("StorageHandle" in obj)
+        self.assert_("FsInfo" in obj)
+        self.assert_("DeviceInfo" in obj)
+        self.assert_("SUPPORTED_FS" in obj)
+        self.assert_("DEFAULT_DEVICE_POOL" in obj)
+        self.assert_("Storage" in obj)
+        self.assert_("Pool" in obj)
+        self.assert_("Devices" in obj)
+        self.assert_("Volumes" in obj)
 
     def test_fsinfo_methods(self):
         obj = dir(main.FsInfo)
-        self.assertIn("extN_get_info", obj)
-        self.assertIn("extN_fsck", obj)
+        self.assert_("extN_get_info" in obj)
+        self.assert_("extN_fsck" in obj)
         for fs in set(main.SUPPORTED_FS) - set(main.EXTN):
             if fs == 'btrfs':
                 continue
-            self.assertIn("{0}_get_info".format(fs), obj)
-            self.assertIn("{0}_fsck".format(fs), obj)
+            self.assert_("{0}_get_info".format(fs) in obj)
+            self.assert_("{0}_fsck".format(fs) in obj)
 
     def test_storage_handle_methods(self):
         obj = dir(main.StorageHandle)
-        self.assertIn("dev", obj)
-        self.assertIn("pool", obj)
-        self.assertIn("vol", obj)
-        self.assertIn("check", obj)
-        self.assertIn("resize", obj)
-        self.assertIn("create", obj)
-        self.assertIn("list", obj)
-        self.assertIn("add", obj)
-        self.assertIn("remove", obj)
-        self.assertIn("snapshot", obj)
-        self.assertIn("set_globals", obj)
+        self.assert_("dev" in obj)
+        self.assert_("pool" in obj)
+        self.assert_("vol" in obj)
+        self.assert_("check" in obj)
+        self.assert_("resize" in obj)
+        self.assert_("create" in obj)
+        self.assert_("list" in obj)
+        self.assert_("add" in obj)
+        self.assert_("remove" in obj)
+        self.assert_("snapshot" in obj)
+        self.assert_("set_globals" in obj)
 
 
 class SsmFunctionCheck(MockSystemDataSource):
