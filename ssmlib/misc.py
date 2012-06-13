@@ -43,9 +43,9 @@ def get_unit_size(string):
     >>> get_unit_size("g")
     1073741824
     >>> get_unit_size("T")
-    1099511627776
+    1099511627776...
     >>> get_unit_size("p")
-    1125899906842624
+    1125899906842624...
     >>> get_unit_size("")
     0
     >>> get_unit_size("H")
@@ -137,7 +137,7 @@ def get_real_size(size):
         if mult:
             return '{0}{1:.2f}'.format(sign, float(size[:-1]) * mult)
     raise Exception("Not supported unit in the " + \
-            "size \'{}\' argument.".format(size))
+            "size \'{0}\' argument.".format(size))
 
 
 def get_file_size(path):
