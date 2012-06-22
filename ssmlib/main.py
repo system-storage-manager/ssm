@@ -162,6 +162,8 @@ class FsInfo(object):
 
     def extN_get_info(self, dev):
         command = ["tune2fs", "-l", dev]
+        if not misc.check_binary(command[0]):
+            return
         output = misc.run(command)[1]
 
         for line in output.split("\n")[1:]:
@@ -179,6 +181,10 @@ class FsInfo(object):
 
     def extN_fsck(self):
         command = ['fsck.{0}'.format(self.fstype), '-f']
+        if not misc.check_binary(command[0]):
+            PR.warn("\'{0}\' tool does not exist. ".format(command[0]) + \
+                    "File system will not be checked")
+            return 1
         if self.options.force:
             command.append('-f')
         if self.options.verbose:
@@ -188,6 +194,10 @@ class FsInfo(object):
 
     def extN_resize(self, new_size=None):
         command = ['resize2fs', self.device]
+        if not misc.check_binary(command[0]):
+            PR.warn("\'{0}\' tool does not exist. ".format(command[0]) + \
+                    "File system will not be resized")
+            return 1
         if self.options.force:
             command.insert(1, "-f")
         if self.options.verbose:
@@ -211,6 +221,8 @@ class FsInfo(object):
 
     def xfs_get_info(self, dev):
         command = ["xfs_db", "-r", "-c", "sb", "-c", "print", dev]
+        if not misc.check_binary(command[0]):
+            return
         output = misc.run(command)[1]
 
         for line in output.split("\n")[1:]:
@@ -231,6 +243,10 @@ class FsInfo(object):
 
     def xfs_fsck(self):
         command = ['xfs_check']
+        if not misc.check_binary(command[0]):
+            PR.warn("\'{0}\' tool does not exist. ".format(command[0]) + \
+                    "File system will not be checked")
+            return 1
         if self.options.verbose:
             command.append('-v')
         command.append(self.device)
@@ -238,6 +254,10 @@ class FsInfo(object):
 
     def xfs_resize(self, new_size=None):
         command = ['xfs_growfs', self.device]
+        if not misc.check_binary(command[0]):
+            PR.warn("\'{0}\' tool does not exist. ".format(command[0]) + \
+                    "File system will not be resized")
+            return 1
         if new_size:
             command.insert(1, ['-D', new_size + 'K'])
         if not self.mounted:
