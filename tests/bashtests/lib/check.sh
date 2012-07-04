@@ -339,4 +339,25 @@ btrfs_vol_field()
 	}
 }
 
+list_table()
+{
+    # $1=ssm_list_output, $2=unique_value_in_desired_row
+    # if some argument is defined as none = it is not checked
+    # arguments might be regular expressions
+    # size from ssm output is converted from 200.00 MB to 200.00MB
+    row=($(echo "$1" | sed 's/\(.[0-9][0-9]\).\(.B\)/\1\2/g' | \
+        sed 's/\( \+\)/ /g' | grep "$2 "))
+    counter=1
+    for arg in "${@:3}"; do
+        if [ $arg != "none" ] ; then
+            if [[ ! ${row[$counter]} =~ $arg ]] ; then
+                echo "table_list_failed: field=$(($counter + 1)), \
+                    actual=${row[$counter]}, expected=$arg"
+                exit 1
+            fi
+        fi
+        counter=$(($counter + 1))
+    done
+}
+
 "$@"
