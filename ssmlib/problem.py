@@ -105,7 +105,7 @@ class DeviceUsed(SsmError):
 
 class NoDevices(SsmError):
     def __init__(self, msg, errcode=2009):
-        super(NoDevice, self).__init__(msg, errcode)
+        super(NoDevices, self).__init__(msg, errcode)
 
 
 class ToolMissing(SsmError):
