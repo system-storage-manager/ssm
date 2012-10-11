@@ -20,6 +20,7 @@ export test_description='Exercise ssm add'
 
 . lib/test
 
+export COLUMNS=1024
 DEV_COUNT=10
 aux prepare_devs $DEV_COUNT 10
 TEST_DEVS=$(cat DEVICES)
@@ -30,10 +31,25 @@ export SSM_NONINTERACTIVE='1'
 pool1=$vg2
 pool2=$vg3
 
+ssm list dev
+exit
+
 # Create default pool with all devices at once
 ssm add $TEST_DEVS
 check vg_field $SSM_LVM_DEFAULT_POOL pv_count $DEV_COUNT
+ssm_output=$(ssm list dev)
+check list_table "$ssm_output" $dev1 none none 8.00MB $vg1
+check list_table "$ssm_output" $dev2 none none 8.00MB $vg1
+check list_table "$ssm_output" $dev3 none none 8.00MB $vg1
+check list_table "$ssm_output" $dev4 none none 8.00MB $vg1
+check list_table "$ssm_output" $dev5 none none 8.00MB $vg1
+check list_table "$ssm_output" $dev6 none none 8.00MB $vg1
+check list_table "$ssm_output" $dev7 none none 8.00MB $vg1
+check list_table "$ssm_output" $dev8 none none 8.00MB $vg1
+check list_table "$ssm_output" $dev9 none none 8.00MB $vg1
+check list_table "$ssm_output" $dev10 none none 8.00MB $vg1
 ssm -f remove $SSM_LVM_DEFAULT_POOL
+
 
 # Specify backend
 ssm -b lvm add $TEST_DEVS
@@ -50,8 +66,30 @@ ssm add $TEST_DEVS
 check vg_field $SSM_LVM_DEFAULT_POOL pv_count $DEV_COUNT
 ssm remove $dev1 $dev2 $dev3
 check vg_field $SSM_LVM_DEFAULT_POOL pv_count $(($DEV_COUNT-3))
+ssm_output=$(ssm list dev)
+check list_table "$ssm_output" $dev1 9.90MB
+check list_table "$ssm_output" $dev2 9.90MB
+check list_table "$ssm_output" $dev3 9.90MB
+check list_table "$ssm_output" $dev4 none none 8.00MB $vg1
+check list_table "$ssm_output" $dev5 none none 8.00MB $vg1
+check list_table "$ssm_output" $dev6 none none 8.00MB $vg1
+check list_table "$ssm_output" $dev7 none none 8.00MB $vg1
+check list_table "$ssm_output" $dev8 none none 8.00MB $vg1
+check list_table "$ssm_output" $dev9 none none 8.00MB $vg1
+check list_table "$ssm_output" $dev10 none none 8.00MB $vg1
 ssm remove $dev4
 check vg_field $SSM_LVM_DEFAULT_POOL pv_count $(($DEV_COUNT-4))
+ssm_output=$(ssm list dev)
+check list_table "$ssm_output" $dev1 9.90MB
+check list_table "$ssm_output" $dev2 9.90MB
+check list_table "$ssm_output" $dev3 9.90MB
+check list_table "$ssm_output" $dev4 9.90MB
+check list_table "$ssm_output" $dev5 none none 8.00MB $vg1
+check list_table "$ssm_output" $dev6 none none 8.00MB $vg1
+check list_table "$ssm_output" $dev7 none none 8.00MB $vg1
+check list_table "$ssm_output" $dev8 none none 8.00MB $vg1
+check list_table "$ssm_output" $dev9 none none 8.00MB $vg1
+check list_table "$ssm_output" $dev10 none none 8.00MB $vg1
 ssm -f remove $SSM_LVM_DEFAULT_POOL
 
 # Create default pool by adding devices one per a call
@@ -74,6 +112,17 @@ not ssm add $dev10 $pool2 -p $pool1
 check vg_field $SSM_LVM_DEFAULT_POOL pv_count 3
 check vg_field $pool1 pv_count 4
 check vg_field $pool2 pv_count 3
+ssm_output=$(ssm list dev)
+check list_table "$ssm_output" $dev1 none none 8.00MB $vg2
+check list_table "$ssm_output" $dev2 none none 8.00MB $vg2
+check list_table "$ssm_output" $dev3 none none 8.00MB $vg2
+check list_table "$ssm_output" $dev4 none none 8.00MB $vg1
+check list_table "$ssm_output" $dev5 none none 8.00MB $vg1
+check list_table "$ssm_output" $dev6 none none 8.00MB $vg1
+check list_table "$ssm_output" $dev7 none none 8.00MB $vg3
+check list_table "$ssm_output" $dev8 none none 8.00MB $vg3
+check list_table "$ssm_output" $dev9 none none 8.00MB $vg2
+check list_table "$ssm_output" $dev10 none none 8.00MB $vg3
 ssm -f remove --all
 
 ssm add --help
