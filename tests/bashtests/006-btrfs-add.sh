@@ -40,6 +40,7 @@ pool2=$vg3
 # Create default pool with all devices at once
 ssm add $TEST_DEVS
 check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count $DEV_COUNT
+check list_table "$(ssm list pool)" $SSM_BTRFS_DEFAULT_POOL btrfs 10 none none none
 ssm -f remove $SSM_BTRFS_DEFAULT_POOL
 
 # Specify backend
@@ -57,10 +58,12 @@ export SSM_DEFAULT_BACKEND='btrfs'
 
 ssm add $TEST_DEVS
 check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count $DEV_COUNT
+check list_table "$(ssm list pool)" $SSM_BTRFS_DEFAULT_POOL btrfs $DEV_COUNT none none none
 ssm remove $dev1 $dev2 $dev3
 check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count $(($DEV_COUNT-3))
 ssm remove $dev4
 check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count $(($DEV_COUNT-4))
+check list_table "$(ssm list pool)" $SSM_BTRFS_DEFAULT_POOL btrfs $(($DEV_COUNT-4)) none none none
 ssm -f remove $SSM_BTRFS_DEFAULT_POOL
 
 # Create default pool by adding devices one per a call
@@ -84,6 +87,11 @@ not ssm add $dev10 $pool2 -p $pool1
 check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count 3
 check btrfs_fs_field $pool1 dev_count 4
 check btrfs_fs_field $pool2 dev_count 3
+ssm_output=$(ssm list pool)
+check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL btrfs 3 none none none
+check list_table "$ssm_output" $pool1 btrfs 4 none none none
+check list_table "$ssm_output" $pool2 btrfs 3 none none none
+
 ssm -f remove --all
 
 ssm add --help
