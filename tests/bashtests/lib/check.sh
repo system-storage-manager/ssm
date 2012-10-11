@@ -346,7 +346,10 @@ list_table()
     # arguments might be regular expressions
     # size from ssm output is converted from 200.00 MB to 200.00MB
     row=($(echo "$1" | sed 's/\(.[0-9][0-9]\).\(.B\)/\1\2/g' | \
-        sed 's/\( \+\)/ /g' | grep "$2 "))
+        sed 's/\( \+\)/ /g' | grep "$2 ")) || {
+            echo "table_list_failed: pattern \"$2\" not found"
+            exit 1
+        }
     counter=1
     for arg in "${@:3}"; do
         if [ $arg != "none" ] ; then
