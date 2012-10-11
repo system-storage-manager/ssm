@@ -41,12 +41,18 @@ pool2=$vg3
 ssm create $TEST_DEVS $mnt1
 not ssm create $TEST_DEVS -p $pool1
 check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count $DEV_COUNT
+check list_table "$(ssm list vol)" $SSM_BTRFS_DEFAULT_POOL $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt1
 ssm create
 ssm create --name $vol1
 ssm create --name $vol1/$vol2
 check btrfs_vol_field $mnt1 vol_count 3
 check btrfs_vol_field $mnt1 subvolume $vol1
 check btrfs_vol_field $mnt1 subvolume $vol1/$vol2
+ssm_output=$(ssm list vol)
+check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt1
+check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:....-..-..-....... $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt1/....-..-..-.......
+check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$vol1 $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt1/$vol1
+check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$vol1/$vol2 $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt1/$vol1/$vol2
 umount $mnt1
 ssm -f remove $SSM_BTRFS_DEFAULT_POOL
 
@@ -91,7 +97,6 @@ ssm create --pool $pool1 $dev2 $dev3 $mnt2
 ssm create --name $vol2 --pool $pool1
 # Also try to mount the subvolume somewhere else
 ssm create --name $vol3 --pool $pool1 $mnt3
-ssm list
 check btrfs_fs_field $pool1 dev_count 2
 check btrfs_vol_field $mnt2 subvolume $vol2
 check btrfs_vol_field $mnt1 vol_count 1
@@ -105,13 +110,36 @@ ssm create --name $vol1 --pool $pool2 $dev9 $mnt4
 check btrfs_fs_field $pool2 dev_count 6
 check btrfs_vol_field $mnt2 subvolume $vol2
 check btrfs_vol_field $mnt4 subvolume $vol1
-ssm list
 check btrfs_vol_field $mnt2 vol_count 2
 check btrfs_vol_field $mnt4 vol_count 2
 not check btrfs_vol_field $mnt2 subvolume $vol1
+ssm_output=$(ssm list vol)
+check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt1
+check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$vol1 $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt1/$vol1
+check list_table "$ssm_output" $pool1 $pool1 none btrfs none none btrfs $mnt2
+check list_table "$ssm_output" $pool1:$vol2 $pool1 none btrfs none none btrfs $mnt2/$vol2
+check list_table "$ssm_output" $pool1:$vol3 $pool1 none btrfs none none btrfs $mnt3
+check list_table "$ssm_output" $pool2 $pool2 none btrfs none none btrfs
+check list_table "$ssm_output" $pool2:$vol1 $pool2 none btrfs none none btrfs $mnt4
+check list_table "$ssm_output" $pool2:$vol2 $pool2 none btrfs none none btrfs
+ssm_output=$(ssm list pool)
+check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL btrfs 1 none none none
+check list_table "$ssm_output" $pool1 btrfs 2 none none none
+check list_table "$ssm_output" $pool2 btrfs 6 none none none
 
 umount_all
 ssm -f remove $SSM_BTRFS_DEFAULT_POOL $pool1 $pool2
+
+# Create root mounted soubvolume and then another subvolume mounted at different mount point
+ssm create $TEST_DEVS $mnt1
+ssm create --name $vol1 $mnt2
+ssm create --name $vol1/$vol2 $mnt3
+ssm_output=$(ssm list vol)
+check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt1
+check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$vol1 $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt2
+check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$vol1/$vol2 $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt3
+umount_all
+ssm  -f remove $SSM_BTRFS_DEFAULT_POOL
 
 ssm create --help
 
