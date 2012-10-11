@@ -65,9 +65,7 @@ check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count $DEV_COUNT
 ssm -f remove $TEST_DEVS
 btrfs filesystem show
 ssm list
-#check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count 1
-# For some reasong btrfs can not remove more devices.
-check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count 2
+check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count 1
 ssm -f remove --all
 
 # Remove multiple things
