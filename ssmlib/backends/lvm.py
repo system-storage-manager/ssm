@@ -124,7 +124,7 @@ class VgsInfo(LvmInfo):
             except OSError:
                 pass
             return name
-        raise Exception("ERROR: could not find proper lvname")
+        self.problem.error("Can not find proper lvname!")
 
     def reduce(self, vg, device):
         command = ['vgreduce', vg, device]
@@ -170,17 +170,20 @@ class VgsInfo(LvmInfo):
 
         if raid:
             if raid['level'] == '0':
+                if not raid['stripesize']:
+                    raid['stripesize'] = "64"
                 if not raid['stripes'] and len(devices) > 0:
                     raid['stripes'] = str(len(devices))
-                elif not raid['stripes'] and raid['stripesize']:
-                    raise Exception("Number of stripes should be defined!")
+                if not raid['stripes']:
+                    self.problem.error("Devices or number of " + \
+                                       "stripes should be defined!")
                 if raid['stripesize']:
                     command.extend(['-I', raid['stripesize']])
                 if raid['stripes']:
                     command.extend(['-i', raid['stripes']])
             else:
-                raise Exception("Lvm backed currently does not support " + \
-                                "RAID level {0}".format(raid['level']))
+                self.problem.not_supported("RAID level {0}".format(raid['level']) + \
+                                           " with \"lvm\" backend")
 
         command.extend(devices)
         self.run_lvm(command, noforce=True)
