@@ -963,13 +963,21 @@ class StorageHandle(object):
 
         fs = True if 'fs_type' in args.volume else False
 
+        # Backend might not support pooling
+        if args.pool is None:
+            pool_free = None
+            pool_name = "none"
+        else:
+            pool_free = float(args.pool['pool_free'])
+            pool_name = args.pool.name
+
         have_size, devices = self._filter_device_list(args,
-                                             float(args.pool['pool_free']),
+                                             pool_free,
                                              new_size)
 
         if have_size < size_change:
             PR.check(PR.RESIZE_NOT_ENOUGH_SPACE,
-                     [args.pool.name, args.volume.name, new_size])
+                     [pool_name, args.volume.name, new_size])
         elif len(args.device) > 0 and new_size > vol_size:
             self.add(args)
 
