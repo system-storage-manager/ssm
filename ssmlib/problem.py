@@ -22,7 +22,7 @@ import sys
 __all__ = ["ProblemSet", "SsmError", "GeneralError", "ProgrammingError",
            "BadEnvVariable", "NotEnoughSpace", "ResizeMatch", "FsNotSpecified",
            "DeviceUsed", "NoDevices", "ToolMissing", "CanNotRun",
-           "CommandFailed", "UserInterrupted"]
+           "CommandFailed", "UserInterrupted", "NotSupported"]
 
 # Define prompt codes
 PROMPT_NONE =           0
@@ -128,6 +128,11 @@ class UserInterrupted(SsmError):
         super(UserInterrupted, self).__init__(msg, errcode)
 
 
+class NotSupported(SsmError):
+    def __init__(self, msg, errcode=2014):
+        super(NotSupported, self).__init__(msg, errcode)
+
+
 class ProblemSet(object):
 
     def __init__(self, options):
@@ -197,6 +202,11 @@ class ProblemSet(object):
         self.COMMAND_FAILED = \
             ['Error while running command \'{0}\'',
              PROMPT_NONE, FL_FATAL, CommandFailed]
+
+        self.NOT_SUPPORTED = \
+            ['{0} is not supported!',
+             PROMPT_NONE, FL_FATAL, NotSupported]
+
 
     def _can_print_message(self, flags):
         if (flags & FL_DEBUG_ONLY):
@@ -293,3 +303,7 @@ class ProblemSet(object):
 
     def warn(self, args):
         self.check(self.GENERAL_WARNING, args)
+
+    def not_supported(self, args):
+        self.check(self.NOT_SUPPORTED, args)
+
