@@ -9,3 +9,4 @@ Back-ends
     btrfs
     lvm
     crypt
+    md

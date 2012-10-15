@@ -26,7 +26,7 @@ from ssmlib import misc
 from ssmlib import problem
 
 # Import backends
-from ssmlib.backends import lvm, crypt, btrfs
+from ssmlib.backends import lvm, crypt, btrfs, md
 
 EXTN = ['ext2', 'ext3', 'ext4']
 SUPPORTED_FS = ['xfs', 'btrfs'] + EXTN
@@ -289,7 +289,7 @@ class DeviceInfo(object):
         self.options=options
 
         hide_dmnumbers = []
-        for name in ['device-mapper', 'sr']:
+        for name in ['device-mapper', 'sr', 'md']:
             hide_dmnumbers.append(misc.get_dmnumber(name))
 
         mounts = misc.get_mounts('/dev/')
@@ -670,9 +670,17 @@ class Devices(Storage):
             PR.warn("Can not get information about btrfs devices")
             my_btrfs = Struct()
             my_btrfs.data = {}
+        try:
+            my_md = md.MdRaidDevice(options=self.options)
+        except RuntimeError, err:
+            PR.warn(err)
+            PR.warn("Can not get information about MD devices")
+            my_md = Struct()
+            my_md.data = {}
 
         self._data['dev'] = DeviceInfo(data=dict(my_lvm.data.items() + \
-                                            my_btrfs.data.items()),
+                                                 my_btrfs.data.items() + \
+                                                 my_md.data.items()),
                                        options=self.options)
         self.header = ['Device', 'Free', 'Used',
                        'Total', 'Pool', 'Mount point']
@@ -706,6 +714,11 @@ class Volumes(Storage):
         except RuntimeError, err:
             PR.warn(err)
             PR.warn("Can not get information about btrfs volumes")
+        try:
+            self._data['md'] = md.MdRaidVolume(options=self.options)
+        except RuntimeError, err:
+            PR.warn(err)
+            PR.warn("Can not get information about md raid volumes")
 
         self.header = ['Volume', 'Pool', 'Volume size', 'FS', 'FS size',
                        'Free', 'Type', 'Mount point']

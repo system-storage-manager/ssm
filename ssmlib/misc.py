@@ -140,6 +140,10 @@ def get_real_size(size):
             "size \'{0}\' argument.".format(size))
 
 
+def get_slaves(devname):
+    return ["/dev/{0}".format(fname) for fname in os.listdir("/sys/block/{0}/slaves".format(devname))]
+
+
 def get_file_size(path):
     '''
     Get size of the file (even block device) by seeking to the end of the

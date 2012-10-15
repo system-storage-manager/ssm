@@ -1,4 +1,4 @@
-.TH "SSM" "8" "June 05, 2012" "0.2" "System Storage Manager"
+.TH "SSM" "8" "October 16, 2012" "0.2" "System Storage Manager"
 .SH NAME
 ssm \- System Storage Manager: a single tool to manage your storage
 .
@@ -447,6 +447,11 @@ Lvm requires \fIphysical device\fP to be created on the device, but with
 Crypt backend in \fBssm\fP is currently limited to only gather the information
 about encrypted volumes in the system. You can not create or manage encrypted
 volumes or pools, but it will be extended in the future.
+.SS MD backend
+.sp
+MD backend in \fBssm\fP is currently limited to only gather the information
+about MD volumes in the system. You can not create or manage MD volumes
+or pools, but it will be extended in the future.
 .SH EXAMPLES
 .sp
 \fBList\fP system storage information:
