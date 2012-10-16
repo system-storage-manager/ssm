@@ -28,6 +28,7 @@ import subprocess
 # before exiting
 TMP_MOUNTED = []
 
+
 def get_unit_size(string):
     """
     Check the last character of the string for the unit and return the unit
@@ -51,6 +52,7 @@ def get_unit_size(string):
     >>> get_unit_size("H")
     0
     """
+
     mult = 0
     units = {'B': 1, 'K': 2 ** 10, 'M': 2 ** 20, 'G': 2 ** 30, 'T': 2 ** 40,
              'P': 2 ** 50}
@@ -419,6 +421,7 @@ def chain(*iterables):
         for element in it:
             yield element
 
+
 def izip(*iterables):
     """
     Make an iterator that aggregates elements from each of the iterables.
@@ -483,7 +486,9 @@ def terminal_size(default=(25, 80)):
     """
     def _ioctl_GWINSZ(fd):
         try:
-            import fcntl, termios, struct
+            import fcntl
+            import termios
+            import struct
             cr = struct.unpack('hh', fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234'))
         except:
             return None

@@ -35,7 +35,7 @@ SUPPORTED_RAID = ['0', '1', '10']
 os.environ['LC_NUMERIC'] = "C"
 
 # If you change this please change doc/conf.py as well
-VERSION='0.2'
+VERSION = '0.2'
 
 # Should the script be run in interactive or non interactive mode ?
 try:
@@ -49,6 +49,11 @@ except KeyError:
 
 
 class Options(object):
+    '''
+    Structure that contains option setting allowing it to be
+    passed between parts of ssm.
+    '''
+
     def __init__(self):
         self.interactive = not SSM_NONINTERACTIVE
         self.verbose = False
@@ -286,7 +291,7 @@ class DeviceInfo(object):
         self.type = 'device'
         self.data = data or {}
         self.attrs = ['major', 'minor', 'dev_size', 'dev_name']
-        self.options=options
+        self.options = options
 
         hide_dmnumbers = []
         for name in ['device-mapper', 'sr', 'md']:
@@ -1375,7 +1380,7 @@ class SsmParser(object):
                 action="store_true")
         parser.add_argument('-b', '--backend', nargs=1,
                 metavar='BACKEND',
-                help="Choose backend to use. Currently you can choose from " +\
+                help="Choose backend to use. Currently you can choose from " + \
                      "({0}).".format(",".join(SUPPORTED_BACKENDS)),
                 choices = SUPPORTED_BACKENDS,
                 action=SetBackend)

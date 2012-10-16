@@ -56,6 +56,7 @@ FL_FATAL =              256
 class SsmError(Exception):
     '''Base exception class for the ssm.'''
     def __init__(self, msg, errcode=None):
+        super(SsmError, self).__init__()
         self.msg = msg
         self.errcode = errcode
 
@@ -210,7 +211,7 @@ class ProblemSet(object):
 
     def _can_print_message(self, flags):
         if (flags & FL_DEBUG_ONLY):
-            return self.debug
+            return self.options.debug
         elif (flags & FL_VERBOSE_ONLY):
             return self.options.verbose
         else:
@@ -306,4 +307,3 @@ class ProblemSet(object):
 
     def not_supported(self, args):
         self.check(self.NOT_SUPPORTED, args)
-

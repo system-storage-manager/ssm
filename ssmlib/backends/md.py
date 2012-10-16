@@ -53,7 +53,7 @@ class MdRaid(object):
         self.problem = problem.ProblemSet(options)
         self.mounts = misc.get_mounts('/dev/md')
 
-        mdnumber = misc.get_dmnumber("md");
+        mdnumber = misc.get_dmnumber("md")
 
         for line in misc.get_partitions():
             devname = '/dev/' + line[3]
@@ -61,14 +61,14 @@ class MdRaid(object):
             if line[0] == mdnumber:
                 self._vol[devname] = self.get_volume_data(devname)
                 for dev in misc.get_slaves(os.path.basename(devname)):
-                    self._dev[dev] = self.get_device_data(dev, devsize);
+                    self._dev[dev] = self.get_device_data(dev, devsize)
 
     def get_device_data(self, devname, devsize):
         data = {}
         data['dev_name'] = devname
         data['hide'] = False
         command = [MDADM, '--examine', devname]
-        output = misc.run(command, stderr=False)[1].split("\n");
+        output = misc.run(command, stderr=False)[1].split("\n")
         for line in output:
             array = line.split(":")
             if len(array) < 2:
@@ -76,7 +76,7 @@ class MdRaid(object):
             item = array[0].strip()
             if item == "Name":
                 data['pool_name'] = SSM_DM_DEFAULT_POOL
-            data['dev_used'] = data['dev_size'] = devsize;
+            data['dev_used'] = data['dev_size'] = devsize
             data['dev_free'] = 0
         return data
 
@@ -99,7 +99,7 @@ class MdRaid(object):
             elif item == 'Array Size':
                 data['vol_size'] = value.split()[0]
             elif item == 'Total Devices':
-                data['total_devices'] = value;
+                data['total_devices'] = value
 
         return data
 
@@ -119,6 +119,7 @@ class MdRaid(object):
 
 
 class MdRaidVolume(MdRaid):
+
     def __init__(self, *args, **kwargs):
         super(MdRaidVolume, self).__init__(*args, **kwargs)
         if self.data:
@@ -135,6 +136,7 @@ class MdRaidVolume(MdRaid):
 
 
 class MdRaidDevice(MdRaid):
+
     def __init__(self, *args, **kwargs):
         super(MdRaidDevice, self).__init__(*args, **kwargs)
         if self.data:
