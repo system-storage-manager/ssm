@@ -29,6 +29,9 @@ clean:
 	rm -f MANIFEST
 	find . -\( -name "*.pyc" -o -name '*.pyo' -o -name "*~" -\) -delete
 
+git-clean:
+	git clean -f
+
 install:
 	@python setup.py install
 
@@ -50,4 +53,4 @@ source: test clean
 test:
 	@python test.py
 
-release: check_vars authors log spec docs source
+release: git-clean clean check_vars authors log spec docs source
