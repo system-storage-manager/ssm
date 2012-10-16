@@ -1,3 +1,21 @@
+* Tue Oct 16 2012 Lukas Czerner <lczerner@redhat.com> - 0.3
+- Add regression test suite to the source distribution (Lukas Czerner)
+- ssm: Fix various stylistic problems (Lukas Czerner)
+- lvm: Use problem interface instead of plain Exception (Lukas Czerner)
+- main: Fix resizing device without pool (Lukas Czerner)
+- md: Add new md backend (Lukas Czerner)
+- problem: Add new not_supported flag (Lukas Czerner)
+- ssm: fix typo in problem interface (Tomas Racek)
+- tests: add bashtest for checking ssm lvm output (Tom Marek)
+- Change priority of ways to gahter terminal dimensions (Tom Marek)
+- tests: Add ssm output check for bash testing into check.sh (Tom Marek)
+- Avoid executing non existing fs specific tools (Tom Marek)
+- Allow non root users to show --help for subcommands (Tom Marek)
+- Fix of unittests in python2.6 (Tom Marek)
+- Fix of doctests in python2.6 (Tom Marek)
+- Wrap table lines when terminal width is too small (Lukas Czerner)
+
+
 * Tue Jun  5 2012 Lukas Czerner <lczerner@redhat.com> - 0.2
 - Update version to 0.2 (Lukas Czerner)
 - Add Makefile to the project (Lukas Czerner)
