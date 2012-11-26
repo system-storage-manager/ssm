@@ -31,9 +31,9 @@ from ssmlib import misc
 from tests.unittests.common import *
 
 class SimpleStorageHandleSanityCheck(BaseStorageHandleInit):
-    '''
+    """
     Simple sanity ckecks for StorageHandle class and some of its methods.
-    '''
+    """
 
     def test_constructor(self):
         # Check initial variables
@@ -99,10 +99,10 @@ class SimpleStorageHandleSanityCheck(BaseStorageHandleInit):
 
 
 class StorageHandleSanityCheck(BaseStorageHandleInit):
-    '''
+    """
     Sanity checks for StorageHandle class and other classes used via
     StorageHandle class.
-    '''
+    """
 
     def setUp(self):
         super(StorageHandleSanityCheck, self).setUp()
@@ -245,9 +245,9 @@ class StorageHandleSanityCheck(BaseStorageHandleInit):
 
 
 class SimpleSsmSanityCheck(unittest.TestCase):
-    '''
+    """
     Simple sanity check of ssm module.
-    '''
+    """
 
     def test_existing_objects(self):
         obj = dir(main)
@@ -287,9 +287,9 @@ class SimpleSsmSanityCheck(unittest.TestCase):
 
 
 class SsmFunctionCheck(MockSystemDataSource):
-    '''
+    """
     Prepare data for ssm function check.
-    '''
+    """
 
     def setUp(self):
         super(SsmFunctionCheck, self).setUp()

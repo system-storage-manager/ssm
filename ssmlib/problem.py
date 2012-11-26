@@ -54,7 +54,7 @@ FL_FATAL =              256
 
 
 class SsmError(Exception):
-    '''Base exception class for the ssm.'''
+    """Base exception class for the ssm."""
     def __init__(self, msg, errcode=None):
         super(SsmError, self).__init__()
         self.msg = msg

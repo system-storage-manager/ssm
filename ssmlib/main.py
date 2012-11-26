@@ -49,10 +49,10 @@ except KeyError:
 
 
 class Options(object):
-    '''
+    """
     Structure that contains option setting allowing it to be
     passed between parts of ssm.
-    '''
+    """
 
     def __init__(self):
         self.interactive = not SSM_NONINTERACTIVE
@@ -99,10 +99,10 @@ class Struct(object):
 
 
 class StoreAll(argparse._StoreAction):
-    '''
+    """
     Argparse class used to store all valid values. Valid values should not be
     empty or None
-    '''
+    """
 
     def __call__(self, parser, namespace, values, option_string=None):
         for val in values[:]:
@@ -112,10 +112,10 @@ class StoreAll(argparse._StoreAction):
 
 
 class SetBackend(argparse._StoreAction):
-    '''
+    """
     Action for the backend parameter, where we want to store provided
     in SSM_DEFAULT_BACKEND.
-    '''
+    """
 
     def __call__(self, parser, namespace, values, option_string=None):
         # Set default backend to the provided value. All check should be
@@ -126,10 +126,10 @@ class SetBackend(argparse._StoreAction):
 
 
 class FsInfo(object):
-    '''
+    """
     Parse and store information about the file system. Methods specific for
     each file system should be part of this class
-    '''
+    """
 
     def __init__(self, dev, options):
         self.data = {}
@@ -275,7 +275,7 @@ class FsInfo(object):
 
 
 class DeviceInfo(object):
-    '''
+    """
     Parse and store information about the devices present in the system. The
     main source of information are /proc/partitions, /proc/mounts and
     /proc/swaps. self.data should be appended to since there might be other
@@ -285,7 +285,7 @@ class DeviceInfo(object):
     Important thing is that we hide all dm devices here, since they might
     really be a volumes. We let backend decide whether the device should be
     listed as device or not simply by setting 'hide' to True/False.
-    '''
+    """
 
     def __init__(self, options, data=None):
         self.type = 'device'
@@ -356,11 +356,11 @@ class DeviceInfo(object):
 
 
 class Item(object):
-    '''
+    """
     Meta object which provides encapsulation for all devices, pools and
     volumes, so we can work with them as with the usual objects without the
     need to call Dev, Pool or Vol methods directly.
-    '''
+    """
 
     def __init__(self, obj, name):
         self.obj = obj
@@ -425,12 +425,12 @@ class Item(object):
 
 
 class Storage(object):
-    '''
+    """
     Template class to use for storing information about Pools, Volumes and
     Devices from different backends. This simplify things a lot since we do not
     have to manually walk through all the backends, but this class will do this
     for us.
-    '''
+    """
 
     def __init__(self, options):
         self._data = {}
@@ -461,12 +461,12 @@ class Storage(object):
         self.__init__(self.options)
 
     def _apply_prefix_filter(self):
-        '''
+        """
         If SSM_PREFIX FILTER is set, remove all items which basenames does not
         start with SSM_PREFIX_FILTER prefix. This is useful especially for
         testing so that ssm see only relevant devices and does not screw real
         system storage configuration.
-        '''
+        """
         if not SSM_PREFIX_FILTER:
             return
         reg = re.compile("^{0}".format(SSM_PREFIX_FILTER))
@@ -498,7 +498,7 @@ class Storage(object):
                 yield item
 
     def ptable(self, cond=None, more_data=None, cond_func=None):
-        '''
+        """
         Print information table about the source (devices, pools, volumes)
         using the predefined variables (below). cond, or cond_func can be
         provided to decide which items not to print out.
@@ -506,7 +506,7 @@ class Storage(object):
         self.header - list of headers for the table
         self.attrs - list of attribute keys to print out
         self.types - types of the attributes to print out (str, or float/int)
-        '''
+        """
         lines = []
         fmt = ""
 
@@ -621,10 +621,10 @@ class Storage(object):
 
 
 class Pool(Storage):
-    '''
+    """
     Store Pools from all the backends. When new backend is added into the ssm
     it should be registered withing this class with appropriate name.
-    '''
+    """
 
     def __init__(self, *args, **kwargs):
         super(Pool, self).__init__(*args, **kwargs)
@@ -650,7 +650,7 @@ class Pool(Storage):
 
 
 class Devices(Storage):
-    '''
+    """
     Store Devices from all the backends. When new backend is added into the ssm
     it should be registered withing this class with appropriate name.
 
@@ -658,7 +658,7 @@ class Devices(Storage):
     discovered by the DeviceInfo() class then it should just add the
     information into the existing devices by passing the data. But if the
     backed discovers new devices, it should add them as a new entry.
-    '''
+    """
 
     def __init__(self, *args, **kwargs):
         super(Devices, self).__init__(*args, **kwargs)
@@ -696,10 +696,10 @@ class Devices(Storage):
 
 
 class Volumes(Storage):
-    '''
+    """
     Store Volumes from all the backends. When new backend is added into the ssm
     it should be registered withing this class with appropriate name.
-    '''
+    """
 
     def __init__(self, *args, **kwargs):
         super(Volumes, self).__init__(*args, **kwargs)
@@ -734,11 +734,11 @@ class Volumes(Storage):
 
 
 class Snapshots(Storage):
-    '''
+    """
     Store Snapshots from all the backends that supports snapshotting. When
     the snapshotting support is added into the backed it should be registered
     within this class with appropriate name.
-    '''
+    """
 
     def __init__(self, *args, **kwargs):
         super(Snapshots, self).__init__(*args, **kwargs)
@@ -763,10 +763,10 @@ class Snapshots(Storage):
 
 
 class StorageHandle(object):
-    '''
+    """
     The main class where all the magic is done. All the commands provided by
     ssm have its appropriate functions here which are then called by argparse.
-    '''
+    """
 
     def __init__(self, options=Options()):
         self._mpoint = None
@@ -858,10 +858,10 @@ class StorageHandle(object):
             misc.do_mount(volume['real_dev'], self._mpoint, options)
 
     def check(self, args):
-        '''
+        """
         Check the file system on the volume. FsInfo is used for that purpose,
         except for btrfs.
-        '''
+        """
         err = 0
         for fs in args.device:
             print "Checking {0} file system on \'{1}\':".format(fs.fstype,
@@ -884,7 +884,7 @@ class StorageHandle(object):
                     "the appropriate fsck utility")
 
     def _filter_device_list(self, args, have_size=None, new_size=None):
-        '''
+        """
         Filter the args.device list. Only items which have to be added to
         pool are left in the args.device list. Function returns touple
         (have_size, devices) where have_size is the size of the devices which
@@ -892,7 +892,7 @@ class StorageHandle(object):
         argument. Devices is the list of devices which can be used for volume
         creation, it means that it does not contain devices which are used
         in other pools and are not removed from it in this function.
-        '''
+        """
 
         if have_size is None:
             have_size = 0.0
@@ -946,13 +946,13 @@ class StorageHandle(object):
 
 
     def resize(self, args):
-        '''
+        """
         Resize the volume to the given size. If more devices are provided as
         arguments, it will be added into the pool prior to the volume resize
         only if the space in the pool is not sufficient. That said, only the
         number of devices are added into the pool to be able to cover the
         resize.
-        '''
+        """
         args.pool = self.pool[args.volume['pool_name']]
         vol_size = float(args.volume['vol_size'])
 
@@ -997,11 +997,11 @@ class StorageHandle(object):
                 PR.check(PR.RESIZE_ALREADY_MATCH, [args.volume.name, new_size])
 
     def create(self, args):
-        '''
+        """
         Create new volume (or subvolume in case of btrfs) using the devices
         provided as arguments. If the device is not in the selected pool, then
         add() is called on the pool prior to create().
-        '''
+        """
         # Get the size in kilobytes
         if args.size:
             args.size = misc.get_real_size(args.size)
@@ -1062,9 +1062,9 @@ class StorageHandle(object):
             self._do_mount(self.vol[lvname])
 
     def list(self, args):
-        '''
+        """
         List devices, pools, volumes
-        '''
+        """
         if not args.type:
             self.dev.ptable()
             self.pool.ptable()
@@ -1082,9 +1082,9 @@ class StorageHandle(object):
             self.snap.ptable()
 
     def add(self, args):
-        '''
+        """
         Add devices into the pool
-        '''
+        """
         for dev in args.device[:]:
             item = self.dev[dev]
             if item and 'pool_name' in item:
@@ -1111,10 +1111,10 @@ class StorageHandle(object):
                 PR.check(PR.NO_DEVICES, args.pool.name)
 
     def remove(self, args):
-        '''
+        """
         Remove the all the items, or all pools if all argument is specified.
         Items could be the devices, pools or volumes.
-        '''
+        """
         ret = True
         if args.all:
             for pool in self.pool:
@@ -1141,9 +1141,9 @@ class StorageHandle(object):
         return ret
 
     def snapshot(self, args):
-        '''
+        """
         Create a new snapshot of the volume.
-        '''
+        """
         pool = self.pool[args.volume['pool_name']]
         vol_size = float(args.volume['vol_size'])
         pool_size = float(pool['pool_size'])
@@ -1174,12 +1174,12 @@ class StorageHandle(object):
         raise argparse.ArgumentTypeError(err)
 
     def _find_device_record(self, path):
-        '''
+        """
         Try to find device name for path, which is used as an key in
         self.dev - this is usually the real block device, but in some
         rare cases (dmsetup) we can have real block device which name
         does not correspond with what we have in /proc/partitions
-        '''
+        """
         if self.dev[path]:
             return path
 
@@ -1191,9 +1191,9 @@ class StorageHandle(object):
             return path
 
     def check_create_item(self, path):
-        '''
+        """
         Check the create argument for block device or directory.
-        '''
+        """
         if not self._mpoint:
             try:
                 mode = os.stat(path).st_mode
@@ -1253,9 +1253,9 @@ class StorageHandle(object):
                 raise argparse.ArgumentTypeError(err)
 
     def check_remove_item(self, string):
-        '''
+        """
         Check the remove argument for volume, pool or device.
-        '''
+        """
         volume = self.vol[string]
         if volume:
             return volume

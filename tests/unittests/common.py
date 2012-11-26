@@ -35,9 +35,9 @@ class MyStdout(object):
 
 
 class BaseStorageHandleInit(unittest.TestCase):
-    '''
+    """
     Initialize StorageHandle class and some mock functions.
-    '''
+    """
 
     def setUp(self):
         self.storage = main.StorageHandle()

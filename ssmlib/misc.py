@@ -84,7 +84,7 @@ def is_number(string):
 
 
 def get_real_size(size):
-    '''
+    """
     Get the real number from the size argument. It converts the size with units
     into the size in kilobytes. Is no unit is specified it defaults to
     kilobytes.
@@ -129,7 +129,7 @@ def get_real_size(size):
     Traceback (most recent call last):
     ...
     Exception: Not supported unit in the size '3141H' argument.
-    '''
+    """
     if is_number(size):
         return size
     elif is_number(size[:-1]):
@@ -147,10 +147,10 @@ def get_slaves(devname):
 
 
 def get_file_size(path):
-    '''
+    """
     Get size of the file (even block device) by seeking to the end of the
     file and returning offset. The returning size is in kilobytes.
-    '''
+    """
     with open(path, 'r') as f:
         return os.lseek(f.fileno(), os.SEEK_SET, os.SEEK_END) / 1024
 
