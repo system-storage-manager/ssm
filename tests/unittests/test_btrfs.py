@@ -236,71 +236,71 @@ class BtrfsFunctionCheck(MockSystemDataSource):
 
         # Extend Volume
         self._checkCmd("ssm resize --size +4m", ['default_pool /dev/sde'],
-            "btrfs filesystem resize 11723608063K /tmp/mount");
+            "btrfs filesystem resize 11723608063K /tmp/mount")
 
         # Specify backend
         self._checkCmd("ssm -b btrfs resize --size +4m",
             ['default_pool /dev/sde'],
-            "btrfs filesystem resize 11723608063K /tmp/mount");
+            "btrfs filesystem resize 11723608063K /tmp/mount")
 
         main.SSM_DEFAULT_BACKEND = 'lvm'
         self._checkCmd("ssm resize --size +4m",
             ['default_pool /dev/sde'],
-            "btrfs filesystem resize 11723608063K /tmp/mount");
+            "btrfs filesystem resize 11723608063K /tmp/mount")
         main.SSM_DEFAULT_BACKEND = 'btrfs'
 
         self._cmdEq("btrfs device add /dev/sde /tmp/mount", -2)
         self._checkCmd("ssm resize --size +1g", ['my_pool /dev/sde'],
-            "btrfs filesystem resize 1073052017K /mnt/test1");
+            "btrfs filesystem resize 1073052017K /mnt/test1")
         self._cmdEq("btrfs device add /dev/sde /mnt/test1", -2)
 
         # Shrink volume
         self._checkCmd("ssm resize", ['-s-100G', 'default_pool'],
-            "btrfs filesystem resize 11618746367K /tmp/mount");
+            "btrfs filesystem resize 11618746367K /tmp/mount")
         self._checkCmd("ssm resize -s-500G", ['my_pool /dev/sde'],
-            "btrfs filesystem resize 547715441K /mnt/test1");
+            "btrfs filesystem resize 547715441K /mnt/test1")
         self.assertNotEqual(self.run_data[-2],
             "btrfs device add /dev/sde /mnt/test1")
 
         # Set volume size
         self._checkCmd("ssm resize", ['-s 10M', 'default_pool'],
-            "btrfs filesystem resize 10240K /tmp/mount");
+            "btrfs filesystem resize 10240K /tmp/mount")
         self._checkCmd("ssm resize", ['-s 10M', 'my_pool'],
-            "btrfs filesystem resize 10240K /mnt/test1");
+            "btrfs filesystem resize 10240K /mnt/test1")
 
         # Set volume and add devices
         self._checkCmd("ssm resize -s 12T default_pool /dev/sdc1 /dev/sde",
-            [], "btrfs filesystem resize 12884901888K /tmp/mount");
+            [], "btrfs filesystem resize 12884901888K /tmp/mount")
         self.assertEqual(self.run_data[-2],
             "btrfs device add /dev/sdc1 /dev/sde /tmp/mount")
         self._checkCmd("ssm resize -s 1T my_pool /dev/sdc1 /dev/sde",
-            [], "btrfs filesystem resize 1073741824K /mnt/test1");
+            [], "btrfs filesystem resize 1073741824K /mnt/test1")
         self.assertEqual(self.run_data[-2],
             "btrfs device add /dev/sdc1 /dev/sde /mnt/test1")
         self._checkCmd("ssm resize -s 1T my_pool /dev/sde /dev/sdc2",
-            [], "btrfs filesystem resize 1073741824K /mnt/test1");
+            [], "btrfs filesystem resize 1073741824K /mnt/test1")
         self.assertEqual(self.run_data[-2],
             "btrfs device add /dev/sde /mnt/test1")
 
         # Set volume in without the need adding more devices
         self._checkCmd("ssm resize -s 10G default_pool /dev/sdc1 /dev/sde",
-            [], "btrfs filesystem resize 10485760K /tmp/mount");
+            [], "btrfs filesystem resize 10485760K /tmp/mount")
         self.assertNotEqual(self.run_data[-2],
             "btrfs device add /dev/sdc1 /dev/sde /tmp/mount")
         self._checkCmd("ssm resize -s 10G my_pool /dev/sdd /dev/sde",
-            [], "btrfs filesystem resize 10485760K /mnt/test1");
+            [], "btrfs filesystem resize 10485760K /mnt/test1")
         self.assertNotEqual(self.run_data[-2],
             "btrfs device add /dev/sdc1 /dev/sde /mnt/test1")
 
         # Extend volume and add devices
         self._checkCmd("ssm resize -s +500G default_pool /dev/sdc1 /dev/sde",
-            [], "btrfs filesystem resize 12247891967K /tmp/mount");
+            [], "btrfs filesystem resize 12247891967K /tmp/mount")
         self.assertEqual(self.run_data[-2],
             "btrfs device add /dev/sdc1 /dev/sde /tmp/mount")
 
         # Extend volume in without the need adding more devices
         self._checkCmd("ssm resize -s 1k default_pool /dev/sdc1 /dev/sde",
-            [], "btrfs filesystem resize 1K /tmp/mount");
+            [], "btrfs filesystem resize 1K /tmp/mount")
         self.assertNotEqual(self.run_data[-2],
             "btrfs device add /dev/sdc1 /dev/sde /tmp/mount")
         self.assertNotEqual(self.run_data[-2],
@@ -308,7 +308,7 @@ class BtrfsFunctionCheck(MockSystemDataSource):
 
         # Shrink volume with devices provided
         self._checkCmd("ssm resize -s-10G default_pool /dev/sdc1 /dev/sde",
-            [], "btrfs filesystem resize 11713118207K /tmp/mount");
+            [], "btrfs filesystem resize 11713118207K /tmp/mount")
         self.assertNotEqual(self.run_data[-2],
             "btrfs device add /dev/sdc1 /dev/sde /tmp/mount")
         self.assertNotEqual(self.run_data[-2],
