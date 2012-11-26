@@ -315,7 +315,7 @@ class SsmFunctionCheck(MockSystemDataSource):
 
     def mock_run(self, cmd, *args, **kwargs):
         for i,arg in enumerate(cmd):
-            if arg == None:
+            if arg is None:
                 cmd[i] = ''
         self.run_data.append(re.sub('\s\s+',' '," ".join(cmd).strip()))
         output = ""

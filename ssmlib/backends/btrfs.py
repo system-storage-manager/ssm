@@ -233,7 +233,7 @@ class BtrfsVolume(Btrfs):
             self.data.update(self._subvolumes)
 
     def mount(self, vol, mpoint, options=None):
-        if options == None:
+        if options is None:
             options = []
         vol = self.data[vol]
         options.append('subvolid={0}'.format(vol['ID']))

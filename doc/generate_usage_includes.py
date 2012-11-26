@@ -98,7 +98,7 @@ class GenerateIncludes(object):
         for line in help.split('\n'):
             if line == '':
                 out = False
-            if out == True:
+            if out:
                 message += "{0}\n".format(line[2:])
             if line == "optional arguments:":
                 out = True

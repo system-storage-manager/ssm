@@ -560,7 +560,7 @@ class Storage(object):
             # Find maximum length for each column
             for a, array in enumerate(len_matrix):
                 for i, item in enumerate(array):
-                    if columns[i] == False:
+                    if not columns[i]:
                         alignment[i] = 0
                         continue
                     if item > alignment[i]:
