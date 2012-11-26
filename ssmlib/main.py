@@ -238,10 +238,10 @@ class FsInfo(object):
         bsize = int(self.fs_info['blocksize'])
         bcount = int(self.fs_info['dblocks'])
         lbcount = int(self.fs_info['logblocks'])
-        bcount = bcount - lbcount
+        bcount -= lbcount
         agcount = int(self.fs_info['agcount'])
         fbcount = int(self.fs_info['fdblocks'])
-        fbcount = fbcount - (4 + (4 + agcount))
+        fbcount -= 4 + (4 + agcount)
         self.data['fs_size'] = bcount * bsize / 1024
         self.data['fs_free'] = fbcount * bsize / 1024
         self.data['fs_used'] = (bcount - fbcount) * bsize / 1024
