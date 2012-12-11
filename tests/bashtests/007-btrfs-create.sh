@@ -84,7 +84,6 @@ ssm -f remove $SSM_BTRFS_DEFAULT_POOL
 # Create several volumes with several pools
 ssm create $dev1 $mnt1
 ssm create --name $vol1
-ssm list
 check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count 1
 check btrfs_vol_field $mnt1 subvolume $vol1
 

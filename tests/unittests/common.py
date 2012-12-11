@@ -78,6 +78,8 @@ class MockSystemDataSource(unittest.TestCase):
         misc.temp_mount = self.mock_temp_mount
         self.check_binary_orig = misc.check_binary
         misc.check_binary = self.mock_check_binary
+        self.send_udev_event_orig = misc.send_udev_event
+        misc.send_udev_event = self.mock_send_udev_event
         self.dev_data = {}
         self.vol_data = {}
         self.pool_data = {}
@@ -99,6 +101,7 @@ class MockSystemDataSource(unittest.TestCase):
         main.StorageHandle.check_create_item = self.check_create_item_orig
         misc.temp_mount = self.temp_mount_orig
         misc.check_binary = self.check_binary_orig
+        misc.send_udev_event = self.send_udev_event_orig
         main.SSM_NONINTERACTIVE = False
 
     def _cmdEq(self, out, index=-1):
@@ -148,6 +151,9 @@ class MockSystemDataSource(unittest.TestCase):
                 self._mpoint = path
                 return
         return main.is_bdevice(path)
+
+    def mock_send_udev_event(self, device, event):
+        pass
 
     def _removeMount(self, device):
         del self.mount_data[device]

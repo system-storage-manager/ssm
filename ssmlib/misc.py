@@ -146,6 +146,26 @@ def get_slaves(devname):
     return ["/dev/{0}".format(fname) for fname in os.listdir("/sys/block/{0}/slaves".format(devname))]
 
 
+def send_udev_event(device, event):
+    major, minor = get_major_minor(device)
+    with open('/sys/dev/block/{0}:{1}/uevent'.format(major, minor), "w") as f:
+        f.write(event)
+
+
+def get_device_by_uuid(uuid):
+    path = "/dev/disk/by-uuid/{0}".format(uuid)
+    return os.path.abspath(os.path.join(os.path.dirname(path),
+        os.readlink(path)))
+
+
+def get_major_minor(device):
+    real_dev = get_real_device(device)
+    stat = os.stat(real_dev)
+    major = os.major(stat.st_rdev)
+    minor = os.minor(stat.st_rdev)
+    return major, minor
+
+
 def get_file_size(path):
     """
     Get size of the file (even block device) by seeking to the end of the
@@ -173,7 +193,11 @@ def do_mount(device, directory, options=None):
 
 def do_umount(mpoint):
     command = ['umount', mpoint]
-    run(command)
+    try:
+        run(command)
+    except RuntimeError:
+        command = ['umount', '-l', mpoint]
+        run(command)
 
 
 def temp_mount(device, options=None):
@@ -251,7 +275,7 @@ def get_mountinfo(regex=".*"):
             row['dev'] = array[2]
             row['sb_options'] = array[3]
             dev = get_real_device(row['dev'])
-            if dev in mounts:
+            if row['root'] != '/':
                 dev = "{0}:{1}".format(dev, row['root'])
             mounts[dev] = row
     return mounts

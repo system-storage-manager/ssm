@@ -129,7 +129,7 @@ class BtrfsFunctionCheck(MockSystemDataSource):
 
         self._addVol('vol002', 1172832, 1, 'my_pool', ['/dev/sdc2'], '/mnt/test')
         self._checkCmd("ssm create", ['-p my_pool', '-n myvolume'],
-            "btrfs subvolume create /mnt/test/myvolume")
+            "btrfs subvolume create /tmp/mount/myvolume")
 
         # Create volume using multiple devices which one of the is in already
         # in the pool
@@ -138,7 +138,7 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         self._cmdEq("btrfs device add /dev/sda /tmp/mount", -2)
 
         self._checkCmd("ssm create", ['-p my_pool', '-n myvolume', '/dev/sdc2 /dev/sda'],
-            "btrfs subvolume create /mnt/test/myvolume")
+            "btrfs subvolume create /tmp/mount/myvolume")
         self._cmdEq("btrfs device add /dev/sda /mnt/test", -2)
 
         self._checkCmd("ssm create", ['-n myvolume', '/dev/sda /dev/sdb /dev/sde'],
@@ -161,7 +161,7 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         # remove subvolume
         self._addVol('vol001', 117283225, 1, 'default_pool', ['/dev/sda'], '/mnt/test')
         self._checkCmd("ssm remove default_pool:/dev/default_pool/vol001", [],
-            "btrfs subvolume delete /mnt/test//dev/default_pool/vol001")
+            "btrfs subvolume delete /mnt/test")
         # remove device
         self._checkCmd("ssm remove /dev/sdc1", [],
             "btrfs device delete /dev/sdc1 /tmp/mount")
@@ -172,7 +172,7 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         # remove combination
         self._addPool('other_pool', ['/dev/sdd', '/dev/sde'])
         self._checkCmd("ssm remove /dev/sdd /dev/sdb other_pool my_pool default_pool:/dev/default_pool/vol001", [],
-            "btrfs subvolume delete /mnt/test//dev/default_pool/vol001")
+            "btrfs subvolume delete /mnt/test")
         self._cmdEq("wipefs -p /dev/sdc1", -2)
         self._cmdEq("wipefs -p /dev/sdc3", -3)
         self._cmdEq("wipefs -p /dev/sdc2", -4)
@@ -219,7 +219,7 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         main.SSM_DEFAULT_BACKEND = 'btrfs'
 
         self._checkCmd("ssm snapshot --name new_snap", ['default_pool:/dev/default_pool/vol001'],
-            "btrfs subvolume snapshot /mnt/mount//dev/default_pool/vol001 /mnt/mount//dev/default_pool/vol001/new_snap")
+            "btrfs subvolume snapshot /mnt/mount /mnt/mount/new_snap")
         self._checkCmd("ssm snapshot --name new_snap", ['my_pool'],
             "btrfs subvolume snapshot /tmp/mount /tmp/mount/new_snap")
 

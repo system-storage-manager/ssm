@@ -93,6 +93,24 @@ class Btrfs(object):
                 uuid = array[3]
                 pool['uuid'] = vol['uuid'] = uuid
 
+                try:
+                    fallback = False
+                    vol['real_dev'] = misc.get_device_by_uuid(uuid)
+
+                    if vol['real_dev'] in self.mounts:
+                        pool['mount'] = self.mounts[vol['real_dev']]['mp']
+                        vol['mount'] = self.mounts[vol['real_dev']]['mp']
+                    else:
+                        for dev_i in self.mounts:
+                            found = re.findall(r'{0}:/.*'.format(vol['real_dev']), dev_i)
+                            if found:
+                                pool['mount'] = self.mounts[found[0]]['mp']
+                                break
+                except OSError:
+                    # udev is "hard-to-work-with" sometimes so this is fallback
+                    fallback = True
+                    vol['real_dev'] = ""
+
                 if label != 'none':
                     vol['label'] = label
                 vol['ID'] = 0
@@ -102,21 +120,31 @@ class Btrfs(object):
                 fs_used = get_real_number(array[6])
 
             elif array[0] == 'devid':
-                if 'mount' not in vol:
-                    vol['real_dev'] = array[7]
                 dev['dev_name'] = array[7]
 
                 if not pool_name:
                     pool_name = self._find_uniq_pool_name(label, array[7])
                 dev['pool_name'] = pool_name
 
+                # Fallback in case we could not find real_dev by uuid
+                if fallback and 'mount' not in pool:
+                    if dev['dev_name'] in self.mounts:
+                        pool['mount'] = self.mounts[dev['dev_name']]['mp']
+                        vol['real_dev'] = dev['dev_name']
+
+                        if 'root' in self.mounts[dev['dev_name']]:
+                            if self.mounts[dev['dev_name']]['root'] == '/':
+                                vol['mount'] = self.mounts[dev['dev_name']]['mp']
+                    else:
+                        for dev_i in self.mounts:
+                            found = re.findall(r'{0}:/.*'.format(dev['dev_name']), dev_i)
+                            if found:
+                                pool['mount'] = self.mounts[found[0]]['mp']
+                                break
+
                 dev_used = get_real_number(array[5])
                 dev['dev_used'] = str(dev_used)
                 fs_size += get_real_number(array[3])
-
-                if vol['real_dev'] in self.mounts:
-                    vol['mount'] = self.mounts[vol['real_dev']]['mp']
-                    pool['mount'] = vol['mount']
 
                 dev_size = \
                     int(partitions[dev['dev_name'].rpartition("/")[-1]][2])
@@ -141,31 +169,62 @@ class Btrfs(object):
             return
         command = ['btrfs', 'subvolume', 'list']
         for name, vol in self._vol.iteritems():
-            if 'mount' in vol:
-                output = misc.run(command + [vol['mount']], stdout=False)[1]
-                for volume in self._parse_subvolumes(output):
-                    new = vol.copy()
-                    new.update(volume)
-                    new['dev_name'] = "{0}:{1}".format(name, new['path'])
+            pool_name = vol['pool_name']
+            real_dev = vol['real_dev']
+            pool = self._pool[pool_name]
 
-                    item = "{0}:/{1}".format(vol['real_dev'], new['path'])
-                    if item in self.mounts:
-                        new['mount'] = self.mounts[item]['mp']
+            if 'mount' in self._pool[pool_name]:
+                mount = pool['mount']
+            else:
+                # If btrfs is not mounted we will not process subvolumes
+                continue
+
+            output = misc.run(command + [mount], stdout=False)[1]
+            for volume in self._parse_subvolumes(output):
+                new = vol.copy()
+                new.update(volume)
+                new['dev_name'] = "{0}:{1}".format(name, new['path'])
+                item = "{0}:/{1}".format(real_dev, new['path'])
+                # If the subvolume is mounted we should find it here
+                if item in self.mounts:
+                    new['mount'] = self.mounts[item]['mp']
+                else:
+                    # If subvolume is not mounted try to find whether parent
+                    # subvolume is mounted
+                    found = re.findall(r'^(.*)/([^/]*)$', new['path'])
+                    if found:
+                        parent_path, path = found[0]
+                        # try previously loaded subvolumes
+                        for prev_sv in self._subvolumes:
+                            # if subvolumes are mounted, use that mp
+                            if self._subvolumes[prev_sv]['path'] == parent_path:
+                                # if parent subvolume is not mounted this
+                                # subvolume is not mounted as well
+                                if self._subvolumes[prev_sv]['mount'] == '':
+                                    new['mount'] = ''
+                                else:
+                                    new['mount'] = "{0}/{1}".format(
+                                        self._subvolumes[prev_sv]['mount'], path)
+                                break
+                    # if parent volume is not mounted, use root subvolume
+                    # if mounted
                     else:
-                        new['mount'] = "{0}/{1}".format(vol['mount'],
+                        if 'mount' in vol:
+                            new['mount'] = "{0}/{1}".format(vol['mount'],
                                 new['path'])
 
-                    new['hide'] = False
-                    # Store snapshot info
-                    if re.match("snap-\d{4}-\d{2}-\d{2}-T\d{6}",
-                            os.path.basename(new['mount'])):
-                        new['hide'] = True
-                        new['snap_name'] = new['dev_name']
-                        new['snap_name'] = "{0}:{1}".format(name,
-                                os.path.basename(new['path']))
-                        new['snap_path'] = new['mount']
+                new['hide'] = False
+                # Store snapshot info
+                if 'mount' in new and \
+                    re.match("snap-\d{4}-\d{2}-\d{2}-T\d{6}",
+                        os.path.basename(new['mount'])):
+                    new['hide'] = True
+                    new['snap_name'] = new['dev_name']
+                    new['snap_name'] = "{0}:{1}".format(name,
+                            os.path.basename(new['path']))
+                    new['snap_path'] = new['mount']
 
-                    self._subvolumes[new['dev_name']] = new
+                self._subvolumes[new['dev_name']] = new
 
     def _parse_subvolumes(self, output):
         volume = {}
@@ -197,6 +256,11 @@ class Btrfs(object):
         pool['pool_name'] = vol['pool_name'] = vol['dev_name'] = pool_name
         pool['type'] = 'btrfs'
         vol['type'] = 'btrfs'
+
+        # Just to be sure that the pool is set if needed. This is mostly for
+        # the sake of unittests
+        if 'mount' in pool and 'mount' not in vol:
+            vol['mount'] = pool['mount']
 
         self._pool[pool['pool_name']] = pool
         self._vol[vol['dev_name']] = vol
@@ -240,8 +304,6 @@ class BtrfsVolume(Btrfs):
         misc.do_mount(vol['real_dev'], mpoint, options)
 
     def remove(self, vol):
-        # Volume and pool name should be the same, since it actually is the
-        # same file system
         if 'subvolume' in self._vol[vol]:
             self.run_btrfs(['subvolume', 'delete', self._vol[vol]['mount']])
         else:
@@ -322,6 +384,7 @@ class BtrfsPool(Btrfs):
             command.extend(['-b', "{0}".format(int(float(size) * 1024))])
         command.extend(devs)
         misc.run(command, stdout=True)
+        misc.send_udev_event(devs[0], "change")
         return name
 
     def reduce(self, pool, device):
@@ -362,10 +425,9 @@ class BtrfsPool(Btrfs):
                 self.problem.warn("Only name, volume name and pool name " + \
                                   "can be specified when creating btrfs " + \
                                   "subvolume, the rest will be ignored")
-            if 'mount' not in self._pool[pool]:
-                tmp = misc.temp_mount(
-                        "UUID={0}".format(self._pool[pool]['uuid']))
-                self._pool[pool]['mount'] = tmp
+            tmp = misc.temp_mount(
+                    "UUID={0}".format(self._pool[pool]['uuid']))
+            self._pool[pool]['mount'] = tmp
 
             if not name:
                 now = datetime.datetime.now()
