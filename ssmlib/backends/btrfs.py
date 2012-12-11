@@ -231,10 +231,9 @@ class Btrfs(object):
         for line in output.strip().split("\n"):
             if not line:
                 continue
-            array = line.split()
-            volume['ID'] = array[1]
-            volume['top_level'] = array[4]
-            volume['path'] = array[6]
+            volume['ID'] = re.search('(?<=ID )\d+', line).group(0)
+            volume['top_level'] = re.search('(?<=top level )\d+', line).group(0)
+            volume['path'] = re.search('(?<=path ).*$', line).group(0)
             volume['subvolume'] = True
             yield volume
 

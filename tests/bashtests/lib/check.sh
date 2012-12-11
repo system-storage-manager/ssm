@@ -323,17 +323,16 @@ btrfs_vol_field()
 			actual=$(btrfs subvolume list $1 | wc -l);;
 		"subvolume")
 			actual=$(btrfs subvolume list $1 2> /dev/null | \
-				cut --complement -f 1-6 -d' ' | \
-				grep -E "^$3$" || true)
-			echo "actual = $actual"
+				grep -E "$3$" || true)
+			actual=${actual##*path }
 			;;
 		*)
 			echo "Unknown filed $2"
 			exit 1
 			;;
 	esac
-
 	test "$actual" = "$3" || {
+		btrfs subvolume list $1
 		echo "btrfs_fs_field: mount=$1, field=$2, actual=$actual, expected=$3"
 		exit 1
 	}
