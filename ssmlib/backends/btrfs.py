@@ -393,6 +393,7 @@ class BtrfsPool(Btrfs):
             pool['mount'] = tmp
         command = ['device', 'delete', device, pool['mount']]
         self.run_btrfs(command)
+        misc.send_udev_event(device, "change")
 
     def new(self, pool, devices):
         if type(devices) is not list:
