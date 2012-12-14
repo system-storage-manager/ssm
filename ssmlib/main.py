@@ -342,7 +342,7 @@ class DeviceInfo(object):
                 dev['type'] = 'disk'
 
     def set_globals(self, options):
-        self.options=options
+        self.options = options
 
     def __iter__(self):
         for item in sorted(self.data.iterkeys()):
@@ -486,7 +486,7 @@ class Storage(object):
         return self._data[name]
 
     def set_globals(self, options):
-        self.options=options
+        self.options = options
         if self._data is None:
             return
         for source in self._data.itervalues():
@@ -579,8 +579,8 @@ class Storage(object):
             if length > term_width and \
                (length - term_width) < (alignment[0] - len(header[0])) and \
                line is not None:
-                   alignment[0] = len(header[0])
-                   len_matrix[line][0] = len(header[0])
+                    alignment[0] = len(header[0])
+                    len_matrix[line][0] = len(header[0])
             else:
                 break
 
@@ -943,7 +943,6 @@ class StorageHandle(object):
             self.reinit_dev()
 
         return have_size, devices
-
 
     def resize(self, args):
         """
@@ -1382,7 +1381,7 @@ class SsmParser(object):
                 metavar='BACKEND',
                 help="Choose backend to use. Currently you can choose from " + \
                      "({0}).".format(",".join(SUPPORTED_BACKENDS)),
-                choices = SUPPORTED_BACKENDS,
+                choices=SUPPORTED_BACKENDS,
                 action=SetBackend)
         return parser
 

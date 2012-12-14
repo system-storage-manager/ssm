@@ -208,7 +208,6 @@ class ProblemSet(object):
             ['{0} is not supported!',
              PROMPT_NONE, FL_FATAL, NotSupported]
 
-
     def _can_print_message(self, flags):
         if (flags & FL_DEBUG_ONLY):
             return self.options.debug
