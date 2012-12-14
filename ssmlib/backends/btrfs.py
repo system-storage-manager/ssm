@@ -43,6 +43,16 @@ def get_real_number(string):
             break
     return number
 
+def get_btrfs_version():
+    try:
+        output = misc.run(['btrfs', '--version'], can_fail=True)[1]
+        output = output.strip().split("\n")[-1]
+        version = re.search('(?<=v)\dd+\.\d+', output).group(0)
+    except (OSError, AttributeError):
+        version = 0.0
+    return version
+
+BTRFS_VERSION = get_btrfs_version()
 
 class Btrfs(object):
 
