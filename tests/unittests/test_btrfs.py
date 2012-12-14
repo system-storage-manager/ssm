@@ -37,6 +37,16 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         self._addDevice('/dev/sde', 1042177280)
         main.SSM_DEFAULT_BACKEND = 'btrfs'
 
+        self.check_new_path_orig = btrfs.BtrfsPool._check_new_path
+        btrfs.BtrfsPool._check_new_path = self.mock_check_new_path
+
+    def tearDown(self):
+        super(BtrfsFunctionCheck, self).tearDown()
+        btrfs.BtrfsPool._check_new_path = self.check_new_path_orig
+
+    def mock_check_new_path(self, path, name):
+        pass
+
     def mock_run(self, cmd, *args, **kwargs):
         self.run_data.append(" ".join(cmd))
         output = ""

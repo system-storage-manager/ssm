@@ -40,6 +40,10 @@ pool2=$vg3
 # Create volume with all devices at once
 ssm create $TEST_DEVS $mnt1
 not ssm create $TEST_DEVS -p $pool1
+
+#Create subvolume with nonexisting path
+not ssm create -n $vol1/$vol2
+
 check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count $DEV_COUNT
 check list_table "$(ssm list vol)" $SSM_BTRFS_DEFAULT_POOL $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt1
 ssm create

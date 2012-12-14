@@ -396,6 +396,14 @@ class BtrfsPool(Btrfs):
         misc.send_udev_event(devs[0], "change")
         return name
 
+    def _check_new_path(self, path, name):
+        parent = os.path.split(path)[0]
+        if not os.path.exists(parent):
+                msg = "Parent directory \'{0}\' ".format(parent) + \
+                      "does not exist. Subvolume " + \
+                      "\'{0}\' can not be created".format(name)
+                self.problem.error(msg)
+
     def reduce(self, pool, device):
         pool = self.data[pool]
         if 'mount' not in pool:
@@ -447,6 +455,8 @@ class BtrfsPool(Btrfs):
                 vol = name
             else:
                 vol = "{0}/{1}".format(self._pool[pool]['mount'], name)
+
+            self._check_new_path(vol, name)
             self.run_btrfs(['subvolume', 'create', vol])
             vol = "{0}:{1}".format(pool, name)
         else:
