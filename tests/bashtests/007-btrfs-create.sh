@@ -138,6 +138,10 @@ ssm -f remove $SSM_BTRFS_DEFAULT_POOL $pool1 $pool2
 ssm create $TEST_DEVS $mnt1
 ssm create --name $vol1 $mnt2
 ssm create --name $vol1/$vol2 $mnt3
+
+# Create subvolume with already existing path
+not ssm create --name $vol1/$vol2
+not ssm create --name $vol1 $mnt3
 ssm_output=$(ssm list vol)
 check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt1
 check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$vol1 $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt2

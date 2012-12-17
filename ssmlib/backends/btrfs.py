@@ -397,12 +397,18 @@ class BtrfsPool(Btrfs):
         return name
 
     def _check_new_path(self, path, name):
+        msg = 0
         parent = os.path.split(path)[0]
-        if not os.path.exists(parent):
-                msg = "Parent directory \'{0}\' ".format(parent) + \
-                      "does not exist. Subvolume " + \
-                      "\'{0}\' can not be created".format(name)
-                self.problem.error(msg)
+        if os.path.exists(path):
+            msg = "Directory \'{0}\' already exist. ".format(path) + \
+                  "Subvolume \'{0}\' can not be ".format(name) + \
+                  "created"
+        elif not os.path.exists(parent):
+            msg = "Parent directory \'{0}\' ".format(parent) + \
+                  "does not exist. Subvolume " + \
+                  "\'{0}\' can not be created".format(name)
+        if msg:
+            self.problem.error(msg)
 
     def reduce(self, pool, device):
         pool = self.data[pool]
