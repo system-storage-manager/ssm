@@ -103,19 +103,44 @@ ssm create --pool $pool2 $dev3 $dev4 $mnt1
 ssm create --name $vol1 -p $pool2
 ssm create --name $vol1 $dev5 $dev6 $mnt3
 ssm create --name $vol2 $dev7 $dev8
+ssm create --name $vol3 $mnt2
 ssm add $dev9
+
+# We can not remove mounted fs
+ssm remove $pool2
+
+# We can not remove mounted subvolume
+ssm remove ${SSM_BTRFS_DEFAULT_POOL}:${vol3}
 
 check btrfs_fs_field $pool1 dev_count 2
 check btrfs_fs_field $pool2 dev_count 2
 check btrfs_vol_field $mnt1 vol_count 1
 check btrfs_vol_field $mnt1 subvolume $vol1
 check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count 5
-check btrfs_vol_field $mnt3 vol_count 1
+check btrfs_vol_field $mnt3 vol_count 2
 check btrfs_vol_field $mnt3 subvolume $vol2
+check btrfs_vol_field $mnt2 subvolume $vol3
 
-ssm list
 umount_all
+ssm -f remove --all
 
+#Remove subvolume which is not mounted
+ssm create $dev1 $dev2
+ssm create --name $vol1
+ssm create --name $vol2
+ssm create --name ${vol1}/${vol3} $mnt1
+
+check btrfs_vol_field $mnt1 vol_count 3
+ssm remove ${SSM_BTRFS_DEFAULT_POOL}:$vol2
+ssm list
+
+check btrfs_vol_field $mnt1 vol_count 2
+check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count 2
+check btrfs_vol_field $mnt1 subvolume $vol1
+not check btrfs_vol_field $mnt1 subvolume $vol2
+check btrfs_vol_field $mnt1 subvolume ${vol1}/${vol3}
+
+umount_all
 ssm -f remove --all
 
 not check btrfs_fs_field $pool1 label $pool1

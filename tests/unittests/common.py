@@ -198,7 +198,8 @@ class MockSystemDataSource(unittest.TestCase):
         if mount:
             self.pool_data[pool_name]['mount'] = mount
             self._addDir(mount)
-            self.mount_data[devices[0]] = {'dev': devices[0], 'mp': mount}
+            self.mount_data[devices[0]] = {'dev': devices[0], 'mp': mount,
+                                           'root': "/"}
 
         space_per_dev = vol_size / stripes
 

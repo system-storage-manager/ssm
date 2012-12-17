@@ -198,6 +198,8 @@ class Btrfs(object):
                 # If the subvolume is mounted we should find it here
                 if item in self.mounts:
                     new['mount'] = self.mounts[item]['mp']
+                    # Subvolume is mounted directly
+                    new['direct_mount'] = True
                 else:
                     # If subvolume is not mounted try to find whether parent
                     # subvolume is mounted
@@ -266,11 +268,6 @@ class Btrfs(object):
         pool['type'] = 'btrfs'
         vol['type'] = 'btrfs'
 
-        # Just to be sure that the pool is set if needed. This is mostly for
-        # the sake of unittests
-        if 'mount' in pool and 'mount' not in vol:
-            vol['mount'] = pool['mount']
-
         self._pool[pool['pool_name']] = pool
         self._vol[vol['dev_name']] = vol
 
@@ -313,8 +310,23 @@ class BtrfsVolume(Btrfs):
         misc.do_mount(vol['real_dev'], mpoint, options)
 
     def remove(self, vol):
-        if 'subvolume' in self._vol[vol]:
-            self.run_btrfs(['subvolume', 'delete', self._vol[vol]['mount']])
+        volume = self._vol[vol]
+        if 'subvolume' in volume:
+            # If subvolume is mounted directly we can not remove it. So ask
+            # user whether he wants to umount it. The we'll have to mount the
+            # root subvolume and remove this subvolume.
+            if 'direct_mount' in volume and volume['direct_mount']:
+                if self.problem.check(self.problem.FS_MOUNTED,
+                        [vol, volume['mount']]):
+                    misc.do_umount(volume['mount'])
+                    del volume['mount']
+                    del volume['direct_mount']
+            if 'mount' not in volume:
+                mount = misc.temp_mount("UUID={0}".format(volume['uuid']))
+                path = "{0}/{1}".format(mount, volume['path'])
+            else:
+                path = volume['mount']
+            self.run_btrfs(['subvolume', 'delete', path])
         else:
             self._remove_filesystem(vol)
 
