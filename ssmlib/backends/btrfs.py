@@ -47,7 +47,7 @@ def get_btrfs_version():
     try:
         output = misc.run(['btrfs', '--version'], can_fail=True)[1]
         output = output.strip().split("\n")[-1]
-        version = re.search('(?<=v)\dd+\.\d+', output).group(0)
+        version = re.search('(?<=v)\d+\.\d+', output).group(0)
     except (OSError, AttributeError):
         version = 0.0
     return version
@@ -68,6 +68,7 @@ class Btrfs(object):
         self._subvolumes = {}
         self._binary = misc.check_binary('btrfs')
         self.problem = problem.ProblemSet(options)
+        self.modified_list_version = True
 
         if not self._binary:
             return
@@ -172,6 +173,17 @@ class Btrfs(object):
         command.insert(0, "btrfs")
         return misc.run(command, stdout=True)
 
+    def _list_subvolumes(self, mount):
+        command = ['btrfs', 'subvolume', 'list']
+        if self.modified_list_version:
+            command.append('-a');
+        ret, output = misc.run(command + [mount], stdout=False, can_fail=True)
+        if ret:
+            command = ['btrfs', 'subvolume', 'list']
+            output = misc.run(command + [mount], stdout=False)[1]
+            self.modified_list_version = False
+        return output
+
     def _fill_subvolumes(self):
         if not self._binary:
             return
@@ -189,7 +201,7 @@ class Btrfs(object):
                 # If btrfs is not mounted we will not process subvolumes
                 continue
 
-            output = misc.run(command + [mount], stdout=False)[1]
+            output = self._list_subvolumes(mount)
             for volume in self._parse_subvolumes(output):
                 new = vol.copy()
                 new.update(volume)
@@ -243,6 +255,8 @@ class Btrfs(object):
         for line in output.strip().split("\n"):
             if not line:
                 continue
+            # For the version with screwed 'subvolume list' command
+            line = re.sub("<FS_TREE>/*", "", line)
             volume['ID'] = re.search('(?<=ID )\d+', line).group(0)
             volume['top_level'] = re.search('(?<=top level )\d+', line).group(0)
             volume['path'] = re.search('(?<=path ).*$', line).group(0)

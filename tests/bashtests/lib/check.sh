@@ -320,10 +320,12 @@ btrfs_vol_field()
 
 	case $2 in
 		"vol_count")
-			actual=$(btrfs subvolume list $1 | wc -l);;
+			output=$(btrfs subvolume list -a $1 || btrfs subvolume list $1)
+			actual=$(echo "$output" | wc -l);;
 		"subvolume")
-			actual=$(btrfs subvolume list $1 2> /dev/null | \
-				grep -E "$3$" || true)
+			output=$(btrfs subvolume list -a $1 || btrfs subvolume list $1)
+			actual=$(echo "$output" | sed "s/<FS_TREE>\/*//" | \
+				 grep -E "$3$" || true)
 			actual=${actual##*path }
 			;;
 		*)

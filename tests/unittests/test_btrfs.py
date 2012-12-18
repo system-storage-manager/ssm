@@ -65,7 +65,7 @@ class BtrfsFunctionCheck(MockSystemDataSource):
                 output += " Total devices {0} FS bytes used 44.00KB\n".format(count)
                 output += d_output
         elif cmd[:3] == ['btrfs', 'subvolume', 'list']:
-            mpoint = cmd[3]
+            mpoint = cmd[-1]
             for pool, p_data in self.pool_data.iteritems():
                 if 'mount' not in p_data or p_data['mount'] != mpoint:
                     continue
