@@ -70,6 +70,8 @@ class MockSystemDataSource(unittest.TestCase):
         misc.get_partitions = self.mock_get_partitions
         self.is_bdevice_orig = main.is_bdevice
         main.is_bdevice = self.mock_is_bdevice
+        self.is_directory_orig = main.is_directory
+        main.is_directory = self.mock_is_directory
         self.check_create_item_orig = main.StorageHandle.check_create_item
         main.StorageHandle.check_create_item = self.mock_check_create_item
         self.get_mounts_orig = misc.get_mounts
@@ -97,6 +99,7 @@ class MockSystemDataSource(unittest.TestCase):
         misc.run = self.run_orig
         misc.get_partitions = self.get_partitions_orig
         main.is_bdevice = self.is_bdevice_orig
+        main.is_directory = self.is_directory_orig
         misc.get_mounts = self.get_mounts_orig
         main.StorageHandle.check_create_item = self.check_create_item_orig
         misc.temp_mount = self.temp_mount_orig
@@ -134,6 +137,13 @@ class MockSystemDataSource(unittest.TestCase):
             partitions.append([data['major'], data['minor'], data['dev_size'],
                               data['dev_name'].rpartition("/")[2]])
         return partitions
+
+    def mock_is_directory(self, string):
+        if string in self.directories:
+            return string
+        else:
+            err = "'{0}' does not exist.".format(string)
+            raise argparse.ArgumentTypeError(err)
 
     def mock_get_mounts(self, regex=None):
         return self.mount_data

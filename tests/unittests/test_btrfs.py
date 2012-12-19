@@ -70,7 +70,7 @@ class BtrfsFunctionCheck(MockSystemDataSource):
                 if 'mount' not in p_data or p_data['mount'] != mpoint:
                     continue
                 count = 0
-                for vol, v_data in self.vol_data.iteritems():
+                for vol, v_data in iter(sorted(self.vol_data.iteritems())):
                     if v_data['pool_name'] != pool:
                         continue
                     count += 1
@@ -389,3 +389,44 @@ class BtrfsFunctionCheck(MockSystemDataSource):
             "btrfs device add /dev/sda /mnt/test1")
         self._checkCmd("ssm add", ['/dev/sda /dev/sdb'],
             "btrfs device add /dev/sda /tmp/mount")
+
+    def test_btrfs_mount(self):
+        self._addDir("/mnt/test")
+        self._addDir("/mnt/test1")
+        self._addDir("/mnt/test2")
+        # Generate some storage data
+        self._addPool('default_pool', ['/dev/sda', '/dev/sdb'])
+        self._addPool('my_pool', ['/dev/sdc2', '/dev/sdc3', '/dev/sdc1'])
+        self._addVol('vol001', 117283225, 1, 'default_pool', ['/dev/sda'])
+        self._addVol('vol002', 237284225, 1, 'default_pool', ['/dev/sda'],
+                    '/mnt/mount1')
+        self._addVol('vol003/vol006', 1024, 1, 'default_pool', ['/dev/sdd'])
+        self._addVol('vol004', 209715200, 2, 'default_pool', ['/dev/sda',
+                     '/dev/sdb'], '/mnt/mount')
+
+        # Mount subvolume
+        main.main("ssm mount default_pool:/dev/default_pool/vol002 /mnt/test")
+        self._cmdEq("mount -o subvolid=2 /dev/sda /mnt/test")
+        main.main("ssm mount -o discard default_pool:/dev/default_pool/vol002 /mnt/test")
+        self._cmdEq("mount -o discard,subvolid=2 /dev/sda /mnt/test")
+        main.main("ssm mount --options rw,discard,neco=44 default_pool:/dev/default_pool/vol004 /mnt/test1")
+        self._cmdEq("mount -o rw,discard,neco=44,subvolid=4 /dev/sda /mnt/test1")
+
+        main.main("ssm mount -o discard default_pool:/dev/default_pool/vol003/vol006 /mnt/test2")
+        self._cmdEq("mount -o discard,subvolid=3 /dev/sda /mnt/test2")
+
+        # Mount the whole file system
+        main.main("ssm mount default_pool /mnt/test2")
+        self._cmdEq("mount -o subvolid=0 /dev/sda /mnt/test2")
+        main.main("ssm mount --options rw,discard,neco=44 default_pool /mnt/test1")
+        self._cmdEq("mount -o rw,discard,neco=44,subvolid=0 /dev/sda /mnt/test1")
+        main.main("ssm mount /dev/sdb /mnt/test1")
+        self._cmdEq("mount /dev/sdb /mnt/test1")
+        main.main("ssm mount -o rw,discard,neco=44 /dev/sdb /mnt/test1")
+        self._cmdEq("mount -o rw,discard,neco=44 /dev/sdb /mnt/test1")
+
+        # Non existing volume
+        main.main("ssm mount nonexisting /mnt/test1")
+        self._cmdEq("mount nonexisting /mnt/test1")
+        main.main("ssm mount -o discard,rw nonexisting /mnt/test1")
+        self._cmdEq("mount -o discard,rw nonexisting /mnt/test1")

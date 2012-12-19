@@ -283,6 +283,7 @@ class SimpleSsmSanityCheck(unittest.TestCase):
         self.assert_("add" in obj)
         self.assert_("remove" in obj)
         self.assert_("snapshot" in obj)
+        self.assert_("mount" in obj)
         self.assert_("set_globals" in obj)
 
 
@@ -387,9 +388,6 @@ class SsmFunctionCheck(MockSystemDataSource):
             [], "vol resize /dev/my_pool/vol001 1613595352.0 False")
 
     def test_create(self):
-        #out = MyStdout()
-        #sys.stdout = out
-
         # Create volume using single device from non existent default pool
         self._checkCmd("ssm create", ['/dev/sda'],
             "pool create {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL))
@@ -671,6 +669,30 @@ class SsmFunctionCheck(MockSystemDataSource):
             ['--size 1G', '--name test' ,'/mnt/test'],
             "vol snapshot /dev/default_pool/vol004 test 1048576.0 True")
 
+    def test_mount(self):
+        self._addDir("/mnt/test")
+        self._addDir("/mnt/test1")
+        self._addDir("/mnt/test2")
+        # Generate some storage data
+        self._addPool('default_pool', ['/dev/sda', '/dev/sdb'])
+        self._addPool('my_pool', ['/dev/sdc2', '/dev/sdc3', '/dev/sdc1'])
+        self._addVol('vol001', 117283225, 1, 'default_pool', ['/dev/sda'],
+                    '/mnt/test1')
+        self._addVol('vol002', 237284225, 1, 'my_pool', ['/dev/sda'])
+
+        # Simple mount test
+        main.main("ssm mount /dev/default_pool/vol001 /mnt/test")
+        self._cmdEq("mount /dev/default_pool/vol001 /mnt/test")
+        main.main("ssm mount -o discard /dev/default_pool/vol001 /mnt/test")
+        self._cmdEq("mount -o discard /dev/default_pool/vol001 /mnt/test")
+        main.main("ssm mount --options rw,discard,neco=44 /dev/my_pool/vol002 /mnt/test1")
+        self._cmdEq("mount -o rw,discard,neco=44 /dev/my_pool/vol002 /mnt/test1")
+
+        # Non existing volume
+        main.main("ssm mount nonexisting /mnt/test1")
+        self._cmdEq("mount nonexisting /mnt/test1")
+        main.main("ssm mount -o discard,rw nonexisting /mnt/test1")
+        self._cmdEq("mount -o discard,rw nonexisting /mnt/test1")
 
 
 class MyInfo(object):
