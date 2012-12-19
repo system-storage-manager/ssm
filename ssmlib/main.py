@@ -851,11 +851,13 @@ class StorageHandle(object):
                 command.insert(1, '-v')
         return misc.run(command, stdout=True)[0]
 
-    def _do_mount(self, volume, options=None):
+    def _do_mount(self, volume, options=None, directory=None):
+        if directory is None:
+            directory = self._mpoint
         try:
-            volume.mount(self._mpoint, options)
+            volume.mount(directory, options)
         except AttributeError:
-            misc.do_mount(volume['real_dev'], self._mpoint, options)
+            misc.do_mount(volume['real_dev'], directory, options)
 
     def check(self, args):
         """
@@ -1160,6 +1162,21 @@ class StorageHandle(object):
 
         args.volume.snapshot(args.dest, args.name, snap_size, user_set_size)
 
+    def mount(self, args):
+        """
+        Mount a volume at given directory.
+        """
+        vol = self.vol[args.volume]
+        try:
+            if vol:
+                self._do_mount(vol, args.options, args.directory)
+            else:
+                misc.do_mount(args.volume, args.directory, args.options)
+        except RuntimeError:
+            PR.error("Could not mount {0} to ".format(args.volume) + \
+                     "{0} with options \'{1}\'".format(args.directory,
+                                                   args.options))
+
     def is_fs(self, device):
         real = misc.get_real_device(device)
 
@@ -1317,6 +1334,19 @@ def valid_resize_size(size):
         raise argparse.ArgumentTypeError(err)
 
 
+def is_directory(self, string):
+    try:
+        mode = os.stat(string).st_mode
+    except OSError:
+        err = "'{0}' does not exist.".format(string)
+        raise argparse.ArgumentTypeError(err)
+    if stat.S_ISDIR(mode):
+        return string
+    else:
+        err = "'{0}' is not directory.".format(string)
+        raise argparse.ArgumentTypeError(err)
+
+
 def is_bdevice(path):
     path = misc.get_real_device(path)
     try:
@@ -1354,6 +1384,7 @@ class SsmParser(object):
         self.parser_add = self._get_parser_add()
         self.parser_remove = self._get_parser_remove()
         self.parser_snapshot = self._get_parser_snapshot()
+        self.parser_mount = self._get_parser_mount()
         self.args = None
 
     def parse(self):
@@ -1550,6 +1581,23 @@ class SsmParser(object):
         parser_snapshot.set_defaults(func=self.storage.snapshot)
         return parser_snapshot
 
+    def _get_parser_mount(self):
+        """
+        Mount command
+        """
+        parser_mount = self.subcommands.add_parser("mount",
+                help='''Mount a volume with file system to specified
+                     locaion.''')
+        parser_mount.add_argument('-o', '--options',
+                help='''Options are specified with a -o flag followed by a
+                     comma separated string of options. This option is
+                     equivalent to the same mount(8) option.''')
+        parser_mount.add_argument("volume", help="Volume to mount.")
+        parser_mount.add_argument("directory",
+                help="Directory to attach the volume.",
+                type=is_directory)
+        parser_mount.set_defaults(func=self.storage.mount)
+        return parser_mount
 
 def main(args=None):
 

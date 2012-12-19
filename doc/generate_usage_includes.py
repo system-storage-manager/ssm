@@ -13,6 +13,7 @@ RESIZE_OPTIONS_INC = OPTIONS_DIR + "resize_options.inc"
 CHECK_OPTIONS_INC = OPTIONS_DIR + "check_options.inc"
 SNAPSHOT_OPTIONS_INC = OPTIONS_DIR + "snapshot_options.inc"
 ADD_OPTIONS_INC = OPTIONS_DIR + "add_options.inc"
+MOUNT_OPTIONS_INC = OPTIONS_DIR + "mount_options.inc"
 
 SSM_USAGE_INC = OPTIONS_DIR + "ssm_usage.inc"
 CREATE_USAGE_INC = OPTIONS_DIR + "create_usage.inc"
@@ -22,6 +23,7 @@ RESIZE_USAGE_INC = OPTIONS_DIR + "resize_usage.inc"
 CHECK_USAGE_INC = OPTIONS_DIR + "check_usage.inc"
 SNAPSHOT_USAGE_INC = OPTIONS_DIR + "snapshot_usage.inc"
 ADD_USAGE_INC = OPTIONS_DIR + "add_usage.inc"
+MOUNT_USAGE_INC = OPTIONS_DIR + "mount_usage.inc"
 
 
 class GenerateIncludes(object):
@@ -81,6 +83,10 @@ class GenerateIncludes(object):
         message = self.format_synopsis(self.ssm_parser.parser_add)
         self._write_message(message, ADD_USAGE_INC)
 
+    def write_mount_usage(self):
+        message = self.format_synopsis(self.ssm_parser.parser_mount)
+        self._write_message(message, MOUNT_USAGE_INC)
+
     def write_usage(self):
         self.write_ssm_usage()
         self.write_create_usage()
@@ -90,6 +96,7 @@ class GenerateIncludes(object):
         self.write_check_usage()
         self.write_snapshot_usage()
         self.write_add_usage()
+        self.write_mount_usage()
 
     def _format_options(self, parser):
         help = parser.format_help()
@@ -129,6 +136,8 @@ class GenerateIncludes(object):
         message = self._format_options(self.ssm_parser.parser_add)
         self._write_message(message, ADD_OPTIONS_INC)
 
+        message = self._format_options(self.ssm_parser.parser_mount)
+        self._write_message(message, MOUNT_OPTIONS_INC)
 
 includes = GenerateIncludes()
 

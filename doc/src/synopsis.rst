@@ -16,3 +16,5 @@ Synopsis
 .. include:: options/snapshot_usage.inc
 
 .. include:: options/add_usage.inc
+
+.. include:: options/mount_usage.inc

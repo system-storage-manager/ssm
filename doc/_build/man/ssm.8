@@ -1,4 +1,4 @@
-.TH "SSM" "8" "October 16, 2012" "0.3" "System Storage Manager"
+.TH "SSM" "8" "December 19, 2012" "0.3" "System Storage Manager"
 .SH NAME
 ssm \- System Storage Manager: a single tool to manage your storage
 .
@@ -32,7 +32,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .
 .SH SYNOPSIS
 .sp
-\fBssm\fP [\fB\-h\fP] [\fB\-\-version\fP] [\fB\-v\fP] [\fB\-f\fP] [\fB\-b\fP BACKEND] {check,resize,create,list,add,remove,snapshot} ...
+\fBssm\fP [\fB\-h\fP] [\fB\-\-version\fP] [\fB\-v\fP] [\fB\-f\fP] [\fB\-b\fP BACKEND] {check,resize,create,list,add,remove,snapshot,mount} ...
 .sp
 \fBssm\fP \fBcreate\fP [\fB\-h\fP] [\fB\-s\fP SIZE] [\fB\-n\fP NAME] [\fB\-\-fstype\fP FSTYPE] [\fB\-r\fP LEVEL] [\fB\-I\fP STRIPESIZE] [\fB\-i\fP STRIPES] [\fB\-p\fP POOL] [\fBdevice\fP [\fBdevice\fP ...]] [mount]
 .sp
@@ -47,6 +47,8 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 \fBssm\fP \fBsnapshot\fP [\fB\-h\fP] [\fB\-s\fP SIZE] [\fB\-d\fP DEST | \fB\-n\fP NAME] volume
 .sp
 \fBssm\fP \fBadd\fP [\fB\-h\fP] [\fB\-p\fP POOL] \fBdevice\fP [\fBdevice\fP ...]
+.sp
+\fBssm\fP \fBmount\fP [\fB\-h\fP] [\fB\-o\fP OPTIONS] \fBvolume\fP directory
 .SH DESCRIPTION
 .sp
 System Storage Manager provides easy to use command line interface to manage
@@ -335,6 +337,30 @@ show this help message and exit
 Pool to add device into. If not specified the default
 pool is used.
 .UNINDENT
+.SS Mount command
+.sp
+\fBssm\fP \fBmount\fP [\fB\-h\fP] [\fB\-o\fP OPTIONS] \fBvolume\fP directory
+.sp
+This command will mount the \fBvolume\fP at specified \fBdirectory\fP. The
+\fBvolume\fP can be specified in the same way as with \fBmount(8)\fP, however
+in addition one can also specify \fBvolume\fP in the format as it appear in
+the \fBssm list\fP table.
+.sp
+For example, instead of finding out what the device and subvolume id of the
+btrfs subvolume "btrfs_pool:vol001" is in order to mount it, on can simply
+call \fBssm mount btrfs_pool:vol001 /mnt/test\fP.
+.sp
+One can also specify \fIOPTIONS\fP in the same way as with \fBmount(8)\fP.
+.INDENT 0.0
+.TP
+.B \-h,  \-\-help
+show this help message and exit
+.TP
+.BI \-o \ OPTIONS, \ \-\-options \ OPTIONS
+Options are specified with a \-o flag followed by a
+comma separated string of options. This option is
+equivalent to the same mount(8) option.
+.UNINDENT
 .SH BACK-ENDS
 .SS Introduction
 .sp
@@ -537,6 +563,14 @@ Using lvm backend \fBcreate\fP a RAID 0 \fBvolume\fP with devices \fI/dev/sda\fP
 .nf
 .ft C
 # ssm add \-p btrfs_pool /dev/sda /dev/sdb
+.ft P
+.fi
+.sp
+\fBMount btrfs subvolume\fP \fIbtrfs_pool:vol001\fP on \fI/mnt/test\fP:
+.sp
+.nf
+.ft C
+# ssm mount btrfs_pool:vol001 /mnt/test
 .ft P
 .fi
 .SH ENVIRONMENT VARIABLES

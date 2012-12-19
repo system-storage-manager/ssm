@@ -1,0 +1,10 @@
+This command will mount the **volume** at specified **directory**. The
+**volume** can be specified in the same way as with **mount(8)**, however
+in addition one can also specify **volume** in the format as it appear in
+the **ssm list** table.
+
+For example, instead of finding out what the device and subvolume id of the
+btrfs subvolume "btrfs_pool:vol001" is in order to mount it, on can simply
+call **ssm mount btrfs_pool:vol001 /mnt/test**.
+
+One can also specify *OPTIONS* in the same way as with **mount(8)**.

@@ -46,3 +46,7 @@ Using lvm backend **create** a RAID 0 **volume** with devices */dev/sda* and
 **Add devices** */dev/sda* and */dev/sdb* into the *btrfs_pool* pool::
 
     # ssm add -p btrfs_pool /dev/sda /dev/sdb
+
+**Mount btrfs subvolume** *btrfs_pool:vol001* on */mnt/test*::
+
+    # ssm mount btrfs_pool:vol001 /mnt/test

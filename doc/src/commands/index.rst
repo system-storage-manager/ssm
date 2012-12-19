@@ -13,3 +13,4 @@ System Storage Manager Commands
     check
     snapshot
     add
+    mount

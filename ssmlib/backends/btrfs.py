@@ -317,10 +317,12 @@ class BtrfsVolume(Btrfs):
             self.data.update(self._subvolumes)
 
     def mount(self, vol, mpoint, options=None):
-        if options is None:
-            options = []
         vol = self.data[vol]
-        options.append('subvolid={0}'.format(vol['ID']))
+        if options:
+            options += ","
+        else:
+            options = ""
+        options += "subvolid={0}".format(vol['ID'])
         misc.do_mount(vol['real_dev'], mpoint, options)
 
     def remove(self, vol):

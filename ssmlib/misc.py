@@ -186,7 +186,7 @@ def check_binary(name):
 def do_mount(device, directory, options=None):
     command = ['mount']
     if options:
-        command.extend(['-o', ",".join(options)])
+        command.extend(['-o', options])
     command.extend([device, directory])
     run(command)
 
