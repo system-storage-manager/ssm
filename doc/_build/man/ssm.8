@@ -659,6 +659,12 @@ is omitted.
 .B SSM_BTRFS_DEFAULT_POOL
 Name of the default btrfs pool to be used if \fB\-p\fP or \fB\-\-pool\fP argument
 is omitted.
+.TP
+.B SSM_PREFIX_FILTER
+When this is set \fBssm\fP will filter out all devices, volumes and pools
+which name does not start with this prefix. It is used mainly in \fBssm\fP
+test suite to make sure that we do not scramble local system
+configuration.
 .UNINDENT
 .SH LICENCE
 .sp

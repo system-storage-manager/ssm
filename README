@@ -343,6 +343,12 @@ SSM_BTRFS_DEFAULT_POOL
    Name of the default btrfs pool to be used if **-p** or **--pool**
    argument is omitted.
 
+SSM_PREFIX_FILTER
+   When this is set **ssm** will filter out all devices, volumes and
+   pools which name does not start with this prefix. It is used mainly
+   in **ssm** test suite to make sure that we do not scramble local
+   system configuration.
+
 
 Quick examples
 **************
