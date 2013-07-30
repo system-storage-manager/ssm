@@ -969,6 +969,15 @@ class StorageHandle(object):
 
         fs = True if 'fs_type' in args.volume else False
 
+        if vol_size == new_size:
+            # Try to grow the file system, since there is nothing to
+            # do with the volume itself.
+            if fs:
+                args.volume['fs_info'].resize()
+            else:
+                PR.check(PR.RESIZE_ALREADY_MATCH, [args.volume.name, new_size])
+            return
+
         # Backend might not support pooling
         if args.pool is None:
             pool_free = None
@@ -989,13 +998,6 @@ class StorageHandle(object):
 
         if new_size != vol_size:
             args.volume.resize(new_size, fs)
-        else:
-            # Try to grow the file system, since there is nothing to
-            # do with the volume itself.
-            if fs:
-                args.volume['fs_info'].resize()
-            else:
-                PR.check(PR.RESIZE_ALREADY_MATCH, [args.volume.name, new_size])
 
     def create(self, args):
         """
