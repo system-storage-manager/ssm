@@ -209,11 +209,11 @@ Introduction
 Ssm aims to create unified user interface for various technologies
 like Device Mapper (dm), Btrfs file system, Multiple Devices (md) and
 possibly more. In order to do so we have a core abstraction layer in
-``ssmlib/main.py``. This abstraction layer should ideally know nothing
+"ssmlib/main.py". This abstraction layer should ideally know nothing
 about the underlying technology, but rather comply with **device**,
 **pool** and **volume** abstraction.
 
-Various backends can be registered in ``ssmlib/main.py`` in order to
+Various backends can be registered in "ssmlib/main.py" in order to
 handle specific storage technology implementing methods like *create*,
 *snapshot*, or *remove* volumes and pools. The core will then call
 these methods to manage the storage without needing to know what lies
@@ -622,7 +622,7 @@ For developers
 
 We are accepting patches! If you're interested contributing to the
 System Storage Manager code, just checkout the git repository located
-on SourceForge. Please, base all of your work on the ``devel`` branch
+on SourceForge. Please, base all of your work on the "devel" branch
 since it is more up-to-date and it will save us some work when merging
 your patches:
 
@@ -645,9 +645,9 @@ Tests in System Storage Manager are divided into four levels.
 
 1. First the doctest is executed.
 
-2. Then we have unittests in ``tests/unittests/test_ssm.py`` which is
-   testing the core of ssm ``ssmlib/main.py``. It is checking for
-   basic things like required backend methods and variables, flag
+2. Then we have unittests in "tests/unittests/test_ssm.py" which is
+   testing the core of ssm "ssmlib/main.py". It is checking for basic
+   things like required backend methods and variables, flag
    propagations, proper class initialization and finally whether
    commands actually result in the proper backend callbacks. It does
    not require root permissions and it does not touch your system
@@ -660,13 +660,12 @@ Tests in System Storage Manager are divided into four levels.
    configuration in any way. It actually should not invoke any shell
    command and if it does it's a bug.
 
-4. And finally there are real bash tests located in
-   ``tests/bashtests``. Bash tests are divided into files. Each file
-   tests one command for one backend and it containing series of test
-   cases followed by checks whether the command created the expected
-   result. In order to test real system commands we have to create
-   system device to test on and not touch any of the existing system
-   configuration.
+4. And finally there are real bash tests located in "tests/bashtests".
+   Bash tests are divided into files. Each file tests one command for
+   one backend and it containing series of test cases followed by
+   checks whether the command created the expected result. In order to
+   test real system commands we have to create system device to test
+   on and not touch any of the existing system configuration.
 
    Before each test a number of devices are created using *dmsetup* in
    the test directory. These devices will be used in test cases
@@ -689,31 +688,31 @@ covered by the System Storage Manager regression test suite to make
 sure that we do not break it unintentionally.
 
 Important: Please, make sure to run full tests before you send a patch to the
-  mailing list. To do so, simply run ``python test.py`` as root on
-  your test machine.
+  mailing list. To do so, simply run "python test.py" as root on your
+  test machine.
 
 
 Documentation
 =============
 
-System Storage Manager documentation is stored in ``doc/`` directory.
+System Storage Manager documentation is stored in "doc/" directory.
 The documentation is build using **sphinx** software which help us not
 to duplicate texts for different type of documentation (man page, html
 pages, readme). If you are going to modify documentation, please make
 sure not to modify manual page, html pages or README directly, but
-rather modify ``doc/*.rst`` and ``doc/src/*.rst`` files accordingly so
-the change is propagated to all documents.
+rather modify "doc/*.rst" and "doc/src/*.rst" files accordingly so the
+change is propagated to all documents.
 
 Moreover, parts of the documentation such as *synopsis* or ssm command
 *options* are parsed directly from the ssm help output. It means that
 when you're going to add or change argument into **ssm** the only
-thing you have to do is to add or change it in the ``ssmlib/main.py``
-source code and then run ``make dist`` in the ``doc/`` directory and
-all the documents should be updated automatically.
+thing you have to do is to add or change it in the "ssmlib/main.py"
+source code and then run "make dist" in the "doc/" directory and all
+the documents should be updated automatically.
 
 Important: Please make sure you update the documentation when you add or change
   **ssm** functionality if the format of the change requires it. Then
-  regenerate all the documents using ``make dist`` and include changes
+  regenerate all the documents using "make dist" and include changes
   in the patch.
 
 
@@ -757,6 +756,6 @@ sure to follow some simple rules:
    the patch inlined in the email body. It is much better for review
    process.
 
-Hint: You can use **git** to do all the work for you. ``git format-patch``
-  and ``git send-email`` will help you with creating and sending the
+Hint: You can use **git** to do all the work for you. "git format-patch"
+  and "git send-email" will help you with creating and sending the
   patch.
