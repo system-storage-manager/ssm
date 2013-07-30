@@ -1,7 +1,8 @@
 This command adds **device** into the pool. The **device** will not be added if
-it's already part of different pool. When multiple devices are provided,
+it's already part of different pool by default, but user will be asked whether
+to remove the device from it's pool. When multiple devices are provided,
 all of them are added into the pool. If one of the devices can not be added
-into the pool for some reason, it will be skipped. If no pool is specified,
+into the pool for any reason, add command will fail. If no pool is specified,
 default pool will be chosen. In the case of non existing pool, it will be
 created using provided devices.
 
