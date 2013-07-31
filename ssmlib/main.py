@@ -1121,8 +1121,12 @@ class StorageHandle(object):
         ret = True
         if args.all:
             for pool in self.pool:
-                pool.remove()
-            return
+                try:
+                    pool.remove()
+                except (RuntimeError, problem.SsmError), ex:
+                    PR.info("Unable to remove '{0}'".format(pool['pool_name']))
+                    ret = False
+            return ret
         if len(args.items) == 0:
             err = "too few arguments"
             raise argparse.ArgumentTypeError(err)
