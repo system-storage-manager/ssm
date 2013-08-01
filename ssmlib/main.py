@@ -1233,8 +1233,7 @@ class StorageHandle(object):
             if stat.S_ISDIR(mode):
                 self._mpoint = path
                 return
-        path = is_bdevice(path)
-        return self._find_device_record(path)
+        return self.get_bdevice(path)
 
     def get_bdevice(self, path):
         path = is_bdevice(path)
@@ -1297,8 +1296,7 @@ class StorageHandle(object):
             return device
         else:
             try:
-                path = is_bdevice(string)
-                path = self._find_device_record(path)
+                path = self.get_bdevice(path)
                 device = self.dev[path]
                 if device:
                     return device
