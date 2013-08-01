@@ -222,16 +222,22 @@ def do_cleanup():
             break
 
 
-def get_fs_type(dev):
-    command = ["blkid", "-p", "-u", "filesystem", "-s", "TYPE", dev]
-    output = run(command, can_fail=True)[1]
+def get_signature(device, types=None):
+    command = ["blkid", "-o", "value", "-p", "-s", "TYPE"]
+    if types != None:
+        command.extend(['-u', types])
+    command.append(device)
 
-    m = re.search(r"TYPE=\"(?P<fstyp>\w+)\"", output)
-    if m:
-        fstype = m.group('fstyp')
-        return fstype
+    output = run(command, can_fail=True)[1].strip()
+
+    if len(output) > 0:
+        return output
     else:
         return None
+
+
+def get_fs_type(device):
+    return get_signature(device, "filesystem")
 
 
 def get_real_device(device):
