@@ -32,5 +32,4 @@ try:
                 sys.exit("\nRoot privileges required to run this script!\n")
         sys.exit(main.main())
 except problem.SsmError, err:
-    print err
     sys.exit(err.errcode)

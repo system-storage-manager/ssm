@@ -1119,13 +1119,17 @@ class StorageHandle(object):
         Items could be the devices, pools or volumes.
         """
         ret = True
+        removed = 0
         if args.all:
             for pool in self.pool:
                 try:
                     pool.remove()
+                    removed += 1
                 except (RuntimeError, problem.SsmError), ex:
                     PR.info("Unable to remove '{0}'".format(pool['pool_name']))
                     ret = False
+            if removed == 0:
+                PR.error("Nothing was removed!")
             return ret
         if len(args.items) == 0:
             err = "too few arguments"
@@ -1136,15 +1140,19 @@ class StorageHandle(object):
                     pool = self.pool[item['pool_name']]
                     if pool:
                         pool.reduce(item.name)
+                        removed += 1
                         continue
                     else:
                         PR.error("It is not clear what do you want " +
                                  "to achieve by removing " +
                                  "{0}!".format(item.name))
                 item.remove()
+                removed += 1
             except (RuntimeError, problem.SsmError), ex:
                 PR.info("Unable to remove '{0}'".format(item.name))
                 ret = False
+        if removed == 0:
+            PR.error("Nothing was removed")
         return ret
 
     def snapshot(self, args):

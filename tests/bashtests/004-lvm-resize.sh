@@ -140,7 +140,7 @@ for fs in $TEST_FS; do
 	#ssm -f check $DEFAULT_VOLUME
 	#ssm -f remove $SSM_LVM_DEFAULT_POOL
 done
-ssm  -f remove --all
+not ssm  -f remove --all
 
 ssm resize --help
 

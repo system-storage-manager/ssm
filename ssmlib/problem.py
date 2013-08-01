@@ -149,13 +149,13 @@ class ProblemSet(object):
              PROMPT_NONE, FL_FATAL, ProgrammingError]
 
         self.GENERAL_ERROR = \
-            ['{0}!', PROMPT_NONE, FL_FATAL, GeneralError]
+            ['SSM Error: {0}!', PROMPT_NONE, FL_FATAL, GeneralError]
 
         self.GENERAL_INFO = \
-            ['Info: {0}', PROMPT_NONE, FL_NONE, None]
+            ['SSM Info: {0}', PROMPT_NONE, FL_NONE, None]
 
         self.GENERAL_WARNING = \
-            ['Warning: {0}!', PROMPT_NONE, FL_NONE, None]
+            ['SSM Warning: {0}!', PROMPT_NONE, FL_NONE, None]
 
         self.FS_MOUNTED = \
             ['Device \'{0}\' is mounted on \'{1}\'',

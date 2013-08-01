@@ -65,6 +65,10 @@ ssm add $TEST_DEVS
 check vg_field $SSM_LVM_DEFAULT_POOL pv_count $DEV_COUNT
 ssm -f remove $TEST_DEVS
 check vg_field $SSM_LVM_DEFAULT_POOL pv_count 3
+not ssm remove $dev1 $dev2 $dev3
+ssm -f remove $DEFAULT_VOLUME
+ssm remove $dev1 $dev2 $dev3
+not ssm remove $dev3
 ssm -f remove --all
 
 # Remove multiple things
@@ -104,6 +108,7 @@ check vg_field $pool1 vg_name $pool1
 check vg_field $pool2 vg_name $pool2
 check vg_field $SSM_LVM_DEFAULT_POOL vg_name $SSM_LVM_DEFAULT_POOL
 ssm -f remove --all
+not ssm -f remove --all
 not check vg_field $pool1 vg_name $pool1
 not check vg_field $pool2 vg_name $pool2
 not check vg_field $SSM_LVM_DEFAULT_POOL vg_name $SSM_LVM_DEFAULT_POOL
