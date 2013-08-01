@@ -62,6 +62,12 @@ def run_bash_tests():
             failed.append(script)
             with open(bad_file, 'w') as f:
                 f.write(out)
+        elif re.search("Traceback", out):
+            # There should be no tracebacks in the output
+            out += "\nWARNING: Traceback in the output!\n"
+            print "\033[93m[WARNING]\033[0m"
+            with open(bad_file, 'w') as f:
+                f.write(out)
         else:
             print "\033[92m[PASSED]\033[0m"
             passed.append(script)
