@@ -24,6 +24,7 @@ chmod +x $SSM
 
 # set terminal width for testing ssm output
 export COLUMNS=1024
+export LINES=25
 
 export OLDDIR=$HERE
 export COMMON_PREFIX="SSMTEST"

@@ -20,10 +20,6 @@ export test_description='Check whether list command prints correct values for lv
 
 . lib/test
 
-#set terminal width to prevent splitting rows in tables
-original_width=$COLUMNS
-export COLUMNS=1024
-
 DEV_COUNT=10
 DEV_SIZE=100
 TEST_MAX_SIZE=$(($DEV_COUNT*$DEV_SIZE))
@@ -114,8 +110,5 @@ ssm_output=$(ssm list snap)
 check list_table "$ssm_output" "$pool1/$snap1" $lvol1 40.00MB 0.00KB linear
 check list_table "$ssm_output" "$pool2/$snap1" $lvol1 40.00MB 0.00KB linear
 ssm -f remove --all
-
-# set terminal width to original
-export COLUMNS=$original_width
 
 # all_done!!!
