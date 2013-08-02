@@ -915,7 +915,6 @@ class StorageHandle(object):
                     remove_args.items = [self.dev[dev]]
                     if self.remove(remove_args):
                         args.device.append(dev)
-                        have_size += float(self.dev[dev]['dev_size'])
                         changed = True
                     elif new_size is None:
                         PR.error("Device \'{0}\' can not be used!".format(dev))
@@ -936,13 +935,18 @@ class StorageHandle(object):
                     continue
             if not self.dev[dev] or 'pool_name' not in self.dev[dev]:
                 args.device.append(dev)
-                if not self.dev[dev]:
-                    have_size += misc.get_file_size(dev)
-                else:
-                    have_size += float(self.dev[dev]['dev_size'])
 
         if changed:
             self.reinit_dev()
+
+        for dev in devices:
+            if not self.dev[dev]:
+                have_size += misc.get_file_size(dev)
+            else:
+                try:
+                    have_size += float(self.dev[dev]['dev_free'])
+                except ValueError:
+                    have_size += float(self.dev[dev]['dev_size'])
 
         return have_size, devices
 
@@ -1019,6 +1023,10 @@ class StorageHandle(object):
         else:
             pool_free = 0.0
 
+        # If devices were provided we should only use those
+        if len(devices) > 0:
+            pool_free = None
+
         have_size, devices = self._filter_device_list(args, pool_free,
                                                       args.size)
 
@@ -1037,7 +1045,11 @@ class StorageHandle(object):
         if not args.pool.exists() and len(devices) == 0:
             PR.check(PR.NO_DEVICES, args.pool.name)
 
-        # Number of stripes must not exceed number of devices withi the pool
+        if have_size == 0:
+            PR.error("Not enough space ({0} KB) to".format(have_size) + \
+                     "to create volume")
+
+        # Number of stripes must not exceed number of devices within the pool
         if args.stripes and len(devices) > 0 and args.stripes > len(devices):
             PR.error("Number of stripes ({0}) ".format(args.stripes) + \
                      "must not exceed number of devices " + \
