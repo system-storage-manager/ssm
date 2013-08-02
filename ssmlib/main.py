@@ -973,6 +973,9 @@ class StorageHandle(object):
 
         fs = True if 'fs_type' in args.volume else False
 
+        if new_size <= 0:
+            PR.error("New volume size \'{0} KB\' is too small".format(new_size))
+
         if vol_size == new_size:
             # Try to grow the file system, since there is nothing to
             # do with the volume itself.
