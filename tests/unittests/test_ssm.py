@@ -27,6 +27,7 @@ import unittest
 import argparse
 from ssmlib import main
 from ssmlib import misc
+from ssmlib import problem
 
 from tests.unittests.common import *
 
@@ -318,6 +319,9 @@ class SsmFunctionCheck(MockSystemDataSource):
         for i,arg in enumerate(cmd):
             if arg is None:
                 cmd[i] = ''
+            elif type(arg) is not str:
+                cmd[i] = str(arg)
+
         self.run_data.append(re.sub('\s\s+',' '," ".join(cmd).strip()))
         output = ""
         if cmd[0] == 'pooldata':
@@ -421,8 +425,11 @@ class SsmFunctionCheck(MockSystemDataSource):
             "pool create {0} 2791728742.40 0 16 /dev/sda".format(main.DEFAULT_DEVICE_POOL))
         self._cmdEq("pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
-        self._checkCmd("ssm create", ['-r 1', '-s 2.6T', '-I 16', '-i 4', '/dev/sda'],
-            "pool create {0} 2791728742.40 1 4 16 /dev/sda".format(main.DEFAULT_DEVICE_POOL))
+        # Number of stripes must not exceed number of devices
+        self.assertRaises(problem.GeneralError, main.main, "ssm create -r 1 -s 2.6T -I 16 -i 4 /dev/sda")
+
+        self._checkCmd("ssm create", ['-r 1', '-s 2.6T', '-I 16', '/dev/sda'],
+            "pool create {0} 2791728742.40 1 16 /dev/sda".format(main.DEFAULT_DEVICE_POOL))
         self._cmdEq("pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
         # Create volume using single device from non existent my_pool
@@ -439,7 +446,7 @@ class SsmFunctionCheck(MockSystemDataSource):
         self._cmdEq("pool new my_pool /dev/sda", -2)
 
         self._checkCmd("ssm create", ['-r 0', '-p my_pool', '-s 2.6T', '-I 16',
-            '-i 4', '/dev/sda'], "pool create my_pool 2791728742.40 0 4 16 /dev/sda")
+            '/dev/sda'], "pool create my_pool 2791728742.40 0 16 /dev/sda")
         self._cmdEq("pool new my_pool /dev/sda", -2)
 
         # Create volume using multiple devices
@@ -454,27 +461,27 @@ class SsmFunctionCheck(MockSystemDataSource):
         # Create volume using single device from existing pool
         self._addPool(main.DEFAULT_DEVICE_POOL, ['/dev/sdb', '/dev/sdd'])
         self._checkCmd("ssm create", ['-r 10', '-s 2.6T', '-I 16',
-            '-i 4', '-n myvolume', '/dev/sda'],
-            "pool create {0} 2791728742.40 myvolume 10 4 16 /dev/sda". format(main.DEFAULT_DEVICE_POOL))
+            '-n myvolume', '/dev/sda'],
+            "pool create {0} 2791728742.40 myvolume 10 16 /dev/sda". format(main.DEFAULT_DEVICE_POOL))
         self._cmdEq("pool extend {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
         self._addPool("my_pool", ['/dev/sdc2', '/dev/sdc3'])
         self._checkCmd("ssm create", ['-r 1', '-p my_pool', '-s 2.6T', '-I 16',
-            '-i 4', '-n myvolume', '/dev/sda'],
-            "pool create my_pool 2791728742.40 myvolume 1 4 16 /dev/sda")
+            '-n myvolume', '/dev/sda'],
+            "pool create my_pool 2791728742.40 myvolume 1 16 /dev/sda")
         self._cmdEq("pool extend my_pool /dev/sda", -2)
 
         # Create volume using multiple devices which one of the is in already
         # in the pool
         self._checkCmd("ssm create", ['-r 0', '-s 2.6T', '-I 16',
-            '-i 4', '-n myvolume', '/dev/sda /dev/sdb'],
-            "pool create {0} 2791728742.40 myvolume 0 4 16 /dev/sda /dev/sdb". format(main.DEFAULT_DEVICE_POOL))
+            '-i 2', '-n myvolume', '/dev/sda /dev/sdb'],
+            "pool create {0} 2791728742.40 myvolume 0 2 16 /dev/sda /dev/sdb". format(main.DEFAULT_DEVICE_POOL))
         self._cmdEq("pool extend {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
         self._addPool("my_pool", ['/dev/sdc2', '/dev/sdc3'])
         self._checkCmd("ssm create", ['-r 10', '-p my_pool', '-s 2.6T', '-I 16',
-            '-i 4', '-n myvolume', '/dev/sdc2 /dev/sda'],
-            "pool create my_pool 2791728742.40 myvolume 10 4 16 /dev/sdc2 /dev/sda")
+            '-i 2', '-n myvolume', '/dev/sdc2 /dev/sda'],
+            "pool create my_pool 2791728742.40 myvolume 10 2 16 /dev/sdc2 /dev/sda")
         self._cmdEq("pool extend my_pool /dev/sda", -2)
 
         # Test that we do not use devices which are already used in different

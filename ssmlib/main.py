@@ -1037,6 +1037,18 @@ class StorageHandle(object):
         if not args.pool.exists() and len(devices) == 0:
             PR.check(PR.NO_DEVICES, args.pool.name)
 
+        # Number of stripes must not exceed number of devices withi the pool
+        if args.stripes and len(devices) > 0 and args.stripes > len(devices):
+            PR.error("Number of stripes ({0}) ".format(args.stripes) + \
+                     "must not exceed number of devices " + \
+                      "({0})".format(len(devices)))
+        elif args.stripes and len(devices) == 0 and args.pool.exists():
+            tmp = int(args.pool['dev_count'])
+            if args.stripes > tmp:
+                PR.error("Number of stripes ({0}) ".format(args.stripes) + \
+                         "must not exceed number of devices " + \
+                          "({0})".format(tmp))
+
         # If we want btrfs pool and it does not exist yet, we do not
         # want to call add since it would create it. Note that when
         # btrfs pool is created the new btrfs volume is created as well
@@ -1497,11 +1509,13 @@ class SsmParser(object):
                      following list of supported levels
                      ({0}).'''.format(",".join(SUPPORTED_RAID)))
         parser_create.add_argument('-I', '--stripesize',
+                type=int,
                 help='''Gives the number of kilobytes for the granularity
                         of stripes. This is optional and if not given, backend
                         default will be used. Note that you have to specify RAID
                         level as well.''')
         parser_create.add_argument('-i', '--stripes',
+                type=int,
                 help='''Gives the number of stripes. This is equal to the
                      number of physical volumes to scatter the logical
                      volume. This is optional and if stripesize is set

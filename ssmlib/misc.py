@@ -398,6 +398,11 @@ def run(cmd, show_cmd=False, stdout=False, stderr=True, can_fail=False,
     else:
         stdout = subprocess.PIPE
 
+    # Convert all parts of cmd into string
+    for i, item in enumerate(cmd):
+        if type(item) is not str:
+            cmd[i] = str(item)
+
     proc = subprocess.Popen(cmd, stdout=stdout,
                             stderr=stderr, stdin=stdin)
 

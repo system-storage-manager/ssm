@@ -19,6 +19,7 @@
 
 import unittest
 from ssmlib import main
+from ssmlib import problem
 from ssmlib.backends import lvm
 from tests.unittests.common import *
 
@@ -38,6 +39,12 @@ class LvmFunctionCheck(MockSystemDataSource):
         main.SSM_DEFAULT_BACKEND = 'lvm'
 
     def mock_run(self, cmd, *args, **kwargs):
+
+        # Convert all parts of cmd into string
+        for i, item in enumerate(cmd):
+            if type(item) is not str:
+                cmd[i] = str(item)
+
         self.run_data.append(" ".join(cmd))
         output = ""
         if cmd[1] == 'pvs':
@@ -106,9 +113,12 @@ class LvmFunctionCheck(MockSystemDataSource):
             "lvm lvcreate {0} -L 2791728742.40K -n lvol001 -I 16 -i 1 /dev/sda".format(default_pool))
         self._cmdEq("lvm vgcreate {0} /dev/sda".format(default_pool), -2)
 
-        self._checkCmd("ssm create", ['-r 0', '-s 2.6T', '-I 16', '-i 4', '/dev/sda'],
-            "lvm lvcreate {0} -L 2791728742.40K -n lvol001 -I 16 -i 4 /dev/sda".format(default_pool))
+        self._checkCmd("ssm create", ['-r 0', '-s 2.6T', '-I 16', '/dev/sda'],
+            "lvm lvcreate {0} -L 2791728742.40K -n lvol001 -I 16 -i 1 /dev/sda".format(default_pool))
         self._cmdEq("lvm vgcreate {0} /dev/sda".format(default_pool), -2)
+
+        # Number of stripes must not exceed number of devices
+        self.assertRaises(problem.GeneralError, main.main, "ssm create -r 0 -s 2.6T -I 16 -i 4 /dev/sda")
 
         # Create volume using single device from non existent my_pool
         self._checkCmd("ssm create", ['--pool my_pool', '/dev/sda'],
@@ -116,26 +126,28 @@ class LvmFunctionCheck(MockSystemDataSource):
         self._cmdEq("lvm vgcreate my_pool /dev/sda", -2)
 
         self._checkCmd("ssm create", ['-r 0', '-p my_pool', '-s 2.6T', '-I 16',
-            '-i 4', '/dev/sda'],
-            "lvm lvcreate my_pool -L 2791728742.40K -n lvol001 -I 16 -i 4 /dev/sda")
-        self._cmdEq("lvm vgcreate my_pool /dev/sda", -2)
+            '-i 2', '/dev/sda /dev/sdb'],
+            "lvm lvcreate my_pool -L 2791728742.40K -n lvol001 -I 16 -i 2 /dev/sda /dev/sdb")
+        self._cmdEq("lvm vgcreate my_pool /dev/sda /dev/sdb", -2)
 
         # Create volume using multiple devices
         self._checkCmd("ssm create", ['/dev/sda /dev/sdc1'],
             "lvm lvcreate {0} -l 100%PVS -n lvol001 /dev/sda /dev/sdc1".format(default_pool))
         self._cmdEq("lvm vgcreate {0} /dev/sda /dev/sdc1".format(default_pool), -2)
 
-        # Create volume using single device from existing pool
+
+        # Create volume using single devices from existing pool
         self._addPool(default_pool, ['/dev/sdb', '/dev/sdd'])
+
         self._checkCmd("ssm create", ['-r 0', '-s 2.6T', '-I 16',
-            '-i 4', '-n myvolume', '/dev/sda'],
-            "lvm lvcreate {0} -L 2791728742.40K -n myvolume -I 16 -i 4 /dev/sda". format(default_pool))
+            '-n myvolume', '/dev/sda'],
+            "lvm lvcreate {0} -L 2791728742.40K -n myvolume -I 16 -i 1 /dev/sda". format(default_pool))
         self._cmdEq("lvm vgextend {0} /dev/sda".format(default_pool), -2)
 
         self._addPool("my_pool", ['/dev/sdc2', '/dev/sdc3'])
         self._checkCmd("ssm create", ['-r 0', '-p my_pool', '-s 2.6T', '-I 16',
-            '-i 4', '-n myvolume', '/dev/sda'],
-            "lvm lvcreate my_pool -L 2791728742.40K -n myvolume -I 16 -i 4 /dev/sda")
+            '-n myvolume', '/dev/sda'],
+            "lvm lvcreate my_pool -L 2791728742.40K -n myvolume -I 16 -i 1 /dev/sda")
         self._cmdEq("lvm vgextend my_pool /dev/sda", -2)
 
         # Create volume using multiple devices which one of the is in already

@@ -48,6 +48,12 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         pass
 
     def mock_run(self, cmd, *args, **kwargs):
+
+        # Convert all parts of cmd into string
+        for i, item in enumerate(cmd):
+            if type(item) is not str:
+                cmd[i] = str(item)
+
         self.run_data.append(" ".join(cmd))
         output = ""
         if cmd[:3] == ['btrfs', 'filesystem', 'show']:
