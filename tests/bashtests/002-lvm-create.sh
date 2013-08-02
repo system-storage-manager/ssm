@@ -24,6 +24,7 @@ DEV_COUNT=10
 DEV_SIZE=100
 TEST_MAX_SIZE=$(($DEV_COUNT*$DEV_SIZE))
 aux prepare_devs $DEV_COUNT $DEV_SIZE
+aux prepare_mnts 4
 TEST_DEVS=$(cat DEVICES)
 export SSM_DEFAULT_BACKEND='lvm'
 export SSM_LVM_DEFAULT_POOL=$vg1
