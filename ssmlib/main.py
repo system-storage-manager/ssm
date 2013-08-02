@@ -1188,7 +1188,7 @@ class StorageHandle(object):
         """
         pool = self.pool[args.volume['pool_name']]
         vol_size = float(args.volume['vol_size'])
-        pool_size = float(pool['pool_size'])
+        pool_free = float(pool['pool_free'])
 
         if not args.size:
         # We'll ceate snapshot of the size of 20% of the original volume
@@ -1198,8 +1198,12 @@ class StorageHandle(object):
             snap_size = float(misc.get_real_size(args.size))
             user_set_size = True
 
-        if pool_size < snap_size:
-            snap_size = pool_size
+        if pool_free < snap_size:
+            snap_size = pool_free
+
+        if snap_size <= 0 and pool.type != 'btrfs':
+            PR.error("Not enough space ({0} KB) to".format(pool_free) + \
+                     "to create snapshot")
 
         args.volume.snapshot(args.dest, args.name, snap_size, user_set_size)
 
