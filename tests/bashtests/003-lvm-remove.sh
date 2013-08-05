@@ -107,6 +107,24 @@ check vg_field $pool2 pv_count 1
 check vg_field $pool3 pv_count 1
 ssm -f remove -a
 
+# Remove multiple volumes
+ssm create $dev1 $dev2
+ssm add -p $pool1 $TEST_DEVS
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 2
+check vg_field $pool1 pv_count 8
+ssm create -s ${DEV_SIZE}M -p $pool1 -n $lvol1
+ssm create -s ${DEV_SIZE}M -p $pool1 -n $lvol2
+ssm create -s ${DEV_SIZE}M -p $pool1 -n $lvol3
+check vg_field $pool1 lv_count 3
+ssm -f remove $pool1/$lvol1 $pool1/$lvol2
+check vg_field $pool1 lv_count 1
+ssm create -s ${DEV_SIZE}M -p $pool1 -n $lvol1
+ssm create -s ${DEV_SIZE}M -p $pool1 -n $lvol2
+ssm -f remove $SSM_LVM_DEFAULT_POOL/$lvol1 $pool1/$lvol1 $pool1/$lvol2
+check vg_field $SSM_LVM_DEFAULT_POOL lv_count 0
+check vg_field $pool1 lv_count 1
+ssm -f remove -a
+
 # Remove all
 ssm add $dev1 $dev2 -p $pool1
 ssm add $dev3 $dev4 --pool $pool2
