@@ -93,6 +93,20 @@ not check lv_field $DEFAULT_VOLUME lv_name $lvol1
 check vg_field $SSM_LVM_DEFAULT_POOL pv_count 4
 ssm -f remove --all
 
+# Remove multiple devices
+ssm add $dev1 $dev2 $dev3 -p $pool1
+ssm add $dev4 $dev5 --pool $pool2
+ssm add $dev6 -p $pool3
+ssm remove $dev1 $dev2
+check vg_field $pool1 pv_count 1
+ssm add $dev1 $dev2 $dev3 -p $pool1
+check vg_field $pool1 pv_count 3
+ssm remove $dev1 $dev2 $dev4 $dev6
+check vg_field $pool1 pv_count 1
+check vg_field $pool2 pv_count 1
+check vg_field $pool3 pv_count 1
+ssm -f remove -a
+
 # Remove all
 ssm add $dev1 $dev2 -p $pool1
 ssm add $dev3 $dev4 --pool $pool2
