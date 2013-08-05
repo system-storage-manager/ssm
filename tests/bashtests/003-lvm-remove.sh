@@ -159,3 +159,4 @@ ssm remove --help
 
 # Some cases which should fail
 not ssm remove
+not ssm remove non_exist
