@@ -130,7 +130,20 @@ ssm -f remove $SSM_LVM_DEFAULT_POOL
 mkfs.ext3 $dev1
 # Default answer is No
 not ssm add $dev1
+not check vg_field $SSM_LVM_DEFAULT_POOL pv_count 1
 ssm add $dev1 $dev2
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 1
+ssm -f remove --all
+
+# Try to use device with existing file system with force
+mkfs.ext3 $dev1
+# Default answer is No
+ssm -f add $dev1
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 1
+ssm -f remove $SSM_LVM_DEFAULT_POOL
+mkfs.ext3 $dev1
+ssm -f add $dev1 $dev2
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 2
 ssm -f remove --all
 
 ssm add --help

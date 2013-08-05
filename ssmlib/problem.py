@@ -53,6 +53,8 @@ FL_SILENT =             32
 FL_EXIT_ON_NO =         64
 FL_EXIT_ON_YES =        128
 FL_FATAL =              256
+FL_FORCE_YES =          512
+FL_FORCE_NO =           1024
 
 
 class SsmError(Exception):
@@ -198,7 +200,7 @@ class ProblemSet(object):
 
         self.EXISTING_FILESYSTEM = \
             ['Filesystem \'{0}\' detected on the device \'{1}\'!',
-             PROMPT_USE, FL_DEFAULT_NO, ExistingFilesystem]
+             PROMPT_USE, FL_DEFAULT_NO | FL_FORCE_YES, ExistingFilesystem]
 
         self.NO_DEVICES = \
             ['No devices available to use for the \'{0}\' pool!',
@@ -246,7 +248,11 @@ class ProblemSet(object):
         else:
             print "(Y/n/q) ?",
         ch = ''
-        if self.options.interactive:
+        if self.options.force and flags & FL_FORCE_NO:
+            ch = 'N'
+        elif self.options.force and flags & FL_FORCE_YES:
+            ch = 'Y'
+        elif self.options.interactive:
             while ch not in ['Y', 'N', 'Q', chr(13)]:
                 ch = self._read_char().upper()
         elif flags & FL_DEFAULT_NO:

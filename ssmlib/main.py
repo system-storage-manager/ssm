@@ -1672,6 +1672,7 @@ def main(args=None):
         sys.argv = args.split()
 
     options = Options()
+    PR.set_options(options)
     storage = StorageHandle(options)
     ssm_parser = SsmParser(storage)
     args = ssm_parser.parse()
@@ -1693,7 +1694,6 @@ def main(args=None):
 
     #storage.set_globals(args.force, args.verbose, args.yes, args.config)
     storage.set_globals(options)
-    PR.set_options(options)
 
     # Register clean-up function on exit
     sys.exitfunc = misc.do_cleanup
