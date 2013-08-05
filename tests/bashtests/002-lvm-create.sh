@@ -199,6 +199,27 @@ ssm -f remove $SSM_LVM_DEFAULT_POOL
 mkfs.ext3 $dev1
 ssm -f create $dev1 $dev2
 check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 2
+ssm  -f remove --all
+
+# Create volume with device already used in different pool
+ssm add $dev1 $dev2
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 2
+# Fail because $dev1 is already used
+not ssm create -p $pool1 $dev1
+not ssm create -p $pool1 $dev1 $dev2
+# Succeed because we have enough space to create volume just with $dev2
+ssm create -s $(($DEV_SIZE/2))M -p $pool1 $dev1 $dev3
+check lv_field $pool1/$lvol1 pv_count 1
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 2
+ssm  -f remove --all
+
+# Create volume with device already used in different pool with force
+ssm add $dev1 $dev2
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 2
+ssm -f create -p $pool1 $dev1
+check lv_field $pool1/$lvol1 pv_count 1
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 1
+ssm  -f remove --all
 
 ssm create --help
 

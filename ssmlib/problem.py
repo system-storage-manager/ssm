@@ -196,7 +196,7 @@ class ProblemSet(object):
 
         self.DEVICE_USED = \
             ['Device \'{0}\' is already used in the \'{1}\'!',
-             PROMPT_REMOVE, FL_DEFAULT_NO, DeviceUsed]
+             PROMPT_REMOVE, FL_DEFAULT_NO | FL_FORCE_YES, DeviceUsed]
 
         self.EXISTING_FILESYSTEM = \
             ['Filesystem \'{0}\' detected on the device \'{1}\'!',

@@ -146,6 +146,25 @@ ssm -f add $dev1 $dev2
 check vg_field $SSM_LVM_DEFAULT_POOL pv_count 2
 ssm -f remove --all
 
+# Create pool with device already used in different pool
+ssm add $dev1 $dev2
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 2
+# Fail because $dev1 is already used
+not ssm add -p $pool1 $dev1
+not ssm add -p $pool1 $dev1 $dev2
+ssm add -p $pool1 $dev1 $dev2 $dev3
+check vg_field $pool1 pv_count 1
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 2
+ssm  -f remove --all
+
+# Create pool with device already used in different pool with force
+ssm add $dev1 $dev2
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 2
+ssm -f add -p $pool1 $dev1
+check vg_field $pool1 pv_count 1
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 1
+ssm  -f remove --all
+
 ssm add --help
 
 # Some cases which should fail

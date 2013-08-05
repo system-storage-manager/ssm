@@ -145,14 +145,14 @@ not ssm  -f remove --all
 ssm create $dev1
 ssm resize -s +$((DEV_SIZE/2))M  $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2
 ssm -f remove $SSM_LVM_DEFAULT_POOL
-# Create volume on device with existing file system
+# Use device with existing file system
 mkfs.ext3 $dev2
 ssm create $dev1
 not ssm resize -s +$((DEV_SIZE/2))M  $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2
 ssm resize -s +$((DEV_SIZE/2))M  $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2 $dev3
 ssm -f remove --all
 
-# Create volume on device with existing file system
+# Use device with existing file system
 mkfs.ext3 $dev2
 ssm create $dev1
 ssm -f resize -s +$((DEV_SIZE/2))M  $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2
@@ -163,8 +163,27 @@ mkfs.ext3 $dev2
 ssm create $dev1
 ssm -f resize -s +$((DEV_SIZE/2))M  $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2 $dev3
 check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 3
+ssm -f remove --all
 
 
+# Use device already used in different pool
+ssm create $dev1
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 1
+ssm add -p $pool1 $dev2 $dev3
+check vg_field $pool1 pv_count 2
+not ssm resize -s +$((DEV_SIZE/2))M  $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2
+ssm resize -s +$((DEV_SIZE/2))M  $SSM_LVM_DEFAULT_POOL/$lvol1 $dev3 $dev4
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 2
+ssm -f remove --all
+
+# Use device already used in different pool with force
+ssm create $dev1
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 1
+ssm add -p $pool1 $dev2 $dev3
+check vg_field $pool1 pv_count 2
+ssm -f resize -s +$((DEV_SIZE/2))M  $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 2
+ssm -f remove --all
 
 ssm resize --help
 
