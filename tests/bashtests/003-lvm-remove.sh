@@ -35,6 +35,7 @@ lvol3=${LVOL_PREFIX}003
 
 pool1=$vg2
 pool2=$vg3
+pool3=$vg4
 DEFAULT_VOLUME=${SSM_LVM_DEFAULT_POOL}/$lvol1
 
 _FS=
