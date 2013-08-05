@@ -142,6 +142,15 @@ for fs in $TEST_FS; do
 done
 not ssm  -f remove --all
 
+ssm create $dev1
+ssm resize -s +$((DEV_SIZE/2))M  $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2
+ssm -f remove $SSM_LVM_DEFAULT_POOL
+# Create volume on device with existing file system
+mkfs.ext3 $dev2
+ssm create $dev1
+not ssm resize -s +$((DEV_SIZE/2))M  $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2
+ssm resize -s +$((DEV_SIZE/2))M  $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2 $dev3
+
 ssm resize --help
 
 # Some cases which should fail

@@ -183,6 +183,13 @@ for fs in $TEST_FS; do
 	ssm  -f remove $SSM_LVM_DEFAULT_POOL
 done
 
+ssm create $dev1 $dev2
+ssm -f remove $SSM_LVM_DEFAULT_POOL
+# Create volume on device with existing file system
+mkfs.ext3 $dev1
+not ssm create $dev1
+ssm create $dev1 $dev2
+
 ssm create --help
 
 # Some cases which should fail

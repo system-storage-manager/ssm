@@ -933,8 +933,17 @@ class StorageHandle(object):
                 else:
                     devices.remove(dev)
                     continue
+
             if not self.dev[dev] or 'pool_name' not in self.dev[dev]:
-                args.device.append(dev)
+                # Check signature of existing file system on the device
+                # and ask user whether to use it or not.
+                signature = misc.get_fs_type(dev)
+                if signature and \
+                   not PR.check(PR.EXISTING_FILESYSTEM, [signature, dev]):
+                    devices.remove(dev)
+                    continue
+                else:
+                    args.device.append(dev)
 
         if changed:
             self.reinit_dev()
@@ -1001,7 +1010,7 @@ class StorageHandle(object):
             PR.check(PR.RESIZE_NOT_ENOUGH_SPACE,
                      [pool_name, args.volume.name, new_size])
         elif len(args.device) > 0 and new_size > vol_size:
-            self.add(args)
+            self.add(args, True)
 
         if new_size != vol_size:
             args.volume.resize(new_size, fs)
@@ -1070,7 +1079,7 @@ class StorageHandle(object):
         # because it is actually the same thing
         if len(args.device) > 0 and \
            not (not args.pool.exists() and args.pool.type == 'btrfs'):
-            self.add(args)
+            self.add(args, True)
 
         if args.raid:
             raid = {'level': args.raid,
@@ -1111,24 +1120,34 @@ class StorageHandle(object):
         elif args.type in ['snap', 'snapshots']:
             self.snap.ptable()
 
-    def add(self, args):
+    def add(self, args, skip_check=False):
         """
         Add devices into the pool
         """
-        for dev in args.device[:]:
-            item = self.dev[dev]
-            if item and 'pool_name' in item:
-                if item['pool_name'] == args.pool.name:
-                    args.device.remove(dev)
-                    continue
-                if PR.check(PR.DEVICE_USED, [item.name, item['pool_name']]):
-                    remove_args = Struct()
-                    remove_args.all = False
-                    remove_args.items = [item]
-                    if not self.remove(remove_args):
-                        args.device.remove(item.name)
+        if not skip_check:
+            for dev in args.device[:]:
+                item = self.dev[dev]
+                if item and 'pool_name' in item:
+                    if item['pool_name'] == args.pool.name:
+                        args.device.remove(dev)
+                        continue
+                    if PR.check(PR.DEVICE_USED, [item.name, item['pool_name']]):
+                        remove_args = Struct()
+                        remove_args.all = False
+                        remove_args.items = [item]
+                        if not self.remove(remove_args):
+                            args.device.remove(item.name)
+                    else:
+                        args.device.remove(dev)
                 else:
-                    args.device.remove(dev)
+                    # Check signature of existing file system on the device
+                    # and as user whether to use it or not.
+                    signature = misc.get_fs_type(dev)
+                    if signature and \
+                       not PR.check(PR.EXISTING_FILESYSTEM, [signature, dev]):
+                        args.device.remove(dev)
+                        continue
+
         if args.pool.exists():
             if len(args.device) > 0:
                 args.pool.extend(args.device)
@@ -1266,9 +1285,11 @@ class StorageHandle(object):
                 return
         return self.get_bdevice(path)
 
+
     def get_bdevice(self, path):
         path = is_bdevice(path)
         return self._find_device_record(path)
+
 
     def is_pool(self, string):
         pool = self.pool[string]
@@ -1327,7 +1348,7 @@ class StorageHandle(object):
             return device
         else:
             try:
-                path = self.get_bdevice(path)
+                path = self.get_bdevice(string)
                 device = self.dev[path]
                 if device:
                     return device
@@ -1580,7 +1601,8 @@ class SsmParser(object):
                      pool is used.''', type=self.storage.is_pool)
         parser_add.add_argument('device', nargs='+',
                 help="Devices to add into the pool.",
-                type=self.storage.get_bdevice)
+                type=self.storage.get_bdevice,
+                action=StoreAll)
         parser_add.set_defaults(func=self.storage.add)
         return parser_add
 

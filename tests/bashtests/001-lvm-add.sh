@@ -32,7 +32,6 @@ pool1=$vg2
 pool2=$vg3
 
 ssm list dev
-exit
 
 # Create default pool with all devices at once
 ssm add $TEST_DEVS
@@ -123,6 +122,15 @@ check list_table "$ssm_output" $dev7 none none 8.00MB $vg3
 check list_table "$ssm_output" $dev8 none none 8.00MB $vg3
 check list_table "$ssm_output" $dev9 none none 8.00MB $vg2
 check list_table "$ssm_output" $dev10 none none 8.00MB $vg3
+ssm -f remove --all
+
+ssm add $dev1 $dev2
+ssm -f remove $SSM_LVM_DEFAULT_POOL
+# Try to use device with existing file system
+mkfs.ext3 $dev1
+# Default answer is No
+not ssm add $dev1
+ssm add $dev1 $dev2
 ssm -f remove --all
 
 ssm add --help

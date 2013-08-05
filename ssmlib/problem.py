@@ -21,8 +21,8 @@ import sys
 
 __all__ = ["ProblemSet", "SsmError", "GeneralError", "ProgrammingError",
            "BadEnvVariable", "NotEnoughSpace", "ResizeMatch", "FsNotSpecified",
-           "DeviceUsed", "NoDevices", "ToolMissing", "CanNotRun",
-           "CommandFailed", "UserInterrupted", "NotSupported"]
+           "DeviceUsed", "ExistingFilesystem", "NoDevices", "ToolMissing",
+           "CanNotRun", "CommandFailed", "UserInterrupted", "NotSupported"]
 
 # Define prompt codes
 PROMPT_NONE =           0
@@ -31,6 +31,7 @@ PROMPT_SET_DEFAULT =    2
 PROMPT_IGNORE =         3
 PROMPT_REMOVE =         4
 PROMPT_ADJUST =         5
+PROMPT_USE =            6
 
 PROMPT_MSG = [
         None,
@@ -39,6 +40,7 @@ PROMPT_MSG = [
         'Ignore',
         'Remove',
         'Adjust',
+        'Use anyway',
         ]
 
 # Define problem flags
@@ -134,6 +136,12 @@ class NotSupported(SsmError):
         super(NotSupported, self).__init__(msg, errcode)
 
 
+class ExistingFilesystem(SsmError):
+    def __init__(self, msg, errcode=2015):
+        super(ExistingFilesystem, self).__init__(msg, errcode)
+
+
+
 class ProblemSet(object):
 
     def __init__(self, options):
@@ -187,6 +195,10 @@ class ProblemSet(object):
         self.DEVICE_USED = \
             ['Device \'{0}\' is already used in the \'{1}\'!',
              PROMPT_REMOVE, FL_DEFAULT_NO, DeviceUsed]
+
+        self.EXISTING_FILESYSTEM = \
+            ['Filesystem \'{0}\' detected on the device \'{1}\'!',
+             PROMPT_USE, FL_DEFAULT_NO, ExistingFilesystem]
 
         self.NO_DEVICES = \
             ['No devices available to use for the \'{0}\' pool!',
