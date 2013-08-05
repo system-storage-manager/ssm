@@ -125,6 +125,15 @@ check vg_field $SSM_LVM_DEFAULT_POOL lv_count 0
 check vg_field $pool1 lv_count 1
 ssm -f remove -a
 
+# Remove multiple pools
+ssm create $dev1 $dev2
+ssm create -p $pool1 $dev3 $dev4
+ssm add -p $pool2 $dev5 $dev6 $dev7
+ssm -f remove $SSM_LVM_DEFAULT_POOL $pool1 $pool2
+not check vg_field $SSM_LVM_DEFAULT_POOL vg_name $SSM_LVM_DEFAULT_POOL
+not check vg_field $pool1 vg_name $pool1
+not check vg_field $pool1 vg_name $pool1
+
 # Remove all
 ssm add $dev1 $dev2 -p $pool1
 ssm add $dev3 $dev4 --pool $pool2
