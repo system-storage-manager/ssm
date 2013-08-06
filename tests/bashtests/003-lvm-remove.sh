@@ -24,6 +24,7 @@ DEV_COUNT=10
 DEV_SIZE=10
 TEST_MAX_SIZE=$(($DEV_COUNT*$DEV_SIZE))
 aux prepare_devs $DEV_COUNT $DEV_SIZE
+aux prepare_mnts 1
 TEST_DEVS=$(cat DEVICES)
 export SSM_DEFAULT_BACKEND='lvm'
 export SSM_LVM_DEFAULT_POOL=$vg1
@@ -133,6 +134,22 @@ ssm -f remove $SSM_LVM_DEFAULT_POOL $pool1 $pool2
 not check vg_field $SSM_LVM_DEFAULT_POOL vg_name $SSM_LVM_DEFAULT_POOL
 not check vg_field $pool1 vg_name $pool1
 not check vg_field $pool1 vg_name $pool1
+
+# Remove mounted volumes
+ssm create --fs ext4 $dev1 $dev2 $mnt1
+# Check mounted fs
+not ssm check $SSM_LVM_DEFAULT_POOL/$lvol1
+# Force the removal
+ssm -f remove $SSM_LVM_DEFAULT_POOL/$lvol1
+not check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_name $lvol1
+ssm create --fs ext4 $dev1 $dev2 $mnt1
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 2
+ssm list
+not ssm -f remove $SSM_LVM_DEFAULT_POOL
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_name $lvol1
+umount $mnt1
+ssm check $SSM_LVM_DEFAULT_POOL/$lvol1
+ssm -f remove --all
 
 # Remove all
 ssm add $dev1 $dev2 -p $pool1

@@ -169,7 +169,8 @@ class ProblemSet(object):
 
         self.FS_MOUNTED = \
             ['Device \'{0}\' is mounted on \'{1}\'',
-             PROMPT_UNMOUNT, FL_DEFAULT_NO | FL_EXIT_ON_NO, FsMounted]
+             PROMPT_UNMOUNT,
+             FL_DEFAULT_NO | FL_EXIT_ON_NO | FL_FORCE_YES, FsMounted]
 
         self.BAD_ENV_VARIABLE = \
             ['Environment variable \'{0}\' contains unsupported value \'{1}\'!',
