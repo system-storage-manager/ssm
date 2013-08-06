@@ -192,7 +192,7 @@ class ProblemSet(object):
 
         self.CREATE_MOUNT_NOFS = \
             ['Mount point \'{0}\' specified, but no file system provided!',
-            PROMPT_IGNORE, FL_EXIT_ON_NO, FsNotSpecified]
+            PROMPT_IGNORE, FL_EXIT_ON_NO | FL_FORCE_YES, FsNotSpecified]
 
         self.DEVICE_USED = \
             ['Device \'{0}\' is already used in the \'{1}\'!',
