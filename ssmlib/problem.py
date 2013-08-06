@@ -182,8 +182,8 @@ class ProblemSet(object):
 
         self.CREATE_NOT_ENOUGH_SPACE = \
             ['Not enough space ({0} KB) in the pool \'{1}\' to create ' + \
-             'volume!', PROMPT_ADJUST, FL_DEFAULT_NO | FL_EXIT_ON_NO,
-             NotEnoughSpace]
+             'volume!', PROMPT_ADJUST,
+             FL_DEFAULT_NO | FL_EXIT_ON_NO | FL_FORCE_YES, NotEnoughSpace]
 
         self.RESIZE_ALREADY_MATCH = \
             ['\'{0}\' is already {1} KB long, there is nothing ' + \

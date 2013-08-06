@@ -184,6 +184,20 @@ for fs in $TEST_FS; do
 	ssm  -f remove $SSM_LVM_DEFAULT_POOL
 done
 
+# Create volume without enough space in the pool
+ssm create $dev1
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 1
+ssm add $dev2 $dev3
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 3
+not ssm create -s $(($DEV_SIZE*3))M
+not check lv_field $SSM_LVM_DEFAULT_POOL/$lvol2 lv_name $lvol2
+# Force to adjust the size
+ssm -f create -s $(($DEV_SIZE*3))M
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol2 lv_name $lvol2
+check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$lvol2 $SSM_LVM_DEFAULT_POOL 192.00MB linear
+ssm  -f remove --all
+
+
 ssm create $dev1 $dev2
 ssm -f remove $SSM_LVM_DEFAULT_POOL
 # Create volume on device with existing file system
