@@ -185,7 +185,7 @@ class FsInfo(object):
         self.data['fs_used'] = (bcount - fbcount) * bsize / 1024
 
     def extN_fsck(self):
-        command = ['fsck.{0}'.format(self.fstype), '-f']
+        command = ['fsck.{0}'.format(self.fstype), '-f' ,'-n']
         if not misc.check_binary(command[0]):
             PR.warn("\'{0}\' tool does not exist. ".format(command[0]) + \
                     "File system will not be checked")
