@@ -865,22 +865,29 @@ class StorageHandle(object):
         except for btrfs.
         """
         err = 0
+        checked = 0
         for fs in args.device:
             print "Checking {0} file system on \'{1}\':".format(fs.fstype,
                                                                 fs.device),
             if fs.mounted:
+                print
                 try:
-                    print
                     if PR.check(PR.FS_MOUNTED, [fs.device, fs.mounted]):
                         misc.do_umount(fs.device)
-                except Exception:
+                except problem.FsMounted:
+                    PR.warn("Unable to check file system " + \
+                            "\'{0}\' on volume \'{1}\'".format(fs.fstype,
+                                                               fs.device))
                     continue
             ret = fs.fsck()
+            checked += 1
             err += ret
             if ret:
                 print "FAIL"
             else:
                 print "OK"
+        if checked == 0:
+            PR.error("Nothing was checked")
         if err > 0:
             PR.warn("Some file system(s) contains errors. Please run " + \
                     "the appropriate fsck utility")
