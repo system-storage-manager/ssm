@@ -107,10 +107,10 @@ ssm create --name $vol3 $mnt2
 ssm add $dev9
 
 # We can not remove mounted fs
-ssm remove $pool2
+not ssm remove $pool2
 
 # We can not remove mounted subvolume
-ssm remove ${SSM_BTRFS_DEFAULT_POOL}:${vol3}
+not ssm remove ${SSM_BTRFS_DEFAULT_POOL}:${vol3}
 
 check btrfs_fs_field $pool1 dev_count 2
 check btrfs_fs_field $pool2 dev_count 2
@@ -120,6 +120,10 @@ check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count 5
 check btrfs_vol_field $mnt3 vol_count 2
 check btrfs_vol_field $mnt3 subvolume $vol2
 check btrfs_vol_field $mnt2 subvolume $vol3
+
+# but we can force it
+ssm -f remove ${SSM_BTRFS_DEFAULT_POOL}:${vol3}
+not check btrfs_vol_field $mnt2 subvolume $vol3
 
 umount_all
 ssm -f remove --all
@@ -151,4 +155,4 @@ ssm remove --help
 
 # Some cases which should fail
 not ssm remove
-ssm -f remove --all
+not ssm -f remove --all
