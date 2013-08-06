@@ -419,6 +419,15 @@ class BtrfsPool(Btrfs):
 
         if size:
             command.extend(['-b', "{0}".format(int(float(size) * 1024))])
+        # This might seem weird, but btrfs is mostly broken when it comes to
+        # checking existing signatures because it will for example check for
+        # backup superblocks as well, which is wrong. Also we have check for
+        # existing file system signatures in the ssm itself. Other things
+        # than file system should be covered by the backend and we should
+        # have tried to remove the device from the respective pool already.
+        # So at this point there should not be any useful signatures to
+        # speak of. However as I mentioned btrfs is broken, so force it.
+        command.extend(['-f'])
         command.extend(devs)
         misc.run(command, stdout=True)
         misc.send_udev_event(devs[0], "change")

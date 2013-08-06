@@ -91,48 +91,48 @@ class BtrfsFunctionCheck(MockSystemDataSource):
 
         # Create volume using single device from non existent default pool
         self._checkCmd("ssm create", ['/dev/sda'],
-            "mkfs.btrfs -L {0} /dev/sda".format(default_pool))
+            "mkfs.btrfs -L {0} -f /dev/sda".format(default_pool))
 
         # Specify default backend
         self._checkCmd("ssm -b btrfs create", ['/dev/sda'],
-            "mkfs.btrfs -L {0} /dev/sda".format(default_pool))
+            "mkfs.btrfs -L {0} -f /dev/sda".format(default_pool))
 
         main.SSM_DEFAULT_BACKEND = 'lvm'
         self._checkCmd("ssm --backend btrfs create", ['/dev/sda'],
-            "mkfs.btrfs -L {0} /dev/sda".format(default_pool))
+            "mkfs.btrfs -L {0} -f /dev/sda".format(default_pool))
         main.SSM_DEFAULT_BACKEND = 'btrfs'
 
         self._checkCmd("ssm -f create", ['/dev/sda'],
-            "mkfs.btrfs -L {0} /dev/sda".format(default_pool))
+            "mkfs.btrfs -L {0} -f /dev/sda".format(default_pool))
 
         self._checkCmd("ssm -v create", ['/dev/sda'],
-            "mkfs.btrfs -L {0} /dev/sda".format(default_pool))
+            "mkfs.btrfs -L {0} -f /dev/sda".format(default_pool))
 
         self._checkCmd("ssm -f -v create", ['/dev/sda'],
-            "mkfs.btrfs -L {0} /dev/sda".format(default_pool))
+            "mkfs.btrfs -L {0} -f /dev/sda".format(default_pool))
 
         self._checkCmd("ssm create", ['-s 2.6T', '/dev/sda'],
-            "mkfs.btrfs -L {0} -b 2858730232217 /dev/sda".format(default_pool))
+            "mkfs.btrfs -L {0} -b 2858730232217 -f /dev/sda".format(default_pool))
 
         self._checkCmd("ssm create", ['-r 0', '-s 2.6T', '/dev/sda'],
-            "mkfs.btrfs -L btrfs_pool -m raid0 -d raid0 -b 2858730232217 /dev/sda".format(default_pool))
+            "mkfs.btrfs -L btrfs_pool -m raid0 -d raid0 -b 2858730232217 -f /dev/sda".format(default_pool))
         self._checkCmd("ssm create", ['-r 0', '-s 2.6T', '/dev/sda'],
-            "mkfs.btrfs -L btrfs_pool -m raid0 -d raid0 -b 2858730232217 /dev/sda".format(default_pool))
+            "mkfs.btrfs -L btrfs_pool -m raid0 -d raid0 -b 2858730232217 -f /dev/sda".format(default_pool))
         self._checkCmd("ssm create", ['-r 1', '-s 512k', '/dev/sda'],
-            "mkfs.btrfs -L btrfs_pool -m raid1 -d raid1 -b 524288 /dev/sda".format(default_pool))
+            "mkfs.btrfs -L btrfs_pool -m raid1 -d raid1 -b 524288 -f /dev/sda".format(default_pool))
         self._checkCmd("ssm create", ['-r 10', '-s 10M', '/dev/sda'],
-            "mkfs.btrfs -L btrfs_pool -m raid10 -d raid10 -b 10485760 /dev/sda".format(default_pool))
+            "mkfs.btrfs -L btrfs_pool -m raid10 -d raid10 -b 10485760 -f /dev/sda".format(default_pool))
 
         # Create volume using single device from non existent my_pool
         self._checkCmd("ssm create", ['--pool my_pool', '/dev/sda'],
-            "mkfs.btrfs -L my_pool /dev/sda")
+            "mkfs.btrfs -L my_pool -f /dev/sda")
 
         self._checkCmd("ssm create", ['-p my_pool', '-r 0', '-s 2.6T', '/dev/sda'],
-            "mkfs.btrfs -L my_pool -m raid0 -d raid0 -b 2858730232217 /dev/sda")
+            "mkfs.btrfs -L my_pool -m raid0 -d raid0 -b 2858730232217 -f /dev/sda")
 
         # Create volume using multiple devices
         self._checkCmd("ssm create /dev/sda /dev/sdb", [],
-            "mkfs.btrfs -L {0} /dev/sda /dev/sdb".format(default_pool))
+            "mkfs.btrfs -L {0} -f /dev/sda /dev/sdb".format(default_pool))
 
         # Create volume using single device from existing pool
         self._addPool(default_pool, ['/dev/sdb', '/dev/sdd'])
@@ -336,30 +336,30 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         # Adding to non existent pool
         # Add device into default pool
         self._checkCmd("ssm add", ['/dev/sda'],
-            "mkfs.btrfs -L {0} /dev/sda".format(default_pool))
+            "mkfs.btrfs -L {0} -f /dev/sda".format(default_pool))
 
         # Specify backend
         self._checkCmd("ssm --backend btrfs add", ['/dev/sda'],
-            "mkfs.btrfs -L {0} /dev/sda".format(default_pool))
+            "mkfs.btrfs -L {0} -f /dev/sda".format(default_pool))
 
         main.SSM_DEFAULT_BACKEND = 'lvm'
         self._checkCmd("ssm -b btrfs add", ['/dev/sda'],
-            "mkfs.btrfs -L {0} /dev/sda".format(default_pool))
+            "mkfs.btrfs -L {0} -f /dev/sda".format(default_pool))
         main.SSM_DEFAULT_BACKEND = 'btrfs'
 
         # Add more devices into default pool
         self._checkCmd("ssm add", ['/dev/sda /dev/sdc1'],
-            "mkfs.btrfs -L {0} /dev/sda /dev/sdc1".format(default_pool))
+            "mkfs.btrfs -L {0} -f /dev/sda /dev/sdc1".format(default_pool))
         # Add device into defined pool
         self._checkCmd("ssm add", ['-p my_pool', '/dev/sda'],
-            "mkfs.btrfs -L my_pool /dev/sda")
+            "mkfs.btrfs -L my_pool -f /dev/sda")
         self._checkCmd("ssm add", ['--pool my_pool', '/dev/sda'],
-            "mkfs.btrfs -L my_pool /dev/sda")
+            "mkfs.btrfs -L my_pool -f /dev/sda")
         # Add more devices into defined pool
         self._checkCmd("ssm add", ['-p my_pool', '/dev/sda /dev/sdc1'],
-            "mkfs.btrfs -L my_pool /dev/sda /dev/sdc1")
+            "mkfs.btrfs -L my_pool -f /dev/sda /dev/sdc1")
         self._checkCmd("ssm add", ['--pool my_pool', '/dev/sda /dev/sdc1'],
-            "mkfs.btrfs -L my_pool /dev/sda /dev/sdc1")
+            "mkfs.btrfs -L my_pool -f /dev/sda /dev/sdc1")
 
         # Adding to existing default pool
         self._addPool(default_pool, ['/dev/sdb', '/dev/sdd'])
