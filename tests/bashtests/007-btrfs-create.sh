@@ -153,4 +153,4 @@ ssm create --help
 
 # Some cases which should fail
 not ssm create
-ssm  -f remove --all
+not ssm  -f remove --all
