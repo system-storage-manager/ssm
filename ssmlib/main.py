@@ -756,7 +756,7 @@ class Snapshots(Storage):
 
         self.header = ['Snapshot', 'Origin', 'Volume size', 'Size',
                        'Type', 'Mount point']
-        self.attrs = ['snap_name', 'origin', 'vol_size', 'snap_size',
+        self.attrs = ['dev_name', 'origin', 'vol_size', 'snap_size',
                       'type', 'mount']
         self.types = [str, str, float, float, str, str]
         self._apply_prefix_filter()

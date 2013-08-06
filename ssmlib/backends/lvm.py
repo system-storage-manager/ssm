@@ -336,7 +336,6 @@ class SnapInfo(LvmInfo):
         snap['dev_name'] = "{0}/{1}/{2}".format(DM_DEV_DIR, snap['pool_name'],
                                               snap['lv_name'])
         snap['hide'] = False
-        snap['snap_name'] = snap['dev_name']
         snap['snap_path'] = snap['dev_name']
         size = float(snap['vol_size']) * float(snap['snap_size'])
         snap['snap_size'] = str(size / 100.00)

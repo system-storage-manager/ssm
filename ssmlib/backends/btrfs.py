@@ -49,8 +49,8 @@ def get_btrfs_version():
         output = output.strip().split("\n")[-1]
         version = re.search('(?<=v)\d+\.\d+', output).group(0)
     except (OSError, AttributeError):
-        version = 0.0
-    return version
+        version = "0.0"
+    return float(version)
 
 BTRFS_VERSION = get_btrfs_version()
 
@@ -173,23 +173,44 @@ class Btrfs(object):
         command.insert(0, "btrfs")
         return misc.run(command, stdout=True)
 
-    def _list_subvolumes(self, mount):
+    def _list_subvolumes(self, mount, list_snapshots=False):
         command = ['btrfs', 'subvolume', 'list']
         if self.modified_list_version:
             command.append('-a');
+        if list_snapshots:
+            command.append('-s')
         ret, output = misc.run(command + [mount], stdout=False, can_fail=True)
         if ret:
             command = ['btrfs', 'subvolume', 'list']
+            if list_snapshots:
+                command.append('-s')
             output = misc.run(command + [mount], stdout=False)[1]
             self.modified_list_version = False
         return output
 
-    def _fill_subvolumes(self):
+    # There is no way in btrfs to list subvolumes which are not snapshots
+    # so we have to get the list of snapshots to filter it out from
+    # regular subvolume list so we do not have it in the output twice.
+    # Once in volume list and once in snapshot list.
+    def _get_snap_name_list(self, mount):
+        snap = []
+        if BTRFS_VERSION < 0.20:
+            return snap
+        command = ['btrfs', 'subvolume', 'list', '-s', mount]
+        output = misc.run(command, stdout=False)[1]
+
+        for line in output.strip().split("\n"):
+            if not line:
+                continue
+            path = re.search('(?<=path ).*$', line).group(0)
+            snap.append(path)
+        return snap
+
+    def _fill_subvolumes(self, list_snapshots=False):
         if not self._binary:
             return
         if self._subvolumes:
             return
-        command = ['btrfs', 'subvolume', 'list']
         for name, vol in self._vol.iteritems():
             pool_name = vol['pool_name']
             real_dev = vol['real_dev']
@@ -201,7 +222,11 @@ class Btrfs(object):
                 # If btrfs is not mounted we will not process subvolumes
                 continue
 
-            output = self._list_subvolumes(mount)
+            snapshots = []
+            if not list_snapshots:
+                snapshots = self._get_snap_name_list(mount)
+
+            output = self._list_subvolumes(mount, list_snapshots)
             for volume in self._parse_subvolumes(output):
                 new = vol.copy()
                 new.update(volume)
@@ -242,11 +267,11 @@ class Btrfs(object):
                 if 'mount' in new and \
                     re.match("snap-\d{4}-\d{2}-\d{2}-T\d{6}",
                         os.path.basename(new['mount'])):
-                    new['hide'] = True
-                    new['snap_name'] = new['dev_name']
                     new['snap_name'] = "{0}:{1}".format(name,
                             os.path.basename(new['path']))
                     new['snap_path'] = new['mount']
+                if volume['path'] in snapshots:
+                    new['hide'] = True
 
                 self._subvolumes[new['dev_name']] = new
 
@@ -517,11 +542,14 @@ class BtrfsSnap(Btrfs):
     def __init__(self, *args, **kwargs):
         super(BtrfsSnap, self).__init__(*args, **kwargs)
 
-        self._fill_subvolumes()
+        self._fill_subvolumes(list_snapshots=True)
         for name, vol in self._subvolumes.iteritems():
-            if 'snap_name' in vol:
-                self._snap[vol['snap_name']] = vol.copy()
-                self._snap[vol['snap_name']]['hide'] = False
+            if BTRFS_VERSION < 0.20:
+                if 'snap_name' in vol:
+                    self._snap[vol['snap_name']] = vol.copy()
+                    self._snap[vol['snap_name']]['hide'] = False
+            else:
+                self._snap[vol['dev_name']] = vol.copy()
 
         if self.data:
             self.data.update(self._snap)
