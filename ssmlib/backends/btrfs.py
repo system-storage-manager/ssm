@@ -43,6 +43,7 @@ def get_real_number(string):
             break
     return number
 
+
 def get_btrfs_version():
     try:
         output = misc.run(['btrfs', '--version'], can_fail=True)[1]
@@ -53,6 +54,7 @@ def get_btrfs_version():
     return float(version)
 
 BTRFS_VERSION = get_btrfs_version()
+
 
 class Btrfs(object):
 
@@ -94,7 +96,7 @@ class Btrfs(object):
             if array[0] == 'Label:':
                 if len(vol) > 0:
                     self._store_data(vol, pool, fs_used, fs_size, pool_size,
-                            pool_name)
+                                     pool_name)
                     vol = {}
                     pool = {}
                     fs_size = pool_size = 0
@@ -176,7 +178,7 @@ class Btrfs(object):
     def _list_subvolumes(self, mount, list_snapshots=False):
         command = ['btrfs', 'subvolume', 'list']
         if self.modified_list_version:
-            command.append('-a');
+            command.append('-a')
         if list_snapshots:
             command.append('-s')
         ret, output = misc.run(command + [mount], stdout=False, can_fail=True)
@@ -253,20 +255,21 @@ class Btrfs(object):
                                     new['mount'] = ''
                                 else:
                                     new['mount'] = "{0}/{1}".format(
-                                        self._subvolumes[prev_sv]['mount'], path)
+                                        self._subvolumes[prev_sv]['mount'],
+                                        path)
                                 break
                     # if parent volume is not mounted, use root subvolume
                     # if mounted
                     else:
                         if 'mount' in vol:
                             new['mount'] = "{0}/{1}".format(vol['mount'],
-                                new['path'])
+                                                            new['path'])
 
                 new['hide'] = False
                 # Store snapshot info
                 if 'mount' in new and \
                     re.match("snap-\d{4}-\d{2}-\d{2}-T\d{6}",
-                        os.path.basename(new['mount'])):
+                             os.path.basename(new['mount'])):
                     new['snap_name'] = "{0}:{1}".format(name,
                             os.path.basename(new['path']))
                     new['snap_path'] = new['mount']
@@ -321,7 +324,7 @@ class Btrfs(object):
     def _remove_filesystem(self, name):
         if 'mount' in self._vol[name]:
             if self.problem.check(self.problem.FS_MOUNTED,
-                    [name, self._vol[name]['mount']]):
+                                  [name, self._vol[name]['mount']]):
                 misc.do_umount(self._vol[name]['mount'])
         for dev in self._dev.itervalues():
             if dev['pool_name'] != name:
@@ -358,7 +361,7 @@ class BtrfsVolume(Btrfs):
             # root subvolume and remove this subvolume.
             if 'direct_mount' in volume and volume['direct_mount']:
                 if self.problem.check(self.problem.FS_MOUNTED,
-                        [vol, volume['mount']]):
+                                      [vol, volume['mount']]):
                     misc.do_umount(volume['mount'])
                     del volume['mount']
                     del volume['direct_mount']
@@ -392,7 +395,7 @@ class BtrfsVolume(Btrfs):
             destination = vol['mount'] + "/" + name
 
         if user_set_size:
-            self.problem.warn("Btrfs doesn't allow setting a size of " + \
+            self.problem.warn("Btrfs doesn't allow setting a size of " +
                               "subvolumes")
 
         command = ['subvolume', 'snapshot', vol['mount'], destination]
@@ -409,7 +412,7 @@ class BtrfsDev(Btrfs):
             self.data = self._dev
 
     def remove(self, devices):
-        raise Exception("Not sure what you want to" + \
+        raise Exception("Not sure what you want to" +
                         "achieve by removing {0}".format(devices))
 
 
@@ -424,7 +427,7 @@ class BtrfsPool(Btrfs):
 
     def _create_filesystem(self, pool, name, devs, size=None, raid=None):
         if not devs:
-            raise Exception("To create btrfs volume, some devices must be " + \
+            raise Exception("To create btrfs volume, some devices must be " +
                             "provided")
         self._binary = misc.check_binary('mkfs.btrfs')
         if not self._binary:
@@ -439,7 +442,7 @@ class BtrfsPool(Btrfs):
             elif raid['level'] == '10':
                 command.extend(['-m', 'raid10', '-d', 'raid10'])
             else:
-                raise Exception("Btrfs backed currently does not support " + \
+                raise Exception("Btrfs backed currently does not support " +
                                 "RAID level {0}".format(raid['level']))
 
         if size:
@@ -504,15 +507,14 @@ class BtrfsPool(Btrfs):
         self._remove_filesystem(pool)
 
     def create(self, pool, size=None, name=None, devs=None,
-            raid=None):
+               raid=None):
         if pool in self._pool:
             vol = None
             if size or raid:
-                self.problem.warn("Only name, volume name and pool name " + \
-                                  "can be specified when creating btrfs " + \
+                self.problem.warn("Only name, volume name and pool name " +
+                                  "can be specified when creating btrfs " +
                                   "subvolume, the rest will be ignored")
-            tmp = misc.temp_mount(
-                    "UUID={0}".format(self._pool[pool]['uuid']))
+            tmp = misc.temp_mount("UUID={0}".format(self._pool[pool]['uuid']))
             self._pool[pool]['mount'] = tmp
 
             if not name:
@@ -531,7 +533,7 @@ class BtrfsPool(Btrfs):
             if len(devs) == 0:
                 self.problem.check(self.problem.NO_DEVICES, pool)
             if name:
-                self.problem.warn("Creating new pool. Argument (--name " + \
+                self.problem.warn("Creating new pool. Argument (--name " +
                                   "{0}) will be ignored!".format(name))
             vol = self._create_filesystem(pool, pool, devs, size, raid)
         return vol

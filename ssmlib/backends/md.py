@@ -45,7 +45,7 @@ class MdRaid(object):
         self._binary = misc.check_binary(MDADM)
         self.default_pool_name = SSM_DM_DEFAULT_POOL
         self.attrs = ['dev_name', 'pool_name', 'dev_free',
-                'dev_used', 'dev_size']
+                      'dev_used', 'dev_size']
 
         if not self._binary:
             return

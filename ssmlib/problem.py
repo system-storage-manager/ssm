@@ -143,7 +143,6 @@ class ExistingFilesystem(SsmError):
         super(ExistingFilesystem, self).__init__(msg, errcode)
 
 
-
 class ProblemSet(object):
 
     def __init__(self, options):
@@ -177,23 +176,23 @@ class ProblemSet(object):
              PROMPT_SET_DEFAULT, FL_EXIT_ON_NO, BadEnvVariable]
 
         self.RESIZE_NOT_ENOUGH_SPACE = \
-            ['There is not enough space in the pool \'{0}\' to grow volume' + \
+            ['There is not enough space in the pool \'{0}\' to grow volume' +
              ' \'{1}\' to size {2} KB!',
              PROMPT_NONE, FL_FATAL, NotEnoughSpace]
 
         self.CREATE_NOT_ENOUGH_SPACE = \
-            ['Not enough space ({0} KB) in the pool \'{1}\' to create ' + \
+            ['Not enough space ({0} KB) in the pool \'{1}\' to create ' +
              'volume!', PROMPT_ADJUST,
              FL_DEFAULT_NO | FL_EXIT_ON_NO | FL_FORCE_YES, NotEnoughSpace]
 
         self.RESIZE_ALREADY_MATCH = \
-            ['\'{0}\' is already {1} KB long, there is nothing ' + \
+            ['\'{0}\' is already {1} KB long, there is nothing ' +
              'to resize!',
              PROMPT_NONE, FL_FATAL, ResizeMatch]
 
         self.CREATE_MOUNT_NOFS = \
             ['Mount point \'{0}\' specified, but no file system provided!',
-            PROMPT_IGNORE, FL_EXIT_ON_NO | FL_FORCE_YES, FsNotSpecified]
+             PROMPT_IGNORE, FL_EXIT_ON_NO | FL_FORCE_YES, FsNotSpecified]
 
         self.DEVICE_USED = \
             ['Device \'{0}\' is already used in the \'{1}\'!',

@@ -77,7 +77,7 @@ class LvmInfo(object):
                 break
             array = line.split("|")
             row = dict([(self.attrs[index], array[index].lstrip())
-                for index in range(len(array))])
+                       for index in range(len(array))])
             if self._skip_data(row):
                 continue
             self._fill_aditional_info(row)
@@ -100,10 +100,10 @@ class VgsInfo(LvmInfo):
     def __init__(self, *args, **kwargs):
         super(VgsInfo, self).__init__(*args, **kwargs)
         command = ["lvm", "vgs", "--separator", "|", "--noheadings",
-                "--nosuffix", "--units", "k", "-o",
-                "vg_name,pv_count,vg_size,vg_free,lv_count"]
+                   "--nosuffix", "--units", "k", "-o",
+                   "vg_name,pv_count,vg_size,vg_free,lv_count"]
         self.attrs = ['pool_name', 'dev_count', 'pool_size', 'pool_free',
-                'vol_count']
+                      'vol_count']
 
         self._parse_data(command)
 
@@ -149,7 +149,7 @@ class VgsInfo(LvmInfo):
         self.run_lvm(command)
 
     def create(self, vg, size=None, name=None, devs=None,
-            raid=None):
+               raid=None):
         devices = devs or []
         command = ['lvcreate', vg]
         if size:
@@ -175,14 +175,14 @@ class VgsInfo(LvmInfo):
                 if not raid['stripes'] and len(devices) > 0:
                     raid['stripes'] = str(len(devices))
                 if not raid['stripes']:
-                    self.problem.error("Devices or number of " + \
+                    self.problem.error("Devices or number of " +
                                        "stripes should be defined!")
                 if raid['stripesize']:
                     command.extend(['-I', raid['stripesize']])
                 if raid['stripes']:
                     command.extend(['-i', raid['stripes']])
             else:
-                self.problem.not_supported("RAID level {0}".format(raid['level']) + \
+                self.problem.not_supported("RAID level {0}".format(raid['level']) +
                                            " with \"lvm\" backend")
 
         command.extend(devices)
@@ -195,10 +195,10 @@ class PvsInfo(LvmInfo):
     def __init__(self, *args, **kwargs):
         super(PvsInfo, self).__init__(*args, **kwargs)
         command = ["lvm", "pvs", "--separator", "|", "--noheadings",
-                "--nosuffix", "--units", "k", "-o",
-                "pv_name,vg_name,pv_free,pv_used,pv_size"]
+                   "--nosuffix", "--units", "k", "-o",
+                   "pv_name,vg_name,pv_free,pv_used,pv_size"]
         self.attrs = ['dev_name', 'pool_name', 'dev_free',
-                'dev_used', 'dev_size']
+                      'dev_used', 'dev_size']
 
         self._parse_data(command)
 
@@ -226,10 +226,10 @@ class LvsInfo(LvmInfo):
     def __init__(self, *args, **kwargs):
         super(LvsInfo, self).__init__(*args, **kwargs)
         command = ["lvm", "lvs", "--separator", "|", "--noheadings",
-                "--nosuffix", "--units", "k", "-o",
-                "vg_name,lv_size,stripes,stripesize,segtype,lv_name,origin"]
+                   "--nosuffix", "--units", "k", "-o",
+                   "vg_name,lv_size,stripes,stripesize,segtype,lv_name,origin"]
         self.attrs = ['pool_name', 'vol_size', 'stripes',
-                'stripesize', 'type', 'lv_name', 'origin']
+                      'stripesize', 'type', 'lv_name', 'origin']
         self.handle_fs = True
         self.mounts = misc.get_mounts('{0}/mapper'.format(DM_DEV_DIR))
         self._parse_data(command)
@@ -304,7 +304,7 @@ class LvsInfo(LvmInfo):
             name = now.strftime("snap%Y%m%dT%H%M%S")
 
         command = ['lvcreate', '--size', str(size) + 'K', '--snapshot',
-                '--name', name, lv]
+                   '--name', name, lv]
 
         self.run_lvm(command)
 
@@ -314,11 +314,12 @@ class SnapInfo(LvmInfo):
     def __init__(self, *args, **kwargs):
         super(SnapInfo, self).__init__(*args, **kwargs)
         command = ["lvm", "lvs", "--separator", "|", "--noheadings",
-                "--nosuffix", "--units", "k", "-o",
-                "vg_name,lv_size,stripes,stripesize,segtype," + \
-                "lv_name,origin,snap_percent"]
+                   "--nosuffix", "--units", "k", "-o",
+                   "vg_name,lv_size,stripes,stripesize,segtype," +
+                   "lv_name,origin,snap_percent"]
         self.attrs = ['pool_name', 'vol_size', 'stripes',
-                'stripesize', 'type', 'lv_name', 'origin', 'snap_size']
+                      'stripesize', 'type', 'lv_name', 'origin',
+                      'snap_size']
         self.handle_fs = True
         self.mounts = misc.get_mounts('{0}/mapper'.format(DM_DEV_DIR))
         self._parse_data(command)
@@ -334,7 +335,7 @@ class SnapInfo(LvmInfo):
 
     def _fill_aditional_info(self, snap):
         snap['dev_name'] = "{0}/{1}/{2}".format(DM_DEV_DIR, snap['pool_name'],
-                                              snap['lv_name'])
+                                                snap['lv_name'])
         snap['hide'] = False
         snap['snap_path'] = snap['dev_name']
         size = float(snap['vol_size']) * float(snap['snap_size'])

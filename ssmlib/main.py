@@ -185,9 +185,9 @@ class FsInfo(object):
         self.data['fs_used'] = (bcount - fbcount) * bsize / 1024
 
     def extN_fsck(self):
-        command = ['fsck.{0}'.format(self.fstype), '-f' ,'-n']
+        command = ['fsck.{0}'.format(self.fstype), '-f', '-n']
         if not misc.check_binary(command[0]):
-            PR.warn("\'{0}\' tool does not exist. ".format(command[0]) + \
+            PR.warn("\'{0}\' tool does not exist. ".format(command[0]) +
                     "File system will not be checked")
             return 1
         if self.options.force:
@@ -200,7 +200,7 @@ class FsInfo(object):
     def extN_resize(self, new_size=None):
         command = ['resize2fs', self.device]
         if not misc.check_binary(command[0]):
-            PR.warn("\'{0}\' tool does not exist. ".format(command[0]) + \
+            PR.warn("\'{0}\' tool does not exist. ".format(command[0]) +
                     "File system will not be resized")
             return 1
         if self.options.force:
@@ -249,7 +249,7 @@ class FsInfo(object):
     def xfs_fsck(self):
         command = ['xfs_check']
         if not misc.check_binary(command[0]):
-            PR.warn("\'{0}\' tool does not exist. ".format(command[0]) + \
+            PR.warn("\'{0}\' tool does not exist. ".format(command[0]) +
                     "File system will not be checked")
             return 1
         if self.options.verbose:
@@ -260,14 +260,14 @@ class FsInfo(object):
     def xfs_resize(self, new_size=None):
         command = ['xfs_growfs', self.device]
         if not misc.check_binary(command[0]):
-            PR.warn("\'{0}\' tool does not exist. ".format(command[0]) + \
+            PR.warn("\'{0}\' tool does not exist. ".format(command[0]) +
                     "File system will not be resized")
             return 1
         if new_size:
             command.insert(1, ['-D', new_size + 'K'])
         if not self.mounted:
             raise Exception("Xfs file system on {0}".format(self.device) +
-                    " has to be mounted to perform an resize.")
+                            " has to be mounted to perform an resize.")
         elif new_size and new_size < self.data['fs_size']:
             raise Exception("Xfs file system can not shrink.")
         else:
@@ -550,7 +550,7 @@ class Storage(object):
 
         header = [item for item in misc.compress(self.header, columns)]
         alignment = list([(len(self.header[i]))
-                    for i in range(len(self.header))])
+                         for i in range(len(self.header))])
         term_width = misc.terminal_size()[0]
 
         # Update matrix of attribute lengths and construct the final list
@@ -683,8 +683,8 @@ class Devices(Storage):
             my_md = Struct()
             my_md.data = {}
 
-        self._data['dev'] = DeviceInfo(data=dict(my_lvm.data.items() + \
-                                                 my_btrfs.data.items() + \
+        self._data['dev'] = DeviceInfo(data=dict(my_lvm.data.items() +
+                                                 my_btrfs.data.items() +
                                                  my_md.data.items()),
                                        options=self.options)
         self.header = ['Device', 'Free', 'Used',
@@ -756,8 +756,8 @@ class Snapshots(Storage):
 
         self.header = ['Snapshot', 'Origin', 'Pool', 'Volume size', 'Size',
                        'Type', 'Mount point']
-        self.attrs = ['dev_name', 'origin', 'pool_name', 'vol_size', 'snap_size',
-                      'type', 'mount']
+        self.attrs = ['dev_name', 'origin', 'pool_name', 'vol_size',
+                      'snap_size', 'type', 'mount']
         self.types = [str, str, str, float, float, str, str]
         self._apply_prefix_filter()
 
@@ -838,7 +838,7 @@ class StorageHandle(object):
         """
         command = ["mkfs.{0}".format(fstype), volume]
         if not misc.check_binary(command[0]):
-            PR.warn("\'{0}\' tool does not exist. ".format(command[0]) + \
+            PR.warn("\'{0}\' tool does not exist. ".format(command[0]) +
                     "File system will not be created")
             return 1
         if self.options.force:
@@ -875,7 +875,7 @@ class StorageHandle(object):
                     if PR.check(PR.FS_MOUNTED, [fs.device, fs.mounted]):
                         misc.do_umount(fs.device)
                 except problem.FsMounted:
-                    PR.warn("Unable to check file system " + \
+                    PR.warn("Unable to check file system " +
                             "\'{0}\' on volume \'{1}\'".format(fs.fstype,
                                                                fs.device))
                     continue
@@ -889,7 +889,7 @@ class StorageHandle(object):
         if checked == 0:
             PR.error("Nothing was checked")
         if err > 0:
-            PR.warn("Some file system(s) contains errors. Please run " + \
+            PR.warn("Some file system(s) contains errors. Please run " +
                     "the appropriate fsck utility")
 
     def _filter_device_list(self, args, have_size=None, new_size=None):
@@ -1010,8 +1010,8 @@ class StorageHandle(object):
             pool_name = args.pool.name
 
         have_size, devices = self._filter_device_list(args,
-                                             pool_free,
-                                             new_size)
+                                                      pool_free,
+                                                      new_size)
 
         if have_size < size_change:
             PR.check(PR.RESIZE_NOT_ENOUGH_SPACE,
@@ -1065,20 +1065,20 @@ class StorageHandle(object):
             PR.check(PR.NO_DEVICES, args.pool.name)
 
         if have_size == 0:
-            PR.error("Not enough space ({0} KB) to".format(have_size) + \
+            PR.error("Not enough space ({0} KB) to".format(have_size) +
                      "to create volume")
 
         # Number of stripes must not exceed number of devices within the pool
         if args.stripes and len(devices) > 0 and args.stripes > len(devices):
-            PR.error("Number of stripes ({0}) ".format(args.stripes) + \
-                     "must not exceed number of devices " + \
-                      "({0})".format(len(devices)))
+            PR.error("Number of stripes ({0}) ".format(args.stripes) +
+                     "must not exceed number of devices " +
+                     "({0})".format(len(devices)))
         elif args.stripes and len(devices) == 0 and args.pool.exists():
             tmp = int(args.pool['dev_count'])
             if args.stripes > tmp:
-                PR.error("Number of stripes ({0}) ".format(args.stripes) + \
-                         "must not exceed number of devices " + \
-                          "({0})".format(tmp))
+                PR.error("Number of stripes ({0}) ".format(args.stripes) +
+                         "must not exceed number of devices " +
+                         "({0})".format(tmp))
 
         # If we want btrfs pool and it does not exist yet, we do not
         # want to call add since it would create it. Note that when
@@ -1138,7 +1138,8 @@ class StorageHandle(object):
                     if item['pool_name'] == args.pool.name:
                         args.device.remove(dev)
                         continue
-                    if PR.check(PR.DEVICE_USED, [item.name, item['pool_name']]):
+                    if PR.check(PR.DEVICE_USED,
+                                [item.name, item['pool_name']]):
                         remove_args = Struct()
                         remove_args.all = False
                         remove_args.items = [item]
@@ -1228,7 +1229,7 @@ class StorageHandle(object):
             snap_size = pool_free
 
         if snap_size <= 0 and pool.type != 'btrfs':
-            PR.error("Not enough space ({0} KB) to".format(pool_free) + \
+            PR.error("Not enough space ({0} KB) to".format(pool_free) +
                      "to create snapshot")
 
         args.volume.snapshot(args.dest, args.name, snap_size, user_set_size)
@@ -1244,9 +1245,9 @@ class StorageHandle(object):
             else:
                 misc.do_mount(args.volume, args.directory, args.options)
         except RuntimeError:
-            PR.error("Could not mount {0} to ".format(args.volume) + \
+            PR.error("Could not mount {0} to ".format(args.volume) +
                      "{0} with options \'{1}\'".format(args.directory,
-                                                   args.options))
+                                                       args.options))
 
     def is_fs(self, device):
         real = misc.get_real_device(device)
@@ -1292,11 +1293,9 @@ class StorageHandle(object):
                 return
         return self.get_bdevice(path)
 
-
     def get_bdevice(self, path):
         path = is_bdevice(path)
         return self._find_device_record(path)
-
 
     def is_pool(self, string):
         pool = self.pool[string]
@@ -1476,12 +1475,12 @@ class SsmParser(object):
                 help="Show aditional information while executing.",
                 action="store_true")
         parser.add_argument('-f', '--force',
-                help="Force execution in the case where ssm has some " +\
+                help="Force execution in the case where ssm has some " +
                      "doubts or questions.",
                 action="store_true")
         parser.add_argument('-b', '--backend', nargs=1,
                 metavar='BACKEND',
-                help="Choose backend to use. Currently you can choose from " + \
+                help="Choose backend to use. Currently you can choose from " +
                      "({0}).".format(",".join(SUPPORTED_BACKENDS)),
                 choices=SUPPORTED_BACKENDS,
                 action=SetBackend)
@@ -1672,6 +1671,7 @@ class SsmParser(object):
                 type=is_directory)
         parser_mount.set_defaults(func=self.storage.mount)
         return parser_mount
+
 
 def main(args=None):
 

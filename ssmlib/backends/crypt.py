@@ -61,7 +61,7 @@ class DmCryptVolume(object):
                 continue
             dm['vol_size'] = str(int(array[2]) / 2.0)
             devname = re.sub(":$", "",
-                    "{0}/mapper/{1}".format(DM_DEV_DIR, array[0]))
+                             "{0}/mapper/{1}".format(DM_DEV_DIR, array[0]))
             dm['dm_name'] = devname
             dm['pool_name'] = 'dm-crypt'
             dm['dev_name'] = misc.get_real_device(devname)

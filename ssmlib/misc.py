@@ -138,8 +138,8 @@ def get_real_size(size):
         sign = '+' if size[0] == '+' else ''
         if mult:
             return '{0}{1:.2f}'.format(sign, float(size[:-1]) * mult)
-    raise Exception("Not supported unit in the " + \
-            "size \'{0}\' argument.".format(size))
+    raise Exception("Not supported unit in the " +
+                    "size \'{0}\' argument.".format(size))
 
 
 def get_slaves(devname):
@@ -155,7 +155,7 @@ def send_udev_event(device, event):
 def get_device_by_uuid(uuid):
     path = "/dev/disk/by-uuid/{0}".format(uuid)
     return os.path.abspath(os.path.join(os.path.dirname(path),
-        os.readlink(path)))
+                           os.readlink(path)))
 
 
 def get_major_minor(device):
@@ -224,7 +224,7 @@ def do_cleanup():
 
 def get_signature(device, types=None):
     command = ["blkid", "-o", "value", "-p", "-s", "TYPE"]
-    if types != None:
+    if types is not None:
         command.extend(['-u', types])
     command.append(device)
 
@@ -243,7 +243,7 @@ def get_fs_type(device):
 def get_real_device(device):
     if os.path.islink(device):
         return os.path.abspath(os.path.join(os.path.dirname(device),
-            os.readlink(device)))
+                               os.readlink(device)))
     else:
         return device
 
@@ -524,7 +524,8 @@ def terminal_size(default=(25, 80)):
             import fcntl
             import termios
             import struct
-            cr = struct.unpack('hh', fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234'))
+            cr = struct.unpack('hh',
+                               fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234'))
         except:
             return None
         return cr
