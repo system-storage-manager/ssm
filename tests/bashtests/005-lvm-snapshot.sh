@@ -144,5 +144,6 @@ ssm snapshot --help
 not ssm snapshot
 ssm create $TEST_DEVS
 not ssm snapshot $SSM_LVM_DEFAULT_POOL/$lvol1
-
+ssm -f resize -s $((DEV_SIZE*2)) $SSM_LVM_DEFAULT_POOL/$lvol1
+not ssm snapshot $SSM_LVM_DEFAULT_POOL/${lvol1}notexist
 ssm -f remove --all
