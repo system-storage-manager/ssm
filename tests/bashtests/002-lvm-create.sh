@@ -74,6 +74,9 @@ export SSM_DEFAULT_BACKEND='lvm'
 ssm add $TEST_DEVS
 ssm create
 check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count $DEV_COUNT
+ssm -f remove $SSM_LVM_DEFAULT_POOL/$lvol1
+ssm -f create -s ${DEV_SIZE}m
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size $DEV_SIZE.00m
 ssm -f remove $SSM_LVM_DEFAULT_POOL
 
 # Create a logical volume of fixed size
