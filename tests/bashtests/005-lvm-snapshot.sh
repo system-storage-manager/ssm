@@ -49,7 +49,7 @@ ssm create --size ${size}M $TEST_DEVS
 export SSM_DEFAULT_BACKEND='btrfs'
 ssm snapshot --name $snap1 $SSM_LVM_DEFAULT_POOL/$lvol1
 check vg_field $SSM_LVM_DEFAULT_POOL lv_count 2
-check list_table "$(ssm list snap)" $snap1 $lvol1 none none linear
+check list_table "$(ssm list snap)" $snap1 $lvol1 none none none linear
 export SSM_DEFAULT_BACKEND='lvm'
 
 # Remove entire pool
@@ -69,9 +69,9 @@ ssm snapshot --name $snap3 $SSM_LVM_DEFAULT_POOL/$lvol1
 check lv_field $SSM_LVM_DEFAULT_POOL/$snap3 lv_size ${snap_size}.00m
 check vg_field $SSM_LVM_DEFAULT_POOL lv_count 4
 ssm_output=$(ssm list snap)
-check list_table "$ssm_output" $snap1 $lvol1 ${snap_size}.00MB none linear
-check list_table "$ssm_output" $snap2 $lvol1 ${snap_size}.00MB none linear
-check list_table "$ssm_output" $snap3 $lvol1 ${snap_size}.00MB none linear
+check list_table "$ssm_output" $snap1 $lvol1 $SSM_LVM_DEFAULT_POOL ${snap_size}.00MB none linear
+check list_table "$ssm_output" $snap2 $lvol1 $SSM_LVM_DEFAULT_POOL ${snap_size}.00MB none linear
+check list_table "$ssm_output" $snap3 $lvol1 $SSM_LVM_DEFAULT_POOL ${snap_size}.00MB none linear
 
 # Remove the snapshot volumes
 ssm -f remove $SSM_LVM_DEFAULT_POOL/$snap1 $SSM_LVM_DEFAULT_POOL/$snap2 $SSM_LVM_DEFAULT_POOL/$snap3
@@ -103,9 +103,9 @@ ssm snapshot --name $snap3 $TEST_MNT
 check lv_field $SSM_LVM_DEFAULT_POOL/$snap3 lv_size ${snap_size}.00m
 check vg_field $SSM_LVM_DEFAULT_POOL lv_count 4
 ssm_output=$(ssm list snap)
-check list_table "$ssm_output" $snap1 $lvol1 ${snap_size}.00MB none linear
-check list_table "$ssm_output" $snap2 $lvol1 ${snap_size}.00MB none linear
-check list_table "$ssm_output" $snap3 $lvol1 ${snap_size}.00MB none linear
+check list_table "$ssm_output" $snap1 $lvol1 $SSM_LVM_DEFAULT_POOL ${snap_size}.00MB none linear
+check list_table "$ssm_output" $snap2 $lvol1 $SSM_LVM_DEFAULT_POOL ${snap_size}.00MB none linear
+check list_table "$ssm_output" $snap3 $lvol1 $SSM_LVM_DEFAULT_POOL ${snap_size}.00MB none linear
 check list_table "$(ssm list fs)" $lvol1 $SSM_LVM_DEFAULT_POOL ${size}.00MB ext4 ${size}.00MB none linear $TEST_MNT
 
 # Remove the snapshot volumes

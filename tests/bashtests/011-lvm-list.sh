@@ -95,8 +95,8 @@ ssm create --size ${size}M $TEST_DEVS
 ssm snapshot --name $snap1 --size ${snap_size1}M $SSM_LVM_DEFAULT_POOL/$lvol1
 ssm snapshot --name $snap2 --size ${snap_size2}M $SSM_LVM_DEFAULT_POOL/$lvol1
 ssm_output=$(ssm list snap)
-check list_table "$ssm_output" $snap1 $lvol1 ${snap_size1}.00MB 0.00KB linear
-check list_table "$ssm_output" $snap2 $lvol1 ${snap_size2}.00MB 0.00KB linear
+check list_table "$ssm_output" $snap1 $lvol1 $SSM_LVM_DEFAULT_POOL ${snap_size1}.00MB 0.00KB linear
+check list_table "$ssm_output" $snap2 $lvol1 $SSM_LVM_DEFAULT_POOL ${snap_size2}.00MB 0.00KB linear
 ssm -f remove --all
 
 # Snapshot of the volumes in defferent pools
@@ -107,8 +107,8 @@ ssm add $dev7 $dev8 --pool $pool2
 ssm snapshot --name $snap1 $pool1/$lvol1
 ssm snapshot --name $snap1 $pool2/$lvol1
 ssm_output=$(ssm list snap)
-check list_table "$ssm_output" "$pool1/$snap1" $lvol1 40.00MB 0.00KB linear
-check list_table "$ssm_output" "$pool2/$snap1" $lvol1 40.00MB 0.00KB linear
+check list_table "$ssm_output" "$pool1/$snap1" $lvol1 $pool1 40.00MB 0.00KB linear
+check list_table "$ssm_output" "$pool2/$snap1" $lvol1 $pool2 40.00MB 0.00KB linear
 ssm -f remove --all
 
 # all_done!!!

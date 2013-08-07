@@ -52,7 +52,7 @@ ssm create $TEST_DEVS $mnt1
 export SSM_DEFAULT_BACKEND='lvm'
 ssm snapshot $mnt1
 check btrfs_vol_field $mnt1 vol_count 1
-check list_table "$(ssm list snap)" $SSM_BTRFS_DEFAULT_POOL:snap-....-..-..-....... none btrfs $mnt1/snap-....-..-..-.......
+check list_table "$(ssm list snap)" $SSM_BTRFS_DEFAULT_POOL:snap-....-..-..-....... $SSM_BTRFS_DEFAULT_POOL none btrfs $mnt1/snap-....-..-..-.......
 export SSM_DEFAULT_BACKEND='btrfs'
 
 umount $mnt1
@@ -85,21 +85,25 @@ check btrfs_vol_field $mnt1 subvolume $snap2
 check btrfs_vol_field $mnt1 subvolume $snap3
 ssm_output=$(ssm list vol)
 check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt1
-check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$snap1 $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt1/$snap1
-check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$snap2 $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt1/$snap2
-check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$snap3 $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt1/$snap3
+not check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$snap1 $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt1/$snap1
+not check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$snap2 $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt1/$snap2
+not check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$snap3 $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt1/$snap3
+ssm_output=$(ssm list snap)
+not check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL $SSM_BTRFS_DEFAULT_POOL none btrfs btrfs $mnt1
+check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$snap1 $SSM_BTRFS_DEFAULT_POOL none btrfs $mnt1/$snap1
+check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$snap2 $SSM_BTRFS_DEFAULT_POOL none btrfs $mnt1/$snap2
+check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$snap3 $SSM_BTRFS_DEFAULT_POOL none btrfs $mnt1/$snap3
 
 # Remove the snapshot volumes
 ssm -f remove $SSM_BTRFS_DEFAULT_POOL:$snap1 $SSM_BTRFS_DEFAULT_POOL:$snap2 $SSM_BTRFS_DEFAULT_POOL:$snap3
-
-ssm list
+not check btrfs_vol_field $mnt1 subvolume $snap1
+not check btrfs_vol_field $mnt1 subvolume $snap2
+not check btrfs_vol_field $mnt1 subvolume $snap3
 
 # Take a snapshot with defined name when volume is mounted
 ssm snapshot --name $snap1 $SSM_BTRFS_DEFAULT_POOL
 ssm snapshot --name $snap2 $mnt1
 ssm snapshot --name $snap3 $SSM_BTRFS_DEFAULT_POOL
-
-ssm list
 
 ssm snapshot --name $snap4 $mnt1/$snap3
 ssm snapshot --name $snap3/$snap4/$snap5 $mnt1
@@ -111,39 +115,16 @@ check btrfs_vol_field $mnt1 subvolume $snap3/$snap4
 check btrfs_vol_field $mnt1 subvolume $snap3/$snap4/$snap5
 ssm_output=$(ssm list vol)
 check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt1
-check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$snap1 $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt1/$snap1
-check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$snap2 $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt1/$snap2
-check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$snap3 $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt1/$snap3
-check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$snap3/$snap4 $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt1/$snap3/$snap4
-check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$snap3/$snap4/$snap5 $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt1/$snap3/$snap4/$snap5
-
-ssm create --name $vol1 $mnt2
-ssm snapshot --name $snap6 $mnt2
-ssm_output=$(ssm list vol)
-check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$vol1 $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt2
-check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$vol1/$snap6 $SSM_BTRFS_DEFAULT_POOL none btrfs none none btrfs $mnt2/$snap6
+ssm_output=$(ssm list snap)
+check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$snap1 $SSM_BTRFS_DEFAULT_POOL none btrfs $mnt1/$snap1
+check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$snap2 $SSM_BTRFS_DEFAULT_POOL none btrfs $mnt1/$snap2
+check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$snap3 $SSM_BTRFS_DEFAULT_POOL none btrfs $mnt1/$snap3
+check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$snap3/$snap4 $SSM_BTRFS_DEFAULT_POOL none btrfs $mnt1/$snap3/$snap4
+check list_table "$ssm_output" $SSM_BTRFS_DEFAULT_POOL:$snap3/$snap4/$snap5 $SSM_BTRFS_DEFAULT_POOL none btrfs $mnt1/$snap3/$snap4/$snap5
 
 umount_all
 
 ssm -f remove --all
-
-exit
-
-
-# Snapshot of the volumes in defferent pools
-ssm create --pool $pool1 $dev1 $dev2 $mnt1
-ssm add $dev3 $dev4 --pool $pool1
-ssm create --pool $pool2 $dev5 $dev6
-ssm add $dev7 $dev8 --pool $pool2
-
-ssm snapshot --name $snap1 --pool $pool1
-ssm snapshot --name $snap2 $mnt1
-ssm snapshot --name $snap1 $pool2/$lvol1
-check lv_field $pool1/$snap1 lv_name $snap1
-check lv_field $pool2/$snap1 lv_name $snap1
-
-ssm -f remove --all
-
 ssm snapshot --help
 
 # Some cases which should fail
