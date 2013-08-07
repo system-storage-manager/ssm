@@ -43,6 +43,13 @@ which mkfs.ext3 && TEST_FS+="ext3 "
 which mkfs.ext4 && TEST_FS+="ext4 "
 which mkfs.xfs  && TEST_FS+="xfs"
 
+# Create with single device
+ssm create $dev1
+ssm create -p $pool1 $dev2
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 1
+check lv_field $pool1/$lvol1 pv_count 1
+ssm -f remove -a
+
 # Create volume with all devices at once
 ssm create $TEST_DEVS
 not ssm create $TEST_DEVS
