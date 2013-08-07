@@ -364,4 +364,17 @@ list_table()
     done
 }
 
+mountpoint()
+{
+	if [ $# -lt 2 ] ; then
+		echo usage: mountpoint dev mountpoint
+		exit 1
+	fi
+	if ! grep "$1.*$2" /proc/mounts ; then
+		echo error creating volume $1 with mountpoint at $2
+		exit 1
+	fi
+	exit 0
+}
+
 "$@"
