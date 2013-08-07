@@ -53,4 +53,7 @@ source: test clean
 test:
 	@python test.py
 
+push_html:
+	scp -r doc/_build/singlehtml/* lczerner@shell.sourceforge.net:/home/project-web/storagemanager/htdocs/
+
 release: git-clean clean check_vars authors spec log docs source
