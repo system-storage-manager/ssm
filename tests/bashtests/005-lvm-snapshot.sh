@@ -147,3 +147,10 @@ not ssm snapshot $SSM_LVM_DEFAULT_POOL/$lvol1
 ssm -f resize -s $((DEV_SIZE*2)) $SSM_LVM_DEFAULT_POOL/$lvol1
 not ssm snapshot $SSM_LVM_DEFAULT_POOL/${lvol1}notexist
 ssm -f remove --all
+
+# Snapshot size overflow should fail
+ssm create $dev1 $dev2
+ssm add $dev3
+not ssm snapthot -s $((DEV_SIZE*2)) -n $snap1 $SSM_LVM_DEFAULT_POOL/$lvol1
+check vg_field $SSM_LVM_DEFAULT_POOL lv_count 1
+ssm -f remove --all
