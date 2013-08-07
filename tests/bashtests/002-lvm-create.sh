@@ -165,6 +165,35 @@ ssm  -f remove --all
 
 # Create logical volumes with file system
 for fs in $TEST_FS; do
+	# check addition with different names and sizes from existent and nonexistent pool
+	# pool already exists
+	ssm add $dev1 $dev2 $dev3
+	ssm create --fstype $fs -s ${DEV_SIZE}m -n $lvol1 $mnt1
+	check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size $((DEV_SIZE)).00m
+	check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol1 $mnt1
+	check vg_field $SSM_LVM_DEFAULT_POOL pv_count 3
+
+	# pool doesn't exist
+	ssm create --fstype $fs -s $((DEV_SIZE/2))m -n randvol $dev4 $mnt2
+	size=`align_size_up $((DEV_SIZE/2))`
+	check lv_field $SSM_LVM_DEFAULT_POOL/randvol lv_size $size.00m
+	check mountpoint $SSM_LVM_DEFAULT_POOL-randvol $mnt2
+	check vg_field $SSM_LVM_DEFAULT_POOL pv_count 4
+	umount $mnt1 $mnt2
+	ssm check $SSM_LVM_DEFAULT_POOL/$lvol1 $SSM_LVM_DEFAULT_POOL/randvol
+	ssm -f remove $SSM_LVM_DEFAULT_POOL
+
+	# When we want to get unsed device from other pull, should succeed
+	ssm add -p $pool1 $dev1 $dev2 $dev3
+	ssm -f create -p $pool2 --fstype $fs -s ${DEV_SIZE}m $dev1 $dev2 $mnt1 -n randvol
+	check lv_field $pool2/randvol lv_size $((DEV_SIZE)).00m
+	check mountpoint $pool2-randvol $mnt1
+	umount $mnt1
+	ssm check $pool2/randvol
+	check vg_field $pool2 pv_count 2
+	ssm -f remove $pool1
+	ssm -f remove $pool2
+
 	ssm create --fs=$fs --name $lvol3 -s $(($DEV_SIZE*6))M $TEST_DEVS
 	check lv_field $SSM_LVM_DEFAULT_POOL/$lvol3 pv_count $DEV_COUNT
 	ssm -f check ${SSM_LVM_DEFAULT_POOL}/$lvol3
