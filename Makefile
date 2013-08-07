@@ -36,13 +36,13 @@ install:
 	@python setup.py install
 
 spec: check_vars
-	@(LC_ALL=C date +"* %a %b %e %Y `git config --get user.name` <`git config --get user.email`> - $(VERSION)"; git log --pretty="format:- %s (%an)" $(PREVIOUS)..HEAD| cat) | less
+	@(LC_ALL=C date +"* %a %b %e %Y `git config --get user.name` <`git config --get user.email`> - $(VERSION)"; git log --pretty="format:- %s (%an)" $(PREVIOUS)..HEAD| cat; echo -e "\n\n"; cat CHANGES) > CHANGES.bck; mv CHANGES.bck CHANGES
 
 log: check_vars
 	@(LC_ALL=C date +"[%a %b %e %Y] `git config --get user.name` <`git config --get user.email`> - $(VERSION)"; echo; git shortlog -e $(PREVIOUS)..HEAD | cat; git diff --stat $(PREVIOUS)..HEAD | cat) | sed -e 's/@/_O_/g' | less
 
 authors:
-	@(echo -e "System Storage Manager was written by:\n\tLukáš Czerner <lczerner@redhat.com>"; echo -e "\nContributions (commits):"; git log --no-merges | grep '^Author:' | sort | uniq -c | sort -rn | sed -e 's/^\s*\([0-9]*\) Author: /\t(\1) /') | sed -e 's/@/_O_/g' | less
+	@(echo -e "System Storage Manager was written by:\n\tLukáš Czerner <lczerner@redhat.com>"; echo -e "\nContributions (commits):"; git log --no-merges | grep '^Author:' | sort | uniq -c | sort -rn | sed -e 's/^\s*\([0-9]*\) Author: /\t(\1) /') | sed -e 's/@/_O_/g' > AUTHORS
 
 docs:
 	@make dist -C doc
@@ -53,4 +53,4 @@ source: test clean
 test:
 	@python test.py
 
-release: git-clean clean check_vars authors log spec docs source
+release: git-clean clean check_vars authors spec log docs source
