@@ -222,7 +222,7 @@ class FsInfo(object):
             raise Exception("File system on {0} is not ".format(self.device) +
                             "clean, I will not attempt to resize it. Please," +
                             "fix the problem first.")
-        misc.run(command, stdout=True)
+        return misc.run(command, stdout=True)[0]
 
     def xfs_get_info(self, dev):
         command = ["xfs_db", "-r", "-c", "sb", "-c", "print", dev]
@@ -1036,27 +1036,34 @@ class StorageHandle(object):
             # Try to grow the file system, since there is nothing to
             # do with the volume itself.
             if fs:
-                args.volume['fs_info'].resize()
+                ret = args.volume['fs_info'].resize()
+                if ret:
+                    PR.error("File system on {0} can not be resized".format(args.volume.name))
             else:
                 PR.check(PR.RESIZE_ALREADY_MATCH, [args.volume.name, new_size])
             return
 
         # Backend might not support pooling
         if args.pool is None:
-            pool_free = None
+            pool_free = 0.0
             pool_name = "none"
         else:
             pool_free = float(args.pool['pool_free'])
             pool_name = args.pool.name
 
-        have_size, devices = self._filter_device_list(args,
-                                                      pool_free,
-                                                      new_size)
+        # No need to do anything with provided devices since
+        # we do have enough space to cover the resize
+        if (pool_free < size_change):
+            have_size, devices = self._filter_device_list(args,
+                                                          pool_free,
+                                                          new_size)
+        else:
+            have_size = pool_free
 
         if have_size < size_change:
             PR.check(PR.RESIZE_NOT_ENOUGH_SPACE,
                      [pool_name, args.volume.name, new_size])
-        elif len(args.device) > 0 and new_size > vol_size:
+        elif len(args.device) > 0 and size_change > pool_free:
             try:
                 self.add(args, True)
             except problem.NotSupported:

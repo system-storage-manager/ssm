@@ -365,12 +365,12 @@ class SsmFunctionCheck(MockSystemDataSource):
         # Set volume size
         self._checkCmd("ssm resize -s 10G /dev/default_pool/vol003 /dev/sdc1 /dev/sde",
             [], "vol resize /dev/default_pool/vol003 10485760.0 False")
-        self.assertEqual(self.run_data[-2],
+        self.assertNotEqual(self.run_data[-2],
             "pool extend default_pool /dev/sdc1 /dev/sde")
 
         # Extend volume size with adding more devices
-        self._checkCmd("ssm resize -s +10G /dev/default_pool/vol003 /dev/sdc1 /dev/sde",
-            [], "vol resize /dev/default_pool/vol003 10486784.0 False")
+        self._checkCmd("ssm resize -s +12t /dev/default_pool/vol003 /dev/sdc1 /dev/sde",
+            [], "vol resize /dev/default_pool/vol003 12884902912.0 False")
         self.assertEqual(self.run_data[-2],
             "pool extend default_pool /dev/sdc1 /dev/sde")
 

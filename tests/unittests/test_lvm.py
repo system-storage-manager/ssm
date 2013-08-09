@@ -287,10 +287,16 @@ class LvmFunctionCheck(MockSystemDataSource):
         self.assertEqual(self.run_data[-2],
             "lvm vgextend default_pool /dev/sdc1 /dev/sde")
 
-        # Set volume size
+        # Set volume size with sufficient amount of space
         self._checkCmd("ssm resize -s 10G /dev/default_pool/vol003 /dev/sdc1 /dev/sde",
             [], "lvm lvresize -L 10485760.0k /dev/default_pool/vol003")
-        self.assertEqual(self.run_data[-2],
+        self.assertNotEqual(self.run_data[-2],
+            "lvm vgextend default_pool /dev/sdc1 /dev/sde")
+
+        # Set volume size without sufficient amount of space
+        self._checkCmd("ssm resize -s 10T /dev/default_pool/vol003 /dev/sdc1 /dev/sde",
+            [], "lvm lvresize -L 10737418240.0k /dev/default_pool/vol003")
+        self.assertNotEqual(self.run_data[-2],
             "lvm vgextend default_pool /dev/sdc1 /dev/sde")
 
         # Extend volume and add devices
@@ -299,9 +305,15 @@ class LvmFunctionCheck(MockSystemDataSource):
         self.assertEqual(self.run_data[-2],
             "lvm vgextend default_pool /dev/sdc1 /dev/sde")
 
-        # Extend volume
+        # Extend volume with ehough space in pool
         self._checkCmd("ssm resize -s +10G /dev/default_pool/vol003 /dev/sdc1 /dev/sde",
             [], "lvm lvresize -L 10486784.0k /dev/default_pool/vol003")
+        self.assertNotEqual(self.run_data[-2],
+            "lvm vgextend default_pool /dev/sdc1 /dev/sde")
+
+        # Extend volume without ehough space in pool
+        self._checkCmd("ssm resize -s +20T /dev/default_pool/vol003 /dev/sdc1 /dev/sde",
+            [], "lvm lvresize -L 21474837504.0k /dev/default_pool/vol003")
         self.assertEqual(self.run_data[-2],
             "lvm vgextend default_pool /dev/sdc1 /dev/sde")
 

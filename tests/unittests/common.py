@@ -119,13 +119,19 @@ class MockSystemDataSource(unittest.TestCase):
     def _cmdEq(self, out, index=-1):
         self.assertEqual(self.run_data[index], out)
 
-    def _checkCmd(self, command, args, expected=None):
+    def _cmdNotEq(self, out, index=-1):
+        self.assertNotEqual(self.run_data[index], out)
+
+    def _checkCmd(self, command, args, expected=None, NotEq=False):
         self.run_data = []
         for case in misc.permutations(args):
             cmd = command + " " + " ".join(case)
             main.main(cmd)
             if expected:
-                self._cmdEq(expected)
+		if NotEq:
+			self._cmdNotEq(expected)
+		else:
+			self._cmdEq(expected)
 
     def mock_run(self, cmd, *args, **kwargs):
         self.run_data.append(" ".join(cmd))
@@ -228,6 +234,8 @@ class MockSystemDataSource(unittest.TestCase):
         pool_data = self.pool_data[pool_name]
         pool_free = float(pool_data['pool_free']) - vol_size
         pool_used = float(pool_data['pool_used']) + vol_size
+	pool_data['pool_free'] = pool_free
+	pool_data['pool_used'] = pool_used
         if mount:
             self.pool_data[pool_name]['mount'] = mount
             self._addDir(mount)

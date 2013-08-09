@@ -48,20 +48,79 @@ TEST_MNT=$TESTDIR/mnt
 
 _test_resize()
 {
-	size=$((TEST_MAX_SIZE/2))
-	echo 'y' | ssm -f resize --size ${size}M ${DM_DEV_DIR}/$DEFAULT_VOLUME
+	# Test with no device
+	# Test size increase
+	size=$DEV_SIZE
+	check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+	size=$((DEV_SIZE + 12))
+	ssm resize -s ${size}M $SSM_LVM_DEFAULT_POOL/$lvol1
+	check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+	size=$((size + 3))
+	ssm resize -s +3M $SSM_LVM_DEFAULT_POOL/$lvol1
 	size=$(align_size_up $size)
 	check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
-
-	# xfs does not support shrinking (xfs only grows big!! :))
+	# Test size decrese
 	if [ "$fs" != "xfs" ]; then
-		ssm -f -v resize -s-$(($TEST_MAX_SIZE/4))M $DEFAULT_VOLUME
-		size=$(align_size_up $(($size-($TEST_MAX_SIZE/4))))
+		size=$((size - 8))
+		ssm -f resize -s ${size}M $SSM_LVM_DEFAULT_POOL/$lvol1
 		check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+		size=$((size - 7))
+		ssm -f resize -s-7M $SSM_LVM_DEFAULT_POOL/$lvol1
+		size=$(align_size_up $size)
+		check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+		# Test with devcie belongs to no pool
+		# size decrease
+		size=$((size - 12))
+		ssm -f resize -s ${size}M $SSM_LVM_DEFAULT_POOL/$lvol1 $dev4
+		check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+		check vg_field $SSM_LVM_DEFAULT_POOL pv_count 3
+		check vg_field $pool1 pv_count 3
 	fi
-	echo 'y' | ssm -f resize --size +$(($TEST_MAX_SIZE/5))M $DEFAULT_VOLUME
-	size=$(align_size_up $(($size+($TEST_MAX_SIZE/5))))
+	# If the volume is already of the given size ssm will attempt to resize
+	# file system to cover the whole device. Note that we do not check for
+	# the file system size because it's not really necessary. So this would
+	# fail if the file system is present. This might change in future, so
+	# comment it out for now.
+	# size doesn't change
+	#not ssm -f resize -s ${size}M $SSM_LVM_DEFAULT_POOL/$lvol1 $dev4
+	#check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+	#check vg_field $SSM_LVM_DEFAULT_POOL pv_count 3
+	#check vg_field $pool1 pv_count 3
+	# size increase
+	size=$((size + 12))
+	ssm resize -s ${size}M $SSM_LVM_DEFAULT_POOL/$lvol1 $dev4
 	check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+	check vg_field $SSM_LVM_DEFAULT_POOL pv_count 3
+	check vg_field $pool1 pv_count 3
+
+	# Test with device belongs to other pool
+	# size decrease
+	if [ "$fs" != "xfs" ]; then
+		size=$((size - 12))
+		ssm -f resize -s ${size}M $SSM_LVM_DEFAULT_POOL/$lvol1 $dev6
+		check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+		check vg_field $SSM_LVM_DEFAULT_POOL pv_count 3
+		check vg_field $pool1 pv_count 3
+	fi
+	# size doesn't change
+	#not ssm -f resize -s ${size}M $SSM_LVM_DEFAULT_POOL/$lvol1 $dev6
+	#check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+	#check vg_field $SSM_LVM_DEFAULT_POOL pv_count 3
+	#check vg_field $pool1 pv_count 3
+	# size increase
+	size=$((size + 12))
+	ssm -f resize -s ${size}M $SSM_LVM_DEFAULT_POOL/$lvol1 $dev6
+	check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+	check vg_field $SSM_LVM_DEFAULT_POOL pv_count 3
+	check vg_field $pool1 pv_count 3
+
+	# when resize to excessive amount
+	size=$((DEV_SIZE*4))
+	not ssm resize -s ${size}M $SSM_LVM_DEFAULT_POOL/$lvol1
+	ssm resize -s ${size}M $SSM_LVM_DEFAULT_POOL/$lvol1 $dev8 $dev9
+	check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+	check vg_field $SSM_LVM_DEFAULT_POOL pv_count 5
+
 }
 
 ssm add $TEST_DEVS
@@ -100,46 +159,37 @@ ssm -f remove $SSM_LVM_DEFAULT_POOL
 ssm create --size $((DEV_SIZE/2))M $dev1
 check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 1
 ssm resize --size +$((DEV_SIZE/3))M $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2
-check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 2
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 1
 ssm -f resize -s-$((DEV_SIZE/3))M $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2 $dev3
 ssm resize --size +$((DEV_SIZE/3))M $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2 $dev3
-check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 3
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 1
 ssm -f resize -s-$((DEV_SIZE/3))M $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2 $dev3
-check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 3
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 1
 ssm resize --size +${DEV_SIZE}M $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2 $dev3
 check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 3
 ssm -f remove $SSM_LVM_DEFAULT_POOL
 
+
+ssm add $dev{1,2,3}
+ssm create -s ${DEV_SIZE}M
+ssm add -p $pool1 $dev{5,6,7}
+_test_resize
+ssm -f remove $SSM_LVM_DEFAULT_POOL
+ssm -f remove $pool1
+
+
 [ ! -d $TEST_MNT ] && mkdir $TEST_MNT &> /dev/null
 for fs in $TEST_FS; do
-	# umounted test
-	ssm add $TEST_DEVS
-	size=$((TEST_MAX_SIZE/4))
-	ssm create --fs $fs --size ${size}M $TEST_DEVS
-
+	ssm add $dev{1,2,3}
+	ssm create -s ${DEV_SIZE}M --fs $fs
+	ssm -f check $DEFAULT_VOLUME
+	ssm add -p $pool1 $dev{5,6,7}
 	_test_resize
 	ssm -f check $DEFAULT_VOLUME
 	ssm -f remove $SSM_LVM_DEFAULT_POOL
-
-        echo $fs
-        if [ $fs == 'ext2' ]; then
-            continue
-        fi
-
-        # Disable this for now, since fsadm does not handle -f and -y correctly
-	# mounted test
-	#ssm add $TEST_DEVS
-	size=$((TEST_MAX_SIZE/4))
-	#ssm create --fs $fs --size ${size}M $TEST_DEVS
-
-	#mount ${DM_DEV_DIR}/$DEFAULT_VOLUME $TEST_MNT
-
-	#_test_resize
-
-	#umount $TEST_MNT
-	#ssm -f check $DEFAULT_VOLUME
-	#ssm -f remove $SSM_LVM_DEFAULT_POOL
+	ssm -f remove $pool1
 done
+# There should not be anything to remove
 not ssm  -f remove --all
 
 ssm create $dev1
