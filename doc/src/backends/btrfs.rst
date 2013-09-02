@@ -32,8 +32,8 @@ volume
     Volume in btrfs back-end is actually just btrfs subvolume with the
     exception of the first volume created on btrfs pool creation, which is
     the file system itself. Subvolumes can only be created on btrfs file
-    system when the it is mounted, but user does not have to
-    worry about that, since **ssm** will automatically mount the file
+    system when it is mounted, but user does not have to
+    worry about that since **ssm** will automatically mount the file
     system temporarily in order to create a new subvolume.
 
     Volume name is used as subvolume path in the btrfs file system and every
@@ -44,7 +44,7 @@ volume
 
     Btrfs volumes are only shown in the *list* output, when the file system is
     mounted, with the exception of the main btrfs volume - the file system
-    itself.
+    itself. Also note that btrfs subvolume can not be resized.
 
     New btrfs volume can be created with **create** command.
 

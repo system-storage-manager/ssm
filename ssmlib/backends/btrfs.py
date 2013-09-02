@@ -379,6 +379,9 @@ class BtrfsVolume(Btrfs):
         if 'mount' not in vol:
             tmp = misc.temp_mount("UUID={0}".format(vol['uuid']))
             vol['mount'] = tmp
+        if 'subvolume' in vol and vol['subvolume'] is True:
+            self.problem.check(self.problem.NOT_SUPPORTED,
+                               'Resizing btrfs subvolume')
         command = ['filesystem', 'resize', str(int(size)) + "K", vol['mount']]
         self.run_btrfs(command)
 

@@ -8,3 +8,6 @@ ask you whether you want to remove it from the original pool.
 
 In some cases file system has to be mounted in order to resize. This will be
 handled by **ssm** automatically by mounting the **volume** temporarily.
+
+Note that resizing btrfs subvolume is not supported, only the whole file
+system can be resized.
