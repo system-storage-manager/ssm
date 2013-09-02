@@ -1404,7 +1404,9 @@ def valid_resize_size(size):
         raise argparse.ArgumentTypeError(err)
 
 
-def is_directory(self, string):
+def is_directory(string):
+    if string is None:
+        raise argparse.ArgumentTypeError(err)
     try:
         mode = os.stat(string).st_mode
     except OSError:

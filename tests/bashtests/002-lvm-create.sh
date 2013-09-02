@@ -174,7 +174,8 @@ for fs in $TEST_FS; do
 	check vg_field $SSM_LVM_DEFAULT_POOL pv_count 3
 
 	# pool doesn't exist
-	ssm create --fstype $fs -s $((DEV_SIZE/2))m -n randvol $dev4 $mnt2
+	ssm create --fstype $fs -s $((DEV_SIZE/2))m -n randvol $dev4
+	ssm mount  $SSM_LVM_DEFAULT_POOL/randvol $mnt2
 	size=`align_size_up $((DEV_SIZE/2))`
 	check lv_field $SSM_LVM_DEFAULT_POOL/randvol lv_size $size.00m
 	check mountpoint $SSM_LVM_DEFAULT_POOL-randvol $mnt2
