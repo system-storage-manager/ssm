@@ -347,6 +347,7 @@ activation/polling_interval = 0
 activation/snapshot_autoextend_percent = 50
 activation/snapshot_autoextend_threshold = 50
 activation/monitoring = 0
+global/use_lvmetad = 0
 EOF
     }
 
