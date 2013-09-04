@@ -410,6 +410,9 @@ class Item(object):
         else:
             name = self.data['dev_name']
         fs = FsInfo(name, self.obj.options)
+        if 'fs_type' not in fs.data:
+            # Not a file system
+            return
         try:
             fs.mounted = self.data['mount']
         except KeyError:
@@ -862,30 +865,41 @@ class StorageHandle(object):
     def check(self, args):
         """
         Check the file system on the volume. FsInfo is used for that purpose,
-        except for btrfs.
+        except for btrfs. Or check the volume itself if backend supports it.
         """
         err = 0
         checked = 0
-        for fs in args.device:
-            print "Checking {0} file system on \'{1}\':".format(fs.fstype,
-                                                                fs.device),
-            if fs.mounted:
-                print
+        for dev in args.device:
+            if 'mount' in dev:
                 try:
-                    if PR.check(PR.FS_MOUNTED, [fs.device, fs.mounted]):
-                        misc.do_umount(fs.device)
+                    if PR.check(PR.FS_MOUNTED, [dev['real_dev'], dev['mount']]):
+                        misc.do_umount(dev['real_dev'])
                 except problem.FsMounted:
                     PR.warn("Unable to check file system " +
-                            "\'{0}\' on volume \'{1}\'".format(fs.fstype,
-                                                               fs.device))
+                            "\'{0}\' on volume \'{1}\'".format(dev['fs_type'],
+                                                               dev['real_dev']))
                     continue
-            ret = fs.fsck()
-            checked += 1
-            err += ret
-            if ret:
-                print "FAIL"
-            else:
-                print "OK"
+
+            # Does backend support check ?
+            try:
+                if getattr(dev, "check"):
+                    print "Checking volume \'{0}\'.".format(dev['real_dev'])
+                    ret = dev.check()
+                    checked += 1
+                    err += ret
+                    if ret:
+                        continue
+            except AttributeError:
+                pass
+
+            # Do we have a file system to check ?
+            if 'fs_info' in dev:
+                fs = dev['fs_info']
+                print "Checking {0} file system on \'{1}\'.".format(fs.fstype,
+                                                                    fs.device)
+                ret = fs.fsck()
+                checked += 1
+                err += ret
         if checked == 0:
             PR.error("Nothing was checked")
         if err > 0:
@@ -987,7 +1001,7 @@ class StorageHandle(object):
             new_size = float(args.size)
         size_change = new_size - vol_size
 
-        fs = True if 'fs_type' in args.volume else False
+        fs = True if 'fs_info' in args.volume else False
 
         if new_size <= 0:
             PR.error("New volume size \'{0} KB\' is too small".format(new_size))
@@ -1249,17 +1263,34 @@ class StorageHandle(object):
                      "{0} with options \'{1}\'".format(args.directory,
                                                        args.options))
 
+    def can_check(self, device):
+        fs = self.is_fs(device)
+        if fs is False:
+            real = misc.get_real_device(device)
+            vol = self.vol[real]
+            err = "'{0}' is not valid volume to check.".format(device)
+            try:
+                if not getattr(vol, "check"):
+                    raise argparse.ArgumentTypeError(err)
+                else:
+                    return vol
+            except AttributeError:
+                raise argparse.ArgumentTypeError(err)
+        else:
+            return fs
+
+
     def is_fs(self, device):
         real = misc.get_real_device(device)
 
         vol = self.vol[real]
-        if vol and 'fs_type' in vol:
-            return vol['fs_info']
+        if vol and 'fs_info' in vol:
+            return vol
         dev = self.dev[real]
-        if dev and 'fs_type' in dev:
-            return dev['fs_info']
+        if dev and 'fs_info' in dev:
+            return dev
         err = "'{0}' does not contain valid file system".format(real)
-        raise argparse.ArgumentTypeError(err)
+        return False
 
     def _find_device_record(self, path):
         """
@@ -1310,7 +1341,7 @@ class StorageHandle(object):
         if vol:
             return vol
         dev = self.dev[string]
-        if dev and 'fs_type' in dev:
+        if dev and 'fs_info' in dev:
             return dev
         err = "'{0}' is not a valid volume to resize".format(string)
         raise argparse.ArgumentTypeError(err)
@@ -1496,7 +1527,7 @@ class SsmParser(object):
                 help="Check consistency of the file system on the device.")
         parser_check.add_argument('device', nargs='+',
                 help="Device with file system to check.",
-                type=self.storage.is_fs)
+                type=self.storage.can_check)
         parser_check.set_defaults(func=self.storage.check)
         return parser_check
 

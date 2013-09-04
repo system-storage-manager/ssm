@@ -374,6 +374,10 @@ class BtrfsVolume(Btrfs):
         else:
             self._remove_filesystem(vol)
 
+    def check(self, vol):
+        vol = self.data[vol]
+        return self.run_btrfs(['check', vol['real_dev']])[0]
+
     def resize(self, vol, size, resize_fs=True):
         vol = self.data[vol]
         if 'mount' not in vol:
