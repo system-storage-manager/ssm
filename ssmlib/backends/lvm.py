@@ -17,6 +17,7 @@
 
 # lvm module for System Storage Manager
 
+import re
 import os
 import stat
 import datetime
@@ -35,6 +36,24 @@ try:
 except KeyError:
     DM_DEV_DIR = "/dev"
 MAX_LVS = 999
+
+
+def get_lvm_version():
+    try:
+        output = misc.run(['lvm', 'version'], can_fail=True)[1]
+        output = output.strip().split("\n")
+        pattern = re.compile("LVM version:")
+        for line in output:
+            if pattern.match(line.strip()):
+                match = " ".join(line.split())
+                tmp = re.search('(?<=LVM version: )\d+\.\d+\.\d+',
+                                    match).group(0)
+                version = map(int, tmp.split(".", 3))
+    except (OSError, AttributeError):
+        version = [0, 0, 0]
+    return version
+
+LVM_VERSION = get_lvm_version()
 
 
 class LvmInfo(object):
