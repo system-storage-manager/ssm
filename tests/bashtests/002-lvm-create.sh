@@ -115,6 +115,24 @@ check list_table "$(ssm list pool)" $SSM_LVM_DEFAULT_POOL lvm 10 none none 960.0
 check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$lvol1 $SSM_LVM_DEFAULT_POOL 960.00MB striped
 ssm  -f remove $SSM_LVM_DEFAULT_POOL
 
+# Create a raid 1 logical volume
+# Size of the volume must be specified for lvm raid1
+not ssm create -r 1 $dev1 $dev2
+size=$((DEV_SIZE/2))
+size=$(align_size_up $size)
+ssm create -s ${size}M -r 1 $dev1 $dev2
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 segtype raid1
+check list_table "$(ssm list pool)" $SSM_LVM_DEFAULT_POOL lvm 2 none none 192.00MB
+check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$lvol1 $SSM_LVM_DEFAULT_POOL ${size}.00MB raid1
+
+ssm add $TEST_DEVS
+size=$((DEV_SIZE*2))
+size=$(align_size_up $size)
+ssm create -s ${size}M -r 1
+check list_table "$(ssm list pool)" $SSM_LVM_DEFAULT_POOL lvm 10 none none 960.00MB
+check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$lvol2 $SSM_LVM_DEFAULT_POOL ${size}.00MB raid1
+ssm  -f remove $SSM_LVM_DEFAULT_POOL
+
 # Create several volumes with different parameters
 ssm  add $TEST_DEVS
 not ssm create -I 8 -i $(($DEV_COUNT/2)) -s $(($DEV_SIZE*2))M

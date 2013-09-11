@@ -113,6 +113,14 @@ class LvmInfo(object):
         if key in self.data.iterkeys():
             return self.data[key]
 
+    def supported_since(self, version, string):
+        if version > LVM_VERSION:
+            msg = "ERROR: You need at least lvm version " + \
+                  "{0}. Feature \"{1}\"".format(".".join(map(str, version)),
+                                                string)
+            self.problem.check(self.problem.NOT_SUPPORTED, msg)
+        return True
+
 
 class VgsInfo(LvmInfo):
 
@@ -171,19 +179,20 @@ class VgsInfo(LvmInfo):
                raid=None):
         devices = devs or []
         command = ['lvcreate', vg]
-        if size:
-            command.extend(['-L', size + 'K'])
-        else:
-            if len(devices) > 0:
-                size = "100%PVS"
-            else:
-                size = "100%FREE"
-            command.extend(['-l', size])
 
         if name:
             lvname = name
         else:
             lvname = self._generate_lvname(vg)
+
+        if size:
+            command.extend(['-L', size + 'K'])
+        else:
+            if len(devices) > 0:
+                tmp = "100%PVS"
+            else:
+                tmp = "100%FREE"
+            command.extend(['-l', tmp])
 
         command.extend(['-n', lvname.rpartition("/")[-1]])
 
@@ -200,6 +209,22 @@ class VgsInfo(LvmInfo):
                     command.extend(['-I', raid['stripesize']])
                 if raid['stripes']:
                     command.extend(['-i', raid['stripes']])
+            elif raid['level'] == '1' and \
+                 self.supported_since([2,2,89],"raid1"):
+                if raid['stripesize'] or raid['stripes']:
+                    msg = "ERROR: Specifying stripe size or number of " + \
+                          "stripes when creating raid1 volume with lvm backend"
+                    self.problem.check(self.problem.NOT_SUPPORTED, msg)
+                # Unfortunately 50%PVS does not work here because it does not
+                # take in account metadata needed to create mirrored volume.
+                # Using 49%PVS is not viable either because it will cut off
+                # a lot of potential storage. So we'll require to specify
+                # size in this case.
+                if not size:
+                    msg = "ERROR: Creating raid1 with lvm backend without " + \
+                          "specifying size"
+                    self.problem.check(self.problem.NOT_SUPPORTED, msg)
+                command.extend(["--type", "raid1"])
             else:
                 self.problem.not_supported("RAID level {0}".format(raid['level']) +
                                            " with \"lvm\" backend")
