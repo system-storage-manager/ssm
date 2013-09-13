@@ -428,9 +428,9 @@ class SsmFunctionCheck(MockSystemDataSource):
         # Number of stripes must not exceed number of devices
         self.assertRaises(problem.GeneralError, main.main, "ssm create -r 1 -s 2.6T -I 16 -i 4 /dev/sda")
 
-        self._checkCmd("ssm create", ['-r 1', '-s 2.6T', '-I 16', '/dev/sda'],
-            "pool create {0} 2791728742.40 1 16 /dev/sda".format(main.DEFAULT_DEVICE_POOL))
-        self._cmdEq("pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
+        self._checkCmd("ssm create", ['-r 1', '-s 2.6T', '-I 16', '/dev/sda /dev/sdb'],
+            "pool create {0} 2791728742.40 1 16 /dev/sda /dev/sdb".format(main.DEFAULT_DEVICE_POOL))
+        self._cmdEq("pool new {0} /dev/sda /dev/sdb".format(main.DEFAULT_DEVICE_POOL), -2)
 
         # Create volume using single device from non existent my_pool
         self._checkCmd("ssm create", ['--pool my_pool', '/dev/sda'],

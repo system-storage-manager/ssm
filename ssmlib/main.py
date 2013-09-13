@@ -1094,6 +1094,27 @@ class StorageHandle(object):
                          "must not exceed number of devices " +
                          "({0})".format(tmp))
 
+        if args.raid:
+            # In raid we might has a requirement on a number of devices
+            # available as well as different requirements on the size
+            # available. We do not do any complicated math to figure out
+            # whether we really do have enough space on the devices which
+            # might differ in size. Let the respective backend tool deal
+            # with that, it's always ok to fail, but we might cover the
+            # most obvious cases here.
+            dev_count = len(args.device)
+            if args.pool.exists():
+                dev_count += int(args.pool['dev_count'])
+            if args.raid == '10' and args.stripes:
+                if args.stripes * 2 > dev_count:
+                    PR.error("Not enough devices ({0}) ".format(dev_count) +
+                             "for specified number of ".format(args.stripes) +
+                             "stripes ({0}). You need ".format(args.stripes) +
+                             "at least {0} devices".format(args.stripes * 2))
+            if args.raid == '1' and dev_count < 2:
+                PR.error("You need at least 2 devices to create " +
+                         "raid1 volume")
+
         # If we want btrfs pool and it does not exist yet, we do not
         # want to call add since it would create it. Note that when
         # btrfs pool is created the new btrfs volume is created as well

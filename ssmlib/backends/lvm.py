@@ -225,6 +225,33 @@ class VgsInfo(LvmInfo):
                           "specifying size"
                     self.problem.check(self.problem.NOT_SUPPORTED, msg)
                 command.extend(["--type", "raid1"])
+            elif raid['level'] == '10' and \
+                 self.supported_since([2,2,98],"raid10"):
+                if not raid['stripesize']:
+                    raid['stripesize'] = "64"
+                if not raid['stripes'] and len(devices) > 0:
+                    if len(devices) < 4:
+                        self.problem.error("Number of devices should be at " +
+                                           "least 4 in raid 10 setup")
+                    if len(devices) % 2 != 0:
+                        self.problem.error("Number of devices should be " +
+                                           "even in raid 10 setup")
+                    raid['stripes'] = str(len(devices)/2)
+                if not raid['stripes']:
+                    self.problem.error("Devices or number of " +
+                                       "stripes should be defined")
+                if int(raid['stripes']) < 2:
+                    self.problem.error("Number of stripes should be at " +
+                                       "least 2 in raid 10 setup")
+                if raid['stripesize']:
+                    command.extend(['-I', raid['stripesize']])
+                if raid['stripes']:
+                    command.extend(['-i', raid['stripes']])
+                if not size:
+                    msg = "ERROR: Creating raid10 with lvm backend without " + \
+                          "specifying size"
+                    self.problem.check(self.problem.NOT_SUPPORTED, msg)
+                command.extend(["--type", "raid10"])
             else:
                 self.problem.not_supported("RAID level {0}".format(raid['level']) +
                                            " with \"lvm\" backend")
