@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "SSM" "8" "September 02, 2013" "0.4" "System Storage Manager"
+.TH "SSM" "8" "September 16, 2013" "0.4" "System Storage Manager"
 .SH NAME
 ssm \- System Storage Manager: a single tool to manage your storage
 .
@@ -59,7 +59,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 ..
 .SH SYNOPSIS
 .sp
-\fBssm\fP [\fB\-h\fP] [\fB\-\-version\fP] [\fB\-v\fP] [\fB\-f\fP] [\fB\-b\fP BACKEND] {check,resize,create,list,add,remove,snapshot,mount} ...
+\fBssm\fP [\fB\-h\fP] [\fB\-\-version\fP] [\fB\-v\fP] [\fB\-f\fP] [\fB\-b\fP BACKEND] [\fB\-n\fP] {check,resize,create,list,add,remove,snapshot,mount} ...
 .sp
 \fBssm\fP \fBcreate\fP [\fB\-h\fP] [\fB\-s\fP SIZE] [\fB\-n\fP NAME] [\fB\-\-fstype\fP FSTYPE] [\fB\-r\fP LEVEL] [\fB\-I\fP STRIPESIZE] [\fB\-i\fP STRIPES] [\fB\-p\fP POOL] [\fBdevice\fP [\fBdevice\fP ...]] [mount]
 .sp
@@ -111,6 +111,14 @@ or questions.
 .BI \-b \ BACKEND\fP,\fB \ \-\-backend \ BACKEND
 Choose backend to use. Currently you can choose from
 (lvm,btrfs).
+.TP
+.B \-n\fP,\fB  \-\-dry\-run
+Dry run. Do not do anything, just parse the command
+line options and gather system information if
+necessary. Note that with this option ssm will not
+perform all the check as some of them are done by the
+backends themselves. This option is mainly used for
+debugging purposes.
 .UNINDENT
 .SH SYSTEM STORAGE MANAGER COMMANDS
 .SS Introduction

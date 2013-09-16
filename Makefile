@@ -1,3 +1,6 @@
+PYTHONPATH := $(shell pwd)
+export PYTHONPATH
+
 all: help
 
 help:

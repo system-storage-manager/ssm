@@ -1538,6 +1538,14 @@ class SsmParser(object):
                      "({0}).".format(",".join(SUPPORTED_BACKENDS)),
                 choices=SUPPORTED_BACKENDS,
                 action=SetBackend)
+        parser.add_argument('-n', '--dry-run',
+                help='''Dry run. Do not do anything, just parse the command
+                     line options and gather system information if necessary.
+                     Note that with this option ssm will not perform all the
+                     check as some of them are done by the backends
+                     themselves. This option is mainly used for debugging
+                     purposes.''',
+                action="store_true")
         return parser
 
     def _get_parser_check(self):
@@ -1758,6 +1766,9 @@ def main(args=None):
 
     # Register clean-up function on exit
     sys.exitfunc = misc.do_cleanup
+
+    if args.dry_run:
+        return 0;
 
     try:
         args.func(args)
