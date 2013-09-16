@@ -79,7 +79,7 @@ class DmCryptVolume(object):
             self.data[dm['dev_name']] = dm
 
     def run_cryptsetup(self, command, stdout=True):
-        if not self._binary:
+        if not misc.check_binary('cryptsetup'):
             self.problem.check(self.problem.TOOL_MISSING, 'cryptsetup')
         command.insert(0, "cryptsetup")
         return misc.run(command, stdout=stdout)
