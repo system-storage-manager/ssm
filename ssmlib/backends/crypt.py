@@ -21,6 +21,7 @@ import re
 import os
 from ssmlib import misc
 from ssmlib import problem
+from ssmlib.backends import template
 
 __all__ = ["DmCryptVolume"]
 
@@ -35,16 +36,13 @@ except KeyError:
     DM_DEV_DIR = "/dev"
 
 
-class DmCryptVolume(object):
+class DmCryptVolume(template.BackendVolume):
 
-    def __init__(self, options, data=None):
+    def __init__(self, *args, **kwargs):
+        super(DmCryptVolume, self).__init__(*args, **kwargs)
         self.type = 'crypt'
-        self.data = data or {}
-        self.output = None
-        self.options = options
         self.mounts = misc.get_mounts('{0}/mapper'.format(DM_DEV_DIR))
         self.default_pool_name = SSM_CRYPT_DEFAULT_POOL
-        self.problem = problem.ProblemSet(options)
 
         if not misc.check_binary('dmsetup') or \
            not misc.check_binary('cryptsetup'):
@@ -105,11 +103,3 @@ class DmCryptVolume(object):
         size = str(int(size) * 2)
         command = ['resize', '--size', size, dm]
         self.run_cryptsetup(command)
-
-    def __iter__(self):
-        for item in sorted(self.data.iterkeys()):
-            yield item
-
-    def __getitem__(self, key):
-        if key in self.data.iterkeys():
-            return self.data[key]

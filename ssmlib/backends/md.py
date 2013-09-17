@@ -23,6 +23,7 @@ import socket
 import datetime
 from ssmlib import misc
 from ssmlib import problem
+from ssmlib.backends import template
 
 try:
     SSM_DM_DEFAULT_POOL = os.environ['SSM_DM_DEFAULT_POOL']
@@ -32,15 +33,14 @@ except KeyError:
 MDADM = "mdadm"
 
 
-class MdRaid(object):
+class MdRaid(template.Backend):
 
-    def __init__(self, options, data=None):
+    def __init__(self, *args, **kwargs):
+        super(MdRaid, self).__init__(*args, **kwargs)
         self.type = 'dm'
-        self.data = data or {}
         self._vol = {}
         self._pool = {}
         self._dev = {}
-        self.options = options
         self.hostname = socket.gethostname()
         self._binary = misc.check_binary(MDADM)
         self.default_pool_name = SSM_DM_DEFAULT_POOL
@@ -50,7 +50,6 @@ class MdRaid(object):
         if not self._binary:
             return
 
-        self.problem = problem.ProblemSet(options)
         self.mounts = misc.get_mounts('/dev/md')
 
         mdnumber = misc.get_dmnumber("md")
@@ -109,16 +108,8 @@ class MdRaid(object):
         command.insert(0, MDADM)
         return misc.run(command, stdout=True)
 
-    def __iter__(self):
-        for item in sorted(self.data.iterkeys()):
-            yield item
 
-    def __getitem__(self, key):
-        if key in self.data.iterkeys():
-            return self.data[key]
-
-
-class MdRaidVolume(MdRaid):
+class MdRaidVolume(MdRaid, template.BackendVolume):
 
     def __init__(self, *args, **kwargs):
         super(MdRaidVolume, self).__init__(*args, **kwargs)
@@ -135,7 +126,7 @@ class MdRaidVolume(MdRaid):
         self.problem.not_supported("Resizing with \"md\" backend")
 
 
-class MdRaidDevice(MdRaid):
+class MdRaidDevice(MdRaid, template.BackendDevice):
 
     def __init__(self, *args, **kwargs):
         super(MdRaidDevice, self).__init__(*args, **kwargs)

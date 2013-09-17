@@ -23,6 +23,7 @@ import stat
 import datetime
 from ssmlib import misc
 from ssmlib import problem
+from ssmlib.backends import template
 
 __all__ = ["PvsInfo", "VgsInfo", "LvsInfo"]
 
@@ -56,17 +57,14 @@ def get_lvm_version():
 LVM_VERSION = get_lvm_version()
 
 
-class LvmInfo(object):
+class LvmInfo(template.Backend):
 
-    def __init__(self, options, data=None):
+    def __init__(self, *args, **kwargs):
+        super(LvmInfo, self).__init__(*args, **kwargs)
         self.type = 'lvm'
-        self.data = data or {}
         self.attrs = []
-        self.output = None
-        self.options = options
         self.binary = misc.check_binary('lvm')
         self.default_pool_name = SSM_LVM_DEFAULT_POOL
-        self.problem = problem.ProblemSet(options)
 
     def run_lvm(self, command, noforce=False):
         if not self.binary:
@@ -77,9 +75,6 @@ class LvmInfo(object):
             command.insert(1, "-v")
         command.insert(0, "lvm")
         misc.run(command, stdout=True)
-
-    def __str__(self):
-        return self.output
 
     def _data_index(self, row):
         return row.values()[len(row.values()) - 1]
@@ -105,14 +100,6 @@ class LvmInfo(object):
     def _fill_aditional_info(self, row):
         pass
 
-    def __iter__(self):
-        for item in sorted(self.data.iterkeys()):
-            yield item
-
-    def __getitem__(self, key):
-        if key in self.data.iterkeys():
-            return self.data[key]
-
     def supported_since(self, version, string):
         if version > LVM_VERSION:
             msg = "ERROR: You need at least lvm version " + \
@@ -122,7 +109,7 @@ class LvmInfo(object):
         return True
 
 
-class VgsInfo(LvmInfo):
+class VgsInfo(LvmInfo, template.BackendPool):
 
     def __init__(self, *args, **kwargs):
         super(VgsInfo, self).__init__(*args, **kwargs)
@@ -261,7 +248,7 @@ class VgsInfo(LvmInfo):
         return "{0}/{1}/{2}".format(DM_DEV_DIR, vg, lvname)
 
 
-class PvsInfo(LvmInfo):
+class PvsInfo(LvmInfo, template.BackendDevice):
 
     def __init__(self, *args, **kwargs):
         super(PvsInfo, self).__init__(*args, **kwargs)
@@ -292,7 +279,7 @@ class PvsInfo(LvmInfo):
         self.run_lvm(command)
 
 
-class LvsInfo(LvmInfo):
+class LvsInfo(LvmInfo, template.BackendVolume):
 
     def __init__(self, *args, **kwargs):
         super(LvsInfo, self).__init__(*args, **kwargs)

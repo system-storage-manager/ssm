@@ -22,7 +22,8 @@ import sys
 __all__ = ["ProblemSet", "SsmError", "GeneralError", "ProgrammingError",
            "BadEnvVariable", "NotEnoughSpace", "ResizeMatch", "FsNotSpecified",
            "DeviceUsed", "ExistingFilesystem", "NoDevices", "ToolMissing",
-           "CanNotRun", "CommandFailed", "UserInterrupted", "NotSupported"]
+           "CanNotRun", "CommandFailed", "UserInterrupted", "NotSupported",
+           "NotImplemented"]
 
 # Define prompt codes
 PROMPT_NONE =           0
@@ -142,6 +143,10 @@ class ExistingFilesystem(SsmError):
     def __init__(self, msg, errcode=2015):
         super(ExistingFilesystem, self).__init__(msg, errcode)
 
+class NotImplemented(SsmError):
+    def __init__(self, msg, errcode=2016):
+        super(NotImplemented, self).__init__(msg, errcode)
+
 
 class ProblemSet(object):
 
@@ -221,6 +226,10 @@ class ProblemSet(object):
         self.NOT_SUPPORTED = \
             ['{0} is not supported!',
              PROMPT_NONE, FL_FATAL, NotSupported]
+
+        self.NOT_IMPLEMENTED = \
+            ['\'{0}\' function is not implemented by {1}!',
+            PROMPT_NONE, FL_FATAL, NotImplemented]
 
     def _can_print_message(self, flags):
         if (flags & FL_DEBUG_ONLY):

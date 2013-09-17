@@ -23,6 +23,7 @@ import sys
 import datetime
 from ssmlib import misc
 from ssmlib import problem
+from ssmlib.backends import template
 
 __all__ = ["BtrfsVolume", "BtrfsPool", "BtrfsDev"]
 
@@ -56,12 +57,11 @@ def get_btrfs_version():
 BTRFS_VERSION = get_btrfs_version()
 
 
-class Btrfs(object):
+class Btrfs(template.Backend):
 
-    def __init__(self, options, data=None):
+    def __init__(self, *args, **kwargs):
+        super(Btrfs, self).__init__(*args, **kwargs)
         self.type = 'btrfs'
-        self.data = data or {}
-        self.options = options
         self.default_pool_name = SSM_BTRFS_DEFAULT_POOL
         self._vol = {}
         self._pool = {}
@@ -69,7 +69,6 @@ class Btrfs(object):
         self._snap = {}
         self._subvolumes = {}
         self._binary = misc.check_binary('btrfs')
-        self.problem = problem.ProblemSet(options)
         self.modified_list_version = True
 
         if not self._binary:
@@ -313,14 +312,6 @@ class Btrfs(object):
         self._pool[pool['pool_name']] = pool
         self._vol[vol['dev_name']] = vol
 
-    def __iter__(self):
-        for item in sorted(self.data.iterkeys()):
-            yield item
-
-    def __getitem__(self, key):
-        if key in self.data.iterkeys():
-            return self.data[key]
-
     def _remove_filesystem(self, name):
         if 'mount' in self._vol[name]:
             if self.problem.check(self.problem.FS_MOUNTED,
@@ -332,7 +323,7 @@ class Btrfs(object):
             misc.wipefs(dev['dev_name'], 'btrfs')
 
 
-class BtrfsVolume(Btrfs):
+class BtrfsVolume(Btrfs, template.BackendVolume):
 
     def __init__(self, *args, **kwargs):
         super(BtrfsVolume, self).__init__(*args, **kwargs)
@@ -409,7 +400,7 @@ class BtrfsVolume(Btrfs):
         self.run_btrfs(command)
 
 
-class BtrfsDev(Btrfs):
+class BtrfsDev(Btrfs, template.BackendDevice):
 
     def __init__(self, *args, **kwargs):
         super(BtrfsDev, self).__init__(*args, **kwargs)
@@ -423,7 +414,7 @@ class BtrfsDev(Btrfs):
                         "achieve by removing {0}".format(devices))
 
 
-class BtrfsPool(Btrfs):
+class BtrfsPool(Btrfs, template.BackendPool):
 
     def __init__(self, *args, **kwargs):
         super(BtrfsPool, self).__init__(*args, **kwargs)
