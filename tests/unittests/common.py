@@ -74,8 +74,8 @@ class MockSystemDataSource(unittest.TestCase):
         misc.run = self.mock_run
         self.get_partitions_orig = misc.get_partitions
         misc.get_partitions = self.mock_get_partitions
-        self.is_bdevice_orig = main.is_bdevice
-        main.is_bdevice = self.mock_is_bdevice
+        self.is_bdevice_orig = misc.is_bdevice
+        misc.is_bdevice = self.mock_is_bdevice
         self.is_directory_orig = main.is_directory
         main.is_directory = self.mock_is_directory
         self.check_create_item_orig = main.StorageHandle.check_create_item
@@ -104,7 +104,7 @@ class MockSystemDataSource(unittest.TestCase):
         self.mount_data = {}
         misc.run = self.run_orig
         misc.get_partitions = self.get_partitions_orig
-        main.is_bdevice = self.is_bdevice_orig
+        misc.is_bdevice = self.is_bdevice_orig
         main.is_directory = self.is_directory_orig
         misc.get_mounts = self.get_mounts_orig
         main.StorageHandle.check_create_item = self.check_create_item_orig
@@ -166,7 +166,7 @@ class MockSystemDataSource(unittest.TestCase):
             if path in self.directories:
                 self._mpoint = path
                 return
-        return main.is_bdevice(path)
+        return misc.is_bdevice(path)
 
     def mock_send_udev_event(self, device, event):
         pass

@@ -1346,7 +1346,10 @@ class StorageHandle(object):
         return self.get_bdevice(path)
 
     def get_bdevice(self, path):
-        path = is_bdevice(path)
+        path = misc.is_bdevice(path)
+        if path == False:
+            err = "'{0}' is not valid block device".format(path)
+            raise argparse.ArgumentTypeError(err)
         return self._find_device_record(path)
 
     def is_pool(self, string):
@@ -1469,19 +1472,6 @@ def is_directory(string):
     else:
         err = "'{0}' is not directory.".format(string)
         raise argparse.ArgumentTypeError(err)
-
-
-def is_bdevice(path):
-    path = misc.get_real_device(path)
-    try:
-        mode = os.lstat(path).st_mode
-    except OSError:
-        err = "'{0}' is not valid block device".format(path)
-        raise argparse.ArgumentTypeError(err)
-    if not stat.S_ISBLK(mode):
-        err = "'{0}' is not valid block device".format(path)
-        raise argparse.ArgumentTypeError(err)
-    return path
 
 
 def is_supported_fs(fs):

@@ -20,6 +20,7 @@
 import os
 import re
 import sys
+import stat
 import tempfile
 import threading
 import subprocess
@@ -545,3 +546,18 @@ def terminal_size(default=(25, 80)):
         if not cr:
             cr = (25, 80)
     return int(cr[1]), int(cr[0])
+
+
+def is_bdevice(path):
+    """
+    Check whether the path is block device. If it is return
+    the path to the real block device, otherwise return False
+    """
+    path = get_real_device(path)
+    try:
+        mode = os.lstat(path).st_mode
+    except OSError:
+        return False
+    if not stat.S_ISBLK(mode):
+        return False
+    return path
