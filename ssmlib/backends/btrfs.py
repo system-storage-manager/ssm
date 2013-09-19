@@ -423,7 +423,8 @@ class BtrfsPool(Btrfs, template.BackendPool):
         else:
             self.data = self._pool
 
-    def _create_filesystem(self, pool, name, devs, size=None, raid=None):
+    def _create_filesystem(self, pool, name, devs, size=None, options=None):
+        options = options or {}
         if not devs:
             raise Exception("To create btrfs volume, some devices must be " +
                             "provided")
@@ -432,12 +433,12 @@ class BtrfsPool(Btrfs, template.BackendPool):
             self.problem.check(self.problem.TOOL_MISSING, 'mkfs.btrfs')
         command = ['mkfs.btrfs', '-L', name]
 
-        if raid:
-            if raid['level'] == '0':
+        if 'raid' in options:
+            if options['raid'] == '0':
                 command.extend(['-m', 'raid0', '-d', 'raid0'])
-            elif raid['level'] == '1':
+            elif options['raid'] == '1':
                 command.extend(['-m', 'raid1', '-d', 'raid1'])
-            elif raid['level'] == '10':
+            elif options['raid'] == '10':
                 command.extend(['-m', 'raid10', '-d', 'raid10'])
             else:
                 raise Exception("Btrfs backed currently does not support " +
@@ -505,10 +506,11 @@ class BtrfsPool(Btrfs, template.BackendPool):
         self._remove_filesystem(pool)
 
     def create(self, pool, size=None, name=None, devs=None,
-               raid=None):
+               options=None):
+        options = options or {}
         if pool in self._pool:
             vol = None
-            if size or raid:
+            if size or 'raid' in options:
                 self.problem.warn("Only name, volume name and pool name " +
                                   "can be specified when creating btrfs " +
                                   "subvolume, the rest will be ignored")
@@ -533,7 +535,7 @@ class BtrfsPool(Btrfs, template.BackendPool):
             if name:
                 self.problem.warn("Creating new pool. Argument (--name " +
                                   "{0}) will be ignored!".format(name))
-            vol = self._create_filesystem(pool, pool, devs, size, raid)
+            vol = self._create_filesystem(pool, pool, devs, size, options)
         return vol
 
 

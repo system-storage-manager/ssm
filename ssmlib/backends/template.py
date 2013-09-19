@@ -72,8 +72,8 @@ class BackendPool(Backend):
                         "Removing pool with {0} backend".format(self.type))
 
     def create(self, pool, size=None, name=None, devs=None,
-               options=misc.VolumeOptions()):
-        self.problem.check(self.problem.NOT_SUPPORTED,
+               options=None):
+        self.problem.check(self.problem.NOT_IMPLEMENTED,
                         "Creating volume with {0} backend".format(self.type))
 
 

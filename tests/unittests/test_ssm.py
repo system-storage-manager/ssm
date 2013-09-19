@@ -760,13 +760,14 @@ class PoolInfo(MyInfo):
         misc.run(cmd)
 
     def create(self, pool, size='', name='', devs='',
-               raid=None):
+               options=None):
+        options = options or {}
         if type(devs) is not list:
             devices = [devs]
-        if raid:
-            stripes = raid['stripes']
-            stripesize = raid['stripesize']
-            level = raid['level']
+        if 'raid' in options:
+            stripes = options['stripes']
+            stripesize = options['stripesize']
+            level = options['raid']
         else:
             stripes = stripesize = level = ""
         misc.run([self.f, self.v, self.y, 'pool create', pool, size, name,

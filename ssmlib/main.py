@@ -1123,16 +1123,15 @@ class StorageHandle(object):
            not (not args.pool.exists() and args.pool.type == 'btrfs'):
             self.add(args, True)
 
+        options = {}
         if args.raid:
-            raid = {'level': args.raid,
-                    'stripesize': args.stripesize,
-                    'stripes': args.stripes}
-        else:
-            raid = None
+            options = {'raid': args.raid,
+                       'stripesize': args.stripesize,
+                       'stripes': args.stripes}
 
         lvname = args.pool.create(devs=devices,
                                   size=args.size,
-                                  raid=raid,
+                                  options=options,
                                   name=args.name)
 
         if args.fstype and args.pool.type != 'btrfs':

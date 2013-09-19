@@ -163,7 +163,8 @@ class VgsInfo(LvmInfo, template.BackendPool):
         self.run_lvm(command)
 
     def create(self, vg, size=None, name=None, devs=None,
-               raid=None):
+               options=None):
+        options = options or {}
         devices = devs or []
         command = ['lvcreate', vg]
 
@@ -183,22 +184,22 @@ class VgsInfo(LvmInfo, template.BackendPool):
 
         command.extend(['-n', lvname.rpartition("/")[-1]])
 
-        if raid:
-            if raid['level'] == '0':
-                if not raid['stripesize']:
-                    raid['stripesize'] = "64"
-                if not raid['stripes'] and len(devices) > 0:
-                    raid['stripes'] = str(len(devices))
-                if not raid['stripes']:
+        if 'raid' in options:
+            if options['raid'] == '0':
+                if not options['stripesize']:
+                    options['stripesize'] = "64"
+                if not options['stripes'] and len(devices) > 0:
+                    options['stripes'] = str(len(devices))
+                if not options['stripes']:
                     self.problem.error("Devices or number of " +
                                        "stripes should be defined!")
-                if raid['stripesize']:
-                    command.extend(['-I', raid['stripesize']])
-                if raid['stripes']:
-                    command.extend(['-i', raid['stripes']])
-            elif raid['level'] == '1' and \
+                if options['stripesize']:
+                    command.extend(['-I', options['stripesize']])
+                if options['stripes']:
+                    command.extend(['-i', options['stripes']])
+            elif options['raid'] == '1' and \
                  self.supported_since([2,2,89],"raid1"):
-                if raid['stripesize'] or raid['stripes']:
+                if options['stripesize'] or options['stripes']:
                     msg = "ERROR: Specifying stripe size or number of " + \
                           "stripes when creating raid1 volume with lvm backend"
                     self.problem.check(self.problem.NOT_SUPPORTED, msg)
@@ -212,35 +213,35 @@ class VgsInfo(LvmInfo, template.BackendPool):
                           "specifying size"
                     self.problem.check(self.problem.NOT_SUPPORTED, msg)
                 command.extend(["--type", "raid1"])
-            elif raid['level'] == '10' and \
+            elif options['raid'] == '10' and \
                  self.supported_since([2,2,98],"raid10"):
-                if not raid['stripesize']:
-                    raid['stripesize'] = "64"
-                if not raid['stripes'] and len(devices) > 0:
+                if not options['stripesize']:
+                    options['stripesize'] = "64"
+                if not options['stripes'] and len(devices) > 0:
                     if len(devices) < 4:
                         self.problem.error("Number of devices should be at " +
                                            "least 4 in raid 10 setup")
                     if len(devices) % 2 != 0:
                         self.problem.error("Number of devices should be " +
                                            "even in raid 10 setup")
-                    raid['stripes'] = str(len(devices)/2)
-                if not raid['stripes']:
+                    options['stripes'] = str(len(devices)/2)
+                if not options['stripes']:
                     self.problem.error("Devices or number of " +
                                        "stripes should be defined")
-                if int(raid['stripes']) < 2:
+                if int(options['stripes']) < 2:
                     self.problem.error("Number of stripes should be at " +
                                        "least 2 in raid 10 setup")
-                if raid['stripesize']:
-                    command.extend(['-I', raid['stripesize']])
-                if raid['stripes']:
-                    command.extend(['-i', raid['stripes']])
+                if options['stripesize']:
+                    command.extend(['-I', options['stripesize']])
+                if options['stripes']:
+                    command.extend(['-i', options['stripes']])
                 if not size:
                     msg = "ERROR: Creating raid10 with lvm backend without " + \
                           "specifying size"
                     self.problem.check(self.problem.NOT_SUPPORTED, msg)
                 command.extend(["--type", "raid10"])
             else:
-                self.problem.not_supported("RAID level {0}".format(raid['level']) +
+                self.problem.not_supported("RAID level {0}".format(options['raid']) +
                                            " with \"lvm\" backend")
 
         command.extend(devices)
