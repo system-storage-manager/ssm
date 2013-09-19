@@ -566,3 +566,11 @@ def is_bdevice(path):
     if not stat.S_ISBLK(mode):
         return False
     return path
+
+
+def get_device_size(device):
+    devname = device.split('/')[-1]
+    with open("/sys/block/{0}/size".format(devname), 'r') as f:
+        for line in f:
+            size = int(line)/2
+            return size
