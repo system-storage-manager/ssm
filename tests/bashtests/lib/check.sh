@@ -292,6 +292,35 @@ pvlv_counts()
 	vg_field $local_vg snap_count $num_snaps
 }
 
+crypt_vol_field()
+{
+	data=$(cryptsetup status $1 2> /dev/null | grep $2 | sed -e 's/^[ \t]*//' || true)
+
+	expected=$3
+	case $2 in
+		"type")
+			actual=$(echo ${data##*type:} | sed -e 's/^[ \t]*//') ;;
+		"device")
+			actual=$(echo ${data##*device:} | sed -e 's/^[ \t]*//')
+			actual=$(basename $actual)
+			expected=$(basename $expected)
+			;;
+		"size")
+			actual=$(echo ${data##*size:} | sed -e 's/^[ \t]*//')
+			actual=${actual%% sectors}
+			;;
+		*)
+			echo "Unknown field $2"
+			exit 1
+			;;
+	esac
+
+	test "$actual" = "$expected" || {
+		echo "crypt_vol_field: volume=$1, field=$2, actual=$actual, expected=$expected"
+		exit 1
+	}
+}
+
 btrfs_fs_field()
 {
 	lines=$(btrfs filesystem show 2> /dev/null | grep -A 1 "'$1'" || true)

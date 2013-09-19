@@ -30,7 +30,7 @@ from ssmlib.backends import lvm, crypt, btrfs, md
 
 EXTN = ['ext2', 'ext3', 'ext4']
 SUPPORTED_FS = ['xfs', 'btrfs'] + EXTN
-SUPPORTED_BACKENDS = ['lvm', 'btrfs']
+SUPPORTED_BACKENDS = ['lvm', 'btrfs', 'crypt']
 SUPPORTED_RAID = ['0', '1', '10']
 os.environ['LC_NUMERIC'] = "C"
 
@@ -341,6 +341,11 @@ class DeviceInfo(object):
                 dev['mount'] = "PARTITIONED"
                 dev['type'] = 'disk'
 
+    def remove(self, device):
+        PR.error("It is not clear what do you want " +
+                 "to achieve by removing " +
+                 "{0}!".format(device))
+
     def set_globals(self, options):
         self.options = options
 
@@ -642,6 +647,11 @@ class Pool(Storage):
         except RuntimeError, err:
             PR.warn(err)
             PR.warn("Can not get information about btrfs pools")
+        try:
+            self._data['crypt'] = crypt.DmCryptPool(options=self.options)
+        except RuntimeError, err:
+            PR.warn(err)
+            PR.warn("Can not get information about crypt pools")
 
         backend = self.get_backend(SSM_DEFAULT_BACKEND)
         self.default = Item(backend, backend.default_pool_name)
@@ -685,10 +695,18 @@ class Devices(Storage):
             PR.warn("Can not get information about MD devices")
             my_md = Struct()
             my_md.data = {}
+        try:
+            my_crypt = crypt.DmCryptDevice(options=self.options)
+        except RuntimeError, err:
+            PR.warn(err)
+            PR.warn("Can not get information about crypt devices")
+            my_crypt = Struct()
+            my_crypt.data = {}
 
         self._data['dev'] = DeviceInfo(data=dict(my_lvm.data.items() +
                                                  my_btrfs.data.items() +
-                                                 my_md.data.items()),
+                                                 my_md.data.items() +
+                                                 my_crypt.data.items()),
                                        options=self.options)
         self.header = ['Device', 'Free', 'Used',
                        'Total', 'Pool', 'Mount point']
@@ -1031,7 +1049,11 @@ class StorageHandle(object):
             PR.check(PR.RESIZE_NOT_ENOUGH_SPACE,
                      [pool_name, args.volume.name, new_size])
         elif len(args.device) > 0 and new_size > vol_size:
-            self.add(args, True)
+            try:
+                self.add(args, True)
+            except problem.NotSupported:
+                # Some backends might not support pooling at all.
+                pass
 
         if new_size != vol_size:
             args.volume.resize(new_size, fs)
@@ -1042,6 +1064,27 @@ class StorageHandle(object):
         provided as arguments. If the device is not in the selected pool, then
         add() is called on the pool prior to create().
         """
+
+        lvname = self.create_volume(args)
+
+        if args.encrypt and misc.is_bdevice(lvname) and \
+           SSM_DEFAULT_BACKEND != 'crypt':
+            crypt = self.pool.get_backend("crypt")
+            args.pool = Item(crypt, crypt.default_pool_name)
+            options = {'encrypt': args.encrypt}
+            lvname = args.pool.create(devs=[lvname],
+                                      size=None,
+                                      options=options,
+                                      name=args.name)
+
+        if args.fstype and args.pool.type != 'btrfs':
+            if self._create_fs(args.fstype, lvname) != 0:
+                self._mpoint = None
+        if self._mpoint:
+            self.reinit_vol()
+            self._do_mount(self.vol[lvname])
+
+    def create_volume(self, args):
         # Get the size in kilobytes
         if args.size:
             args.size = misc.get_real_size(args.size)
@@ -1121,25 +1164,25 @@ class StorageHandle(object):
         # because it is actually the same thing
         if len(args.device) > 0 and \
            not (not args.pool.exists() and args.pool.type == 'btrfs'):
-            self.add(args, True)
+            try:
+                self.add(args, True)
+            except problem.NotSupported:
+                # Some backends might not support pooling at all.
+                pass
 
         options = {}
+        if args.encrypt:
+            options['encrypt'] = args.encrypt
         if args.raid:
-            options = {'raid': args.raid,
-                       'stripesize': args.stripesize,
-                       'stripes': args.stripes}
+            options['raid'] = args.raid
+            options['stripesize'] = args.stripesize
+            options['stripes'] = args.stripes
 
         lvname = args.pool.create(devs=devices,
                                   size=args.size,
                                   options=options,
                                   name=args.name)
-
-        if args.fstype and args.pool.type != 'btrfs':
-            if self._create_fs(args.fstype, lvname) != 0:
-                self._mpoint = None
-        if self._mpoint:
-            self.reinit_vol()
-            self._do_mount(self.vol[lvname])
+        return lvname
 
     def list(self, args):
         """
@@ -1230,10 +1273,7 @@ class StorageHandle(object):
                         pool.reduce(item.name)
                         removed += 1
                         continue
-                    else:
-                        PR.error("It is not clear what do you want " +
-                                 "to achieve by removing " +
-                                 "{0}!".format(item.name))
+
                 item.remove()
                 removed += 1
             except (RuntimeError, problem.SsmError), ex:
@@ -1622,6 +1662,10 @@ class SsmParser(object):
         parser_create.add_argument('-p', '--pool', default="",
                 help="Pool to use to create the new volume.",
                 type=self.storage.is_pool)
+        parser_create.add_argument('-e', '--encrypt', nargs='?',
+                choices=crypt.SUPPORTED_CRYPT, const=True,
+                help='''Create encrpted volume. Extension to use can be
+                     specified.''')
         parser_create.add_argument('device', nargs='*',
                 help='''Devices to use for creating the volume. If the device
                      is not in any pool, it is added into the pool prior the

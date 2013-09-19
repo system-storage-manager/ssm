@@ -19,11 +19,16 @@
 
 import re
 import os
+import stat
 from ssmlib import misc
 from ssmlib import problem
 from ssmlib.backends import template
 
 __all__ = ["DmCryptVolume"]
+
+SUPPORTED_CRYPT = ['luks', 'plain']
+CRYPT_SIGNATURES = ['crypto_LUKS']
+CRYPT_DEFAULT_EXTENSION = "luks"
 
 try:
     SSM_CRYPT_DEFAULT_POOL = os.environ['SSM_CRYPT_DEFAULT_POOL']
@@ -31,15 +36,23 @@ except KeyError:
     SSM_CRYPT_DEFAULT_POOL = "crypt_pool"
 
 try:
-    DM_DEV_DIR = os.environ['DM_DEV_DIR']
+    SSM_CRYPT_DEFAULT_VOL_PREFIX = os.environ['SSM_CRYPT_DEFAULT_VOL_PREFIX']
 except KeyError:
-    DM_DEV_DIR = "/dev"
+    SSM_CRYPT_DEFAULT_VOL_PREFIX = "encrypted"
+
+# cryptsetup against my expectations does not take into account
+# DM_DEV_DIR so set it to /dev pernamently for now.
+#try:
+#    DM_DEV_DIR = os.environ['DM_DEV_DIR']
+#except KeyError:
+#    DM_DEV_DIR = "/dev"
+DM_DEV_DIR = "/dev"
+MAX_DEVS = 999
 
 
-class DmCryptVolume(template.BackendVolume):
-
+class DmObject(template.Backend):
     def __init__(self, *args, **kwargs):
-        super(DmCryptVolume, self).__init__(*args, **kwargs)
+        super(DmObject, self).__init__(*args, **kwargs)
         self.type = 'crypt'
         self.mounts = misc.get_mounts('{0}/mapper'.format(DM_DEV_DIR))
         self.default_pool_name = SSM_CRYPT_DEFAULT_POOL
@@ -47,6 +60,92 @@ class DmCryptVolume(template.BackendVolume):
         if not misc.check_binary('dmsetup') or \
            not misc.check_binary('cryptsetup'):
             return
+
+    def run_cryptsetup(self, command, stdout=True):
+        if not misc.check_binary('cryptsetup'):
+            self.problem.check(self.problem.TOOL_MISSING, 'cryptsetup')
+        command.insert(0, "cryptsetup")
+        return misc.run(command, stdout=stdout)
+
+
+class DmCryptPool(DmObject, template.BackendPool):
+    def __init__(self, *args, **kwargs):
+        super(DmCryptPool, self).__init__(*args, **kwargs)
+        '''
+        pool = {'pool_name': self.default_pool_name,
+                'type': 'crypt',
+                'dev_count': '0',
+                'pool_free': '0',
+                'pool_used': '0',
+                'pool_size': '0',
+                'hide': True}
+        self.data[self.default_pool_name] = pool
+        '''
+
+
+    def create(self, pool, size=None, name=None, devs=None,
+               options=None):
+        options = options or {}
+        if 'encrypt' in options:
+            if options['encrypt'] is True:
+                options['encrypt'] = CRYPT_DEFAULT_EXTENSION
+            if options['encrypt'] not in SUPPORTED_CRYPT:
+                self.problem.not_supported("Extension "
+                                           "\'{0}\'".format(options['encrypt']))
+        else:
+            # So the options is not crypt specific. It's ok, just use defaults
+            options['encrypt'] = CRYPT_DEFAULT_EXTENSION
+
+        if len(devs) > 1:
+            self.problem.not_supported("Device concatenation" +
+                                       " with \"crypt\" backend")
+        if not name:
+            name = self._generate_devname()
+        device = devs[0]
+        args = []
+        command = []
+        if self.options.verbose:
+            args.append('-v')
+        else:
+            args.append('-q')
+        if options['encrypt'] == "luks":
+            command.extend(args)
+            if self.options.force:
+                command.append('--force-password')
+            if self.options.interactive:
+                command.append('-y')
+            command.extend(['luksFormat', device])
+            self.run_cryptsetup(command)
+        command = []
+        command.extend(args)
+        command.append('open')
+        if size:
+            # Size is in KiB but cryptsetup accepts it in 512 byte blocks
+            size = str(float(size) * 2).split('.')[0]
+            command.extend(['--size', size])
+        command.extend(['--type', options['encrypt'], device, name])
+        self.run_cryptsetup(command)
+        return "{0}/mapper/{1}".format(DM_DEV_DIR, name)
+
+    def _generate_devname(self):
+        for i in range(1, MAX_DEVS):
+            name = "{0}{1:0>{align}}".format(SSM_CRYPT_DEFAULT_VOL_PREFIX, i,
+                                            align=len(str(MAX_DEVS)))
+            path = "{0}/mapper/{1}".format(DM_DEV_DIR, name)
+            try:
+                if stat.S_ISBLK(os.stat(path).st_mode):
+                    continue
+            except OSError:
+                pass
+            return name
+        self.problem.error("Can not find proper device name. Specify one!")
+
+
+class DmCryptVolume(DmObject, template.BackendVolume):
+
+    def __init__(self, *args, **kwargs):
+        super(DmCryptVolume, self).__init__(*args, **kwargs)
+
         command = ['dmsetup', 'table']
         self.output = misc.run(command, stderr=False)[1]
         for line in self.output.split("\n"):
@@ -61,9 +160,9 @@ class DmCryptVolume(template.BackendVolume):
             devname = re.sub(":$", "",
                              "{0}/mapper/{1}".format(DM_DEV_DIR, array[0]))
             dm['dm_name'] = devname
-            dm['pool_name'] = 'dm-crypt'
-            dm['dev_name'] = misc.get_real_device(devname)
-            dm['real_dev'] = dm['dev_name']
+            dm['pool_name'] = self.default_pool_name
+            dm['dev_name'] = devname
+            dm['real_dev'] = misc.get_real_device(devname)
             if dm['real_dev'] in self.mounts:
                 dm['mount'] = self.mounts[dm['real_dev']]['mp']
 
@@ -75,12 +174,6 @@ class DmCryptVolume(template.BackendVolume):
             command = ['cryptsetup', 'status', devname]
             self._parse_cryptsetup(command, dm)
             self.data[dm['dev_name']] = dm
-
-    def run_cryptsetup(self, command, stdout=True):
-        if not misc.check_binary('cryptsetup'):
-            self.problem.check(self.problem.TOOL_MISSING, 'cryptsetup')
-        command.insert(0, "cryptsetup")
-        return misc.run(command, stdout=stdout)
 
     def _parse_cryptsetup(self, cmd, dm):
         self.output = misc.run(cmd, stderr=False)[1]
@@ -95,11 +188,52 @@ class DmCryptVolume(template.BackendVolume):
             elif array[0].strip() == 'device:':
                 dm['crypt_device'] = array[1]
 
+    def __getitem__(self, name):
+        if name in self.data.iterkeys():
+            return self.data[name]
+        device = name
+        if not os.path.exists(name):
+            device = DM_DEV_DIR + "/" + name
+            if not os.path.exists(device):
+                return None
+        device = misc.get_real_device(device)
+        if device in self.data.iterkeys():
+            return self.data[device]
+        return None
+
     def remove(self, dm):
+        vol = self[dm]
+        if 'mount' in vol:
+            if self.problem.check(self.problem.FS_MOUNTED,
+                                  [vol['dev_name'], vol['mount']]):
+                misc.do_umount(vol['mount'])
         command = ['remove', dm]
         self.run_cryptsetup(command)
+        misc.wipefs(vol['crypt_device'], CRYPT_SIGNATURES)
 
     def resize(self, dm, size, resize_fs=True):
         size = str(int(size) * 2)
         command = ['resize', '--size', size, dm]
         self.run_cryptsetup(command)
+
+
+class DmCryptDevice(DmObject, template.BackendDevice):
+
+    def __init__(self, *args, **kwargs):
+        super(DmCryptDevice, self).__init__(*args, **kwargs)
+
+        for line in misc.get_partitions():
+            device = {}
+            devname = "/dev/" + line[3]
+            signature = misc.get_signature(devname)
+            if misc.get_signature(devname) in CRYPT_SIGNATURES:
+                device['hide'] = False
+                device['dev_name'] = devname
+                device['pool_name'] = self.default_pool_name
+                device['dev_free'] = '0'
+                device['dev_used'] = str(misc.get_device_size(devname))
+                self.data[devname] = device
+
+
+    def remove(self, devices):
+        misc.wipefs(device, CRYPT_SIGNATURES)

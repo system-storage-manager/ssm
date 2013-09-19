@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "SSM" "8" "September 16, 2013" "0.4" "System Storage Manager"
+.TH "SSM" "8" "September 24, 2013" "0.4" "System Storage Manager"
 .SH NAME
 ssm \- System Storage Manager: a single tool to manage your storage
 .
@@ -61,7 +61,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .sp
 \fBssm\fP [\fB\-h\fP] [\fB\-\-version\fP] [\fB\-v\fP] [\fB\-f\fP] [\fB\-b\fP BACKEND] [\fB\-n\fP] {check,resize,create,list,add,remove,snapshot,mount} ...
 .sp
-\fBssm\fP \fBcreate\fP [\fB\-h\fP] [\fB\-s\fP SIZE] [\fB\-n\fP NAME] [\fB\-\-fstype\fP FSTYPE] [\fB\-r\fP LEVEL] [\fB\-I\fP STRIPESIZE] [\fB\-i\fP STRIPES] [\fB\-p\fP POOL] [\fBdevice\fP [\fBdevice\fP ...]] [mount]
+\fBssm\fP \fBcreate\fP [\fB\-h\fP] [\fB\-s\fP SIZE] [\fB\-n\fP NAME] [\fB\-\-fstype\fP FSTYPE] [\fB\-r\fP LEVEL] [\fB\-I\fP STRIPESIZE] [\fB\-i\fP STRIPES] [\fB\-p\fP POOL] [\fB\-e\fP [{luks,plain}]] [\fBdevice\fP [\fBdevice\fP ...]] [mount]
 .sp
 \fBssm\fP \fBlist\fP [\fB\-h\fP] [{volumes,vol,dev,devices,pool,pools,fs,filesystems,snap,snapshots}]
 .sp
@@ -110,7 +110,7 @@ or questions.
 .TP
 .BI \-b \ BACKEND\fP,\fB \ \-\-backend \ BACKEND
 Choose backend to use. Currently you can choose from
-(lvm,btrfs).
+(lvm,btrfs,crypt).
 .TP
 .B \-n\fP,\fB  \-\-dry\-run
 Dry run. Do not do anything, just parse the command
@@ -128,7 +128,7 @@ line as a first argument to the ssm. They all have specific use and its own
 arguments, but global ssm arguments are propagated to all commands.
 .SS Create command
 .sp
-\fBssm\fP \fBcreate\fP [\fB\-h\fP] [\fB\-s\fP SIZE] [\fB\-n\fP NAME] [\fB\-\-fstype\fP FSTYPE] [\fB\-r\fP LEVEL] [\fB\-I\fP STRIPESIZE] [\fB\-i\fP STRIPES] [\fB\-p\fP POOL] [\fBdevice\fP [\fBdevice\fP ...]] [mount]
+\fBssm\fP \fBcreate\fP [\fB\-h\fP] [\fB\-s\fP SIZE] [\fB\-n\fP NAME] [\fB\-\-fstype\fP FSTYPE] [\fB\-r\fP LEVEL] [\fB\-I\fP STRIPESIZE] [\fB\-i\fP STRIPES] [\fB\-p\fP POOL] [\fB\-e\fP [{luks,plain}]] [\fBdevice\fP [\fBdevice\fP ...]] [mount]
 .sp
 This command creates a new volume with defined parameters. If \fBdevice\fP is
 provided it will be used to create a volume, hence it will be added into the
@@ -202,6 +202,12 @@ you have to specify RAID level as well.
 .TP
 .BI \-p \ POOL\fP,\fB \ \-\-pool \ POOL
 Pool to use to create the new volume.
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \-e [{luks,plain}], \-\-encrypt [{luks,plain}]
+Create encrpted volume. Extension to use can be
+specified.
 .UNINDENT
 .SS List command
 .sp
@@ -509,9 +515,41 @@ Lvm requires \fIphysical device\fP to be created on the device, but with
 .UNINDENT
 .SS Crypt backend
 .sp
-Crypt backend in \fBssm\fP is currently limited to only gather the information
-about encrypted volumes in the system. You can not create or manage encrypted
-volumes or pools, but it will be extended in the future.
+Crypt backend in \fBssm\fP uses cryptsetup and dm\-crypt target to manage
+encrypted volumes. Crypt backend can be used as a regular backend for
+creating encrypted volumes on top of regular block devices, or even other
+volumes (lvm or md volumes for example). Or it can be used to create
+encrypted lvm volumes right away in a single step.
+.sp
+Only volumes can be created with crypt backend. This backend does not
+support pooling and does not require special devices.
+.INDENT 0.0
+.TP
+.B pool
+Crypt backend does not support pooling it is not possible to create
+crypt pool or add a device into a pool.
+.TP
+.B volume
+Volume in crypt backend is the volume created by dm\-crypt which
+represent the data on the original encrypted device in unencrypted form.
+Crypt backend does not support pooling, so only one device can be used
+to create crypt volume. It also does not support raid or any device
+concatenation.
+.sp
+Currently two modes, or extensions are supported luks and plain. Luks
+is used by default.For more information about the extensions please see
+\fBcryptsetup\fP manual page.
+.TP
+.B snapshot
+Crypt backend does not support snapshotting, however if the encrypted
+volume is created on top of the lvm volume, the lvm volume itself can
+be snapshotted. The snapshot can be then opened by using \fBcryptsetup\fP\&.
+It is possible that this might change in the future so that \fBssm\fP will
+be able to activate the volume directly without the extra step.
+.TP
+.B device
+Crypt backend does not require any special device to be created on.
+.UNINDENT
 .SS MD backend
 .sp
 MD backend in \fBssm\fP is currently limited to only gather the information
