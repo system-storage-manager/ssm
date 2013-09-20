@@ -53,9 +53,10 @@ FL_DEFAULT_NO =         16
 FL_SILENT =             32
 FL_EXIT_ON_NO =         64
 FL_EXIT_ON_YES =        128
-FL_FATAL =              256
+FL_NO_MESSAGE =         256
 FL_FORCE_YES =          512
 FL_FORCE_NO =           1024
+FL_FATAL =              (2048 | FL_NO_MESSAGE)
 
 
 class SsmError(Exception):
@@ -66,7 +67,7 @@ class SsmError(Exception):
         self.errcode = errcode
 
     def __str__(self):
-        return repr("Error ({0}): {1}".format(self.errcode, self.msg))
+        return "SSM Error ({0}): {1}".format(self.errcode, self.msg)
 
 
 class GeneralError(SsmError):
@@ -163,7 +164,7 @@ class ProblemSet(object):
              PROMPT_NONE, FL_FATAL, ProgrammingError]
 
         self.GENERAL_ERROR = \
-            ['SSM Error: {0}!', PROMPT_NONE, FL_FATAL, GeneralError]
+            ['{0}!', PROMPT_NONE, FL_FATAL, GeneralError]
 
         self.GENERAL_INFO = \
             ['SSM Info: {0}', PROMPT_NONE, FL_NONE, None]
@@ -236,6 +237,8 @@ class ProblemSet(object):
             return self.options.debug
         elif (flags & FL_VERBOSE_ONLY):
             return self.options.verbose
+        elif (flags & FL_NO_MESSAGE):
+            return False
         else:
             return True
 
@@ -298,14 +301,10 @@ class ProblemSet(object):
 
         if self._can_print_message(flags) and \
            (flags & FL_MSG_ONLY or prompt_msg is None):
-            print >> sys.stderr, message,
-        else:
-            print message,
+            print >> sys.stderr, message
         if not flags & FL_MSG_ONLY and prompt_msg is not None:
-            print '{0}'.format(prompt_msg),
+            print message, '{0}'.format(prompt_msg),
             res = self._ask_question(flags)
-        else:
-            print >> sys.stderr
 
         if (flags & FL_FATAL):
             if exc:
