@@ -229,12 +229,13 @@ def get_signature(device, types=None):
         command.extend(['-u', types])
     command.append(device)
 
-    output = run(command, can_fail=True)[1].strip()
+    ret, output = run(command, can_fail=True, stderr=False)
+    output = output.strip()
 
-    if len(output) > 0:
-        return output
-    else:
+    if ret:
         return None
+    else:
+        return output
 
 
 def get_fs_type(device):

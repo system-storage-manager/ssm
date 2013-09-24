@@ -88,6 +88,8 @@ class MockSystemDataSource(unittest.TestCase):
         misc.check_binary = self.mock_check_binary
         self.send_udev_event_orig = misc.send_udev_event
         misc.send_udev_event = self.mock_send_udev_event
+        self.get_fs_type_orig = misc.get_fs_type
+        misc.get_fs_type = self.mock_get_fs_type
         self.dev_data = {}
         self.vol_data = {}
         self.pool_data = {}
@@ -111,6 +113,7 @@ class MockSystemDataSource(unittest.TestCase):
         misc.temp_mount = self.temp_mount_orig
         misc.check_binary = self.check_binary_orig
         misc.send_udev_event = self.send_udev_event_orig
+        misc.get_fs_type = self.get_fs_type_orig
         main.SSM_NONINTERACTIVE = False
 
     def _cmdEq(self, out, index=-1):
@@ -167,6 +170,20 @@ class MockSystemDataSource(unittest.TestCase):
                 self._mpoint = path
                 return
         return misc.is_bdevice(path)
+
+    def mock_get_fs_type(self, device):
+        if device in self.vol_data:
+            if 'fstype' in self.vol_data[device]:
+                return self.vol_data[device]['fstype']
+            else:
+                return None
+        elif device in self.dev_data:
+            if 'fstype' in self.dev_data[device]:
+                return self.dev_data[device]['fstype']
+            else:
+                return None
+        else:
+                return None
 
     def mock_send_udev_event(self, device, event):
         pass
