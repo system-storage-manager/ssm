@@ -341,4 +341,8 @@ not ssm create
 ssm add $TEST_DEVS
 not ssm create -p $pool1
 not ssm create -r 0 -I 16 -i 3 $dev1 $dev2
+not ssm create -s-20M
+not ssm create -s+20M
+not ssm create --size 25.8.1991
+not ssm create --size linux
 ssm  -f remove --all
