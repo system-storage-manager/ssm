@@ -88,6 +88,7 @@ ssm -f remove $SSM_BTRFS_DEFAULT_POOL
 
 # Create raid 10 volume with just one device
 ssm create -r 10 $dev1 $dev2 $dev3 $dev4
+ssm check $SSM_BTRFS_DEFAULT_POOL
 not ssm create $dev1 -p $pool1
 ssm -f remove $SSM_BTRFS_DEFAULT_POOL
 
