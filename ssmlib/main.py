@@ -1106,6 +1106,12 @@ class StorageHandle(object):
         have_size, devices = self._filter_device_list(args, pool_free,
                                                       args.size)
 
+        # When the pool does not exist and there is no device usable
+        # for creating the new pool, then there is no point of trying to
+        # create a volume, since it would fail in the backend anyway.
+        if not args.pool.exists() and len(devices) == 0:
+            PR.check(PR.NO_DEVICES, args.pool.name)
+
         # Currently we do not allow setting subvolume size with btrfs. This
         # should change in the future (quotas maybe) so the check should
         # be removed or pushed to the backend itself.
@@ -1114,12 +1120,6 @@ class StorageHandle(object):
             if PR.check(PR.CREATE_NOT_ENOUGH_SPACE,
                         [have_size, args.pool.name]):
                 args.size = None
-
-        # When the pool does not exist and there is no device usable
-        # for creating the new pool, then there is no point of trying to
-        # create a volume, since it would fail in the backend anyway.
-        if not args.pool.exists() and len(devices) == 0:
-            PR.check(PR.NO_DEVICES, args.pool.name)
 
         if have_size == 0:
             PR.error("Not enough space ({0} KB) to".format(have_size) +
