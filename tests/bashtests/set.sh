@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+chmod +x *.sh
 for i in $(ls lib/*.sh); do
 	echo "$i -> ${i%%.sh}"
 	cp $i ${i%%.sh}
