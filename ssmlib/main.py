@@ -976,6 +976,14 @@ class StorageHandle(object):
             if not self.dev[dev] or 'pool_name' not in self.dev[dev]:
                 # Check signature of existing file system on the device
                 # and ask user whether to use it or not.
+                if self.dev[dev] and 'mount' in self.dev[dev]:
+                    try:
+                        if PR.check(PR.FS_MOUNTED,
+                                    [dev, self.dev[dev]['mount']]):
+                            misc.do_umount(dev)
+                    except problem.FsMounted:
+                        args.device.remove(dev)
+                        continue
                 signature = misc.get_fs_type(dev)
                 if signature and \
                    not PR.check(PR.EXISTING_FILESYSTEM, [signature, dev]):
@@ -1227,11 +1235,20 @@ class StorageHandle(object):
                 else:
                     # Check signature of existing file system on the device
                     # and as user whether to use it or not.
-                    signature = misc.get_fs_type(dev)
-                    if signature and \
-                       not PR.check(PR.EXISTING_FILESYSTEM, [signature, dev]):
-                        args.device.remove(dev)
-                        continue
+                    if item and 'mount' in item:
+                        try:
+                            if PR.check(PR.FS_MOUNTED, [dev, item['mount']]):
+                                misc.do_umount(dev)
+                        except problem.FsMounted:
+                            args.device.remove(dev)
+                            continue
+                    else:
+                        signature = misc.get_fs_type(dev)
+                        if signature and \
+                           not PR.check(PR.EXISTING_FILESYSTEM,
+                                        [signature, dev]):
+                            args.device.remove(dev)
+                            continue
 
         if args.pool.exists():
             if len(args.device) > 0:
