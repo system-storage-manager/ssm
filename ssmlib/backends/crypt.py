@@ -49,6 +49,15 @@ except KeyError:
 DM_DEV_DIR = "/dev"
 MAX_DEVS = 999
 
+def get_cryptsetup_version():
+    try:
+        output = misc.run(['cryptsetup', '--version'], can_fail=True)[1]
+        version = map(int, output.strip().split()[-1].split('.', 3))
+    except (OSError, AttributeError):
+        version = [0, 0, 0]
+    return version
+
+CRYPTSETUP_VERSION = get_cryptsetup_version()
 
 class DmObject(template.Backend):
     def __init__(self, *args, **kwargs):
@@ -85,6 +94,11 @@ class DmCryptPool(DmObject, template.BackendPool):
 
     def create(self, pool, size=None, name=None, devs=None,
                options=None):
+
+        if CRYPTSETUP_VERSION < [1, 6, 0]:
+            msg = "You need at least cryptsetup version " + \
+                  "{0}. Creating encrypted volumes".format('1.6.0')
+            self.problem.check(self.problem.NOT_SUPPORTED, msg)
         options = options or {}
         if 'encrypt' in options:
             if options['encrypt'] is True:
