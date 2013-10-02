@@ -271,8 +271,11 @@ volume
 
    Btrfs volumes are only shown in the *list* output, when the file
    system is mounted, with the exception of the main btrfs volume -
-   the file system itself. Also note that btrfs subvolume can not be
-   resized.
+   the file system itself.
+
+   Also note that btrfs volumes and subvolumes can not be resized.
+   This is mainly limitation of the btrfs tools which currently does
+   not work reliably.
 
    New btrfs volume can be created with **create** command.
 

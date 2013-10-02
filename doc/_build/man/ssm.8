@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "SSM" "8" "September 24, 2013" "0.4" "System Storage Manager"
+.TH "SSM" "8" "October 02, 2013" "0.4" "System Storage Manager"
 .SH NAME
 ssm \- System Storage Manager: a single tool to manage your storage
 .
@@ -464,7 +464,11 @@ with its mount point.
 .sp
 Btrfs volumes are only shown in the \fIlist\fP output, when the file system is
 mounted, with the exception of the main btrfs volume \- the file system
-itself. Also note that btrfs subvolume can not be resized.
+itself.
+.sp
+Also note that btrfs volumes and subvolumes can not be resized. This is
+mainly limitation of the btrfs tools which currently does not work
+reliably.
 .sp
 New btrfs volume can be created with \fBcreate\fP command.
 .TP
