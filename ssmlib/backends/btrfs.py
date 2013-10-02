@@ -74,7 +74,7 @@ class Btrfs(template.Backend):
         if not self._binary:
             return
 
-        self.mounts = misc.get_mounts('/dev/')
+        self.mounts = misc.get_mounts('btrfs')
         command = ['btrfs', 'filesystem', 'show']
         self.output = misc.run(command, stderr=False)[1]
 
@@ -106,12 +106,12 @@ class Btrfs(template.Backend):
                 pool['uuid'] = vol['uuid'] = uuid
 
                 try:
-                    fallback = False
                     vol['real_dev'] = misc.get_device_by_uuid(uuid)
 
                     if vol['real_dev'] in self.mounts:
                         pool['mount'] = self.mounts[vol['real_dev']]['mp']
                         vol['mount'] = self.mounts[vol['real_dev']]['mp']
+
                     else:
                         for dev_i in self.mounts:
                             found = re.findall(r'{0}:/.*'.format(vol['real_dev']), dev_i)
@@ -120,7 +120,6 @@ class Btrfs(template.Backend):
                                 break
                 except OSError:
                     # udev is "hard-to-work-with" sometimes so this is fallback
-                    fallback = True
                     vol['real_dev'] = ""
 
                 if label != 'none':
@@ -139,7 +138,7 @@ class Btrfs(template.Backend):
                 dev['pool_name'] = pool_name
 
                 # Fallback in case we could not find real_dev by uuid
-                if fallback and 'mount' not in pool:
+                if 'mount' not in pool:
                     if dev['dev_name'] in self.mounts:
                         pool['mount'] = self.mounts[dev['dev_name']]['mp']
                         vol['real_dev'] = dev['dev_name']
@@ -152,6 +151,7 @@ class Btrfs(template.Backend):
                             found = re.findall(r'{0}:/.*'.format(dev['dev_name']), dev_i)
                             if found:
                                 pool['mount'] = self.mounts[found[0]]['mp']
+                                vol['real_dev'] = found[0].split(':')[0]
                                 break
 
                 dev_used = get_real_number(array[5])
@@ -316,7 +316,7 @@ class Btrfs(template.Backend):
         if 'mount' in self._vol[name]:
             if self.problem.check(self.problem.FS_MOUNTED,
                                   [name, self._vol[name]['mount']]):
-                misc.do_umount(self._vol[name]['mount'])
+                misc.do_umount(self._vol[name]['real_dev'], all_targets=True)
         for dev in self._dev.itervalues():
             if dev['pool_name'] != name:
                 continue

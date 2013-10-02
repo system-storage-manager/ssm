@@ -192,13 +192,15 @@ def do_mount(device, directory, options=None):
     run(command)
 
 
-def do_umount(mpoint):
-    command = ['umount', mpoint]
+def do_umount(mpoint, all_targets=False):
+    command = ['umount']
+    if all_targets:
+        command.append('--all-targets')
     try:
-        run(command)
+        run(command + [mpoint])
     except RuntimeError:
-        command = ['umount', '-l', mpoint]
-        run(command)
+        command.append('-l')
+        run(command + mpoint)
 
 
 def temp_mount(device, options=None):
