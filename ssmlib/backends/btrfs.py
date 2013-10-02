@@ -423,6 +423,20 @@ class BtrfsPool(Btrfs, template.BackendPool):
         else:
             self.data = self._pool
 
+    def _can_btrfs_force(self):
+        """
+        This is just ridiculous. Unfortunately btrfs tools usually change
+        behaviour and options without bumping version number. So we have
+        to check whether btrfs allows to 'force' file system creation.
+        """
+        command=['mkfs.btrfs', '-f']
+        output = misc.run(command, can_fail=True)[1]
+        found = re.search('invalid option', output)
+        if found:
+            return False
+        else:
+            return True
+
     def _create_filesystem(self, pool, name, devs, size=None, options=None):
         options = options or {}
         if not devs:
@@ -454,7 +468,8 @@ class BtrfsPool(Btrfs, template.BackendPool):
         # have tried to remove the device from the respective pool already.
         # So at this point there should not be any useful signatures to
         # speak of. However as I mentioned btrfs is broken, so force it.
-        command.extend(['-f'])
+        if self._can_btrfs_force():
+            command.extend(['-f'])
         command.extend(devs)
         misc.run(command, stdout=True)
         misc.send_udev_event(devs[0], "change")
