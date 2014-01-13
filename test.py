@@ -89,17 +89,18 @@ def run_bash_tests():
 
 def quick_test():
     print "[+] Running doctests"
-    doctest_flags = doctest.IGNORE_EXCEPTION_DETAIL | doctest.ELLIPSIS
+    doctest_flags = doctest.IGNORE_EXCEPTION_DETAIL | doctest.ELLIPSIS | \
+                    doctest.REPORT_ONLY_FIRST_FAILURE
     result = doctest.testmod(main, exclude_empty=True, report=True,
-            raise_on_error=True, optionflags=doctest_flags)
+            raise_on_error=False, optionflags=doctest_flags)
     result = doctest.testmod(lvm, exclude_empty=True, report=True,
-            raise_on_error=True, optionflags=doctest_flags)
+            raise_on_error=False, optionflags=doctest_flags)
     result = doctest.testmod(crypt, exclude_empty=True, report=True,
-            raise_on_error=True, optionflags=doctest_flags)
+            raise_on_error=False, optionflags=doctest_flags)
     result = doctest.testmod(btrfs, exclude_empty=True, report=True,
-            raise_on_error=True, optionflags=doctest_flags)
+            raise_on_error=False, optionflags=doctest_flags)
     result = doctest.testmod(misc, exclude_empty=True, report=True,
-            raise_on_error=True, optionflags=doctest_flags)
+            raise_on_error=False, optionflags=doctest_flags)
     print "[+] Running unittests"
     test_loader = unittest.TestLoader()
     tests_lvm = test_loader.loadTestsFromModule(test_lvm)

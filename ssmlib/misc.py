@@ -32,34 +32,57 @@ TMP_MOUNTED = []
 
 def get_unit_size(string):
     """
-    Check the last character of the string for the unit and return the unit
-    value, otherwise return zero. It check only the last character of the
-    string.
+    Check the last character of the string for the unit and return the tuple
+    of unit value, unit name, otherwise return zero. It check only the first
+    character of the unit string.
 
     >>> get_unit_size("B")
-    1
+    (1, 'B')
     >>> get_unit_size("k")
-    1024
-    >>> get_unit_size("M")
-    1048576
-    >>> get_unit_size("g")
-    1073741824
-    >>> get_unit_size("T")
-    1099511627776...
-    >>> get_unit_size("p")
-    1125899906842624...
+    (1024, 'k')
+    >>> get_unit_size("KiB")
+    (1024, 'KiB')
+    >>> get_unit_size("KB")
+    (1024, 'KB')
+    >>> get_unit_size("10M")
+    (1048576, 'M')
+    >>> get_unit_size("-99.99g")
+    (1073741824, 'g')
+    >>> get_unit_size("-99.99GiB")
+    (1073741824, 'GiB')
+    >>> get_unit_size("+99.99G")
+    (1073741824, 'G')
+    >>> get_unit_size("+99.99gb")
+    (1073741824, 'gb')
+    >>> get_unit_size("99.99g")
+    (1073741824, 'g')
+    >>> get_unit_size("0.84T")
+    (1099511627776, 'T')
+    >>> get_unit_size("0.84TiB")
+    (1099511627776, 'TiB')
+    >>> get_unit_size("0p")
+    (1125899906842624, 'p')
+    >>> get_unit_size("99kit")
+    (0, '')
     >>> get_unit_size("")
-    0
+    (0, '')
     >>> get_unit_size("H")
-    0
+    (0, '')
     """
 
     mult = 0
     units = {'B': 1, 'K': 2 ** 10, 'M': 2 ** 20, 'G': 2 ** 30, 'T': 2 ** 40,
              'P': 2 ** 50}
-    if len(string) > 0 and string[-1].upper() in units:
-        mult = units[string[-1].upper()]
-    return mult
+    unit = re.sub(r'^\+?-?\d+(\.\d*)?', '', string)
+    if len(unit) > 0 and unit[0].upper() in units:
+        mult = units[unit[0].upper()]
+    all_units = {'B', 'K', 'M', 'G', 'T', 'P',
+                 'KB', 'MB', 'GB', 'TB', 'PB',
+                 'KIB', 'MIB', 'GIB', 'TIB', 'PIB'}
+    if unit.upper() in all_units:
+        return mult, unit
+    else:
+        return 0, ""
 
 
 def is_number(string):
@@ -92,7 +115,13 @@ def get_real_size(size):
 
     >>> get_real_size("3141")
     '3141'
+    >>> get_real_size("3141B")
+    '3.07'
     >>> get_real_size("3141K")
+    '3141.00'
+    >>> get_real_size("3141KB")
+    '3141.00'
+    >>> get_real_size("3141KiB")
     '3141.00'
     >>> get_real_size("3141k")
     '3141.00'
@@ -118,6 +147,10 @@ def get_real_size(size):
     '-3.14'
     >>> get_real_size("3.14G")
     '3292528.64'
+    >>> get_real_size("3.14GB")
+    '3292528.64'
+    >>> get_real_size("3.14GiB")
+    '3292528.64'
     >>> get_real_size("+3.14g")
     '+3292528.64'
     >>> get_real_size("-3.14G")
@@ -133,12 +166,15 @@ def get_real_size(size):
     """
     if is_number(size):
         return size
-    elif is_number(size[:-1]):
+    else:
         # Always use kilobytes in ssm
-        mult = get_unit_size(size) / 1024
-        sign = '+' if size[0] == '+' else ''
-        if mult:
-            return '{0}{1:.2f}'.format(sign, float(size[:-1]) * mult)
+        mult, unit = get_unit_size(size)
+        mult /= float(1024)
+        number = re.sub(unit + "$", '', size)
+        if is_number(number):
+            sign = '+' if size[0] == '+' else ''
+            if mult:
+                return '{0}{1:.2f}'.format(sign, float(number) * mult)
     raise Exception("Not supported unit in the " +
                     "size \'{0}\' argument.".format(size))
 

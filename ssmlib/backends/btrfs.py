@@ -33,18 +33,6 @@ except KeyError:
     SSM_BTRFS_DEFAULT_POOL = "btrfs_pool"
 
 
-def get_real_number(string):
-    number = float(string[0:-2])
-    unit = string[-2:-1]
-    # The result will be in kilobytes
-    units = ["K", "M", "G", "T", "P", "E", "Z", "Y"]
-    for i, u in enumerate(units):
-        if u == unit:
-            number *= (2 ** (i * 10))
-            break
-    return number
-
-
 def get_btrfs_version():
     try:
         output = misc.run(['btrfs', '--version'], can_fail=True)[1]
@@ -128,7 +116,7 @@ class Btrfs(template.Backend):
 
             elif array[0] == 'Total':
                 pool['dev_count'] = array[2]
-                fs_used = get_real_number(array[6])
+                fs_used = float(misc.get_real_size(array[6]))
 
             elif array[0] == 'devid':
                 dev['dev_name'] = array[7]
@@ -154,9 +142,9 @@ class Btrfs(template.Backend):
                                 vol['real_dev'] = found[0].split(':')[0]
                                 break
 
-                dev_used = get_real_number(array[5])
+                dev_used = float(misc.get_real_size(array[5]))
                 dev['dev_used'] = str(dev_used)
-                fs_size += get_real_number(array[3])
+                fs_size += float(misc.get_real_size(array[3]))
 
                 dev_size = \
                     int(partitions[dev['dev_name'].rpartition("/")[-1]][2])
