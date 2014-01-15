@@ -608,8 +608,9 @@ def is_bdevice(path):
 
 
 def get_device_size(device):
-    devname = device.split('/')[-1]
-    with open("/sys/block/{0}/size".format(devname), 'r') as f:
+    info = os.stat(device)
+    major, minor = divmod(info.st_rdev, 256)
+    with open("/sys/dev/block/{0}:{1}/size".format(major, minor), 'r') as f:
         for line in f:
             size = int(line)/2
             return size
