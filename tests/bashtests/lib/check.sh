@@ -323,7 +323,7 @@ crypt_vol_field()
 
 btrfs_fs_field()
 {
-	lines=$(btrfs filesystem show 2> /dev/null | grep -A 1 "'$1'" || true)
+	lines=$(btrfs filesystem show 2> /dev/null | grep -A 1 "^Label:.*$1" || true)
 
 	case $2 in
 		"label")
