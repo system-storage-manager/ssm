@@ -411,14 +411,13 @@ class BtrfsPool(Btrfs, template.BackendPool):
         else:
             self.data = self._pool
 
-    def _can_btrfs_force(self):
+    def _can_btrfs_force(self, command):
         """
         This is just ridiculous. Unfortunately btrfs tools usually change
         behaviour and options without bumping version number. So we have
         to check whether btrfs allows to 'force' file system creation.
         """
-        command=['mkfs.btrfs', '-f']
-        output = misc.run(command, can_fail=True)[1]
+        output = misc.run(command + ['--force'], can_fail=True)[1]
         found = re.search('invalid option', output)
         if found:
             return False
@@ -456,8 +455,8 @@ class BtrfsPool(Btrfs, template.BackendPool):
         # have tried to remove the device from the respective pool already.
         # So at this point there should not be any useful signatures to
         # speak of. However as I mentioned btrfs is broken, so force it.
-        if self._can_btrfs_force():
-            command.extend(['-f'])
+        if self._can_btrfs_force(command):
+            command.extend(['--force'])
         command.extend(devs)
         misc.run(command, stdout=True)
         misc.send_udev_event(devs[0], "change")
@@ -499,6 +498,16 @@ class BtrfsPool(Btrfs, template.BackendPool):
         if type(devices) is not list:
             devices = [devices]
         command = ['device', 'add']
+        # This might seem weird, but btrfs is mostly broken when it comes to
+        # checking existing signatures because it will for example check for
+        # backup superblocks as well, which is wrong. Also we have check for
+        # existing file system signatures in the ssm itself. Other things
+        # than file system should be covered by the backend and we should
+        # have tried to remove the device from the respective pool already.
+        # So at this point there should not be any useful signatures to
+        # speak of. However as I mentioned btrfs is broken, so force it.
+        if self._can_btrfs_force(['btrfs', 'device', 'add']):
+            command.extend(['--force'])
         command.extend(devices)
         command.append(pool['mount'])
         self.run_btrfs(command)

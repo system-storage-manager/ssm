@@ -91,48 +91,48 @@ class BtrfsFunctionCheck(MockSystemDataSource):
 
         # Create volume using single device from non existent default pool
         self._checkCmd("ssm create", ['/dev/sda'],
-            "mkfs.btrfs -L {0} -f /dev/sda".format(default_pool))
+            "mkfs.btrfs -L {0} --force /dev/sda".format(default_pool))
 
         # Specify default backend
         self._checkCmd("ssm -b btrfs create", ['/dev/sda'],
-            "mkfs.btrfs -L {0} -f /dev/sda".format(default_pool))
+            "mkfs.btrfs -L {0} --force /dev/sda".format(default_pool))
 
         main.SSM_DEFAULT_BACKEND = 'lvm'
         self._checkCmd("ssm --backend btrfs create", ['/dev/sda'],
-            "mkfs.btrfs -L {0} -f /dev/sda".format(default_pool))
+            "mkfs.btrfs -L {0} --force /dev/sda".format(default_pool))
         main.SSM_DEFAULT_BACKEND = 'btrfs'
 
-        self._checkCmd("ssm -f create", ['/dev/sda'],
-            "mkfs.btrfs -L {0} -f /dev/sda".format(default_pool))
+        self._checkCmd("ssm --force create", ['/dev/sda'],
+            "mkfs.btrfs -L {0} --force /dev/sda".format(default_pool))
 
         self._checkCmd("ssm -v create", ['/dev/sda'],
-            "mkfs.btrfs -L {0} -f /dev/sda".format(default_pool))
+            "mkfs.btrfs -L {0} --force /dev/sda".format(default_pool))
 
-        self._checkCmd("ssm -f -v create", ['/dev/sda'],
-            "mkfs.btrfs -L {0} -f /dev/sda".format(default_pool))
+        self._checkCmd("ssm --force -v create", ['/dev/sda'],
+            "mkfs.btrfs -L {0} --force /dev/sda".format(default_pool))
 
         self._checkCmd("ssm create", ['-s 2.6T', '/dev/sda'],
-            "mkfs.btrfs -L {0} -b 2858730232217 -f /dev/sda".format(default_pool))
+            "mkfs.btrfs -L {0} -b 2858730232217 --force /dev/sda".format(default_pool))
 
         self._checkCmd("ssm create", ['-r 0', '-s 2.6T', '/dev/sda'],
-            "mkfs.btrfs -L btrfs_pool -m raid0 -d raid0 -b 2858730232217 -f /dev/sda".format(default_pool))
+            "mkfs.btrfs -L btrfs_pool -m raid0 -d raid0 -b 2858730232217 --force /dev/sda".format(default_pool))
         self._checkCmd("ssm create", ['-r 0', '-s 2.6T', '/dev/sda'],
-            "mkfs.btrfs -L btrfs_pool -m raid0 -d raid0 -b 2858730232217 -f /dev/sda".format(default_pool))
+            "mkfs.btrfs -L btrfs_pool -m raid0 -d raid0 -b 2858730232217 --force /dev/sda".format(default_pool))
         self._checkCmd("ssm create", ['-r 1', '-s 512k', '/dev/sda /dev/sdb'],
-            "mkfs.btrfs -L btrfs_pool -m raid1 -d raid1 -b 524288 -f /dev/sda /dev/sdb".format(default_pool))
+            "mkfs.btrfs -L btrfs_pool -m raid1 -d raid1 -b 524288 --force /dev/sda /dev/sdb".format(default_pool))
         self._checkCmd("ssm create", ['-r 10', '-s 10M', '/dev/sda'],
-            "mkfs.btrfs -L btrfs_pool -m raid10 -d raid10 -b 10485760 -f /dev/sda".format(default_pool))
+            "mkfs.btrfs -L btrfs_pool -m raid10 -d raid10 -b 10485760 --force /dev/sda".format(default_pool))
 
         # Create volume using single device from non existent my_pool
         self._checkCmd("ssm create", ['--pool my_pool', '/dev/sda'],
-            "mkfs.btrfs -L my_pool -f /dev/sda")
+            "mkfs.btrfs -L my_pool --force /dev/sda")
 
         self._checkCmd("ssm create", ['-p my_pool', '-r 0', '-s 2.6T', '/dev/sda'],
-            "mkfs.btrfs -L my_pool -m raid0 -d raid0 -b 2858730232217 -f /dev/sda")
+            "mkfs.btrfs -L my_pool -m raid0 -d raid0 -b 2858730232217 --force /dev/sda")
 
         # Create volume using multiple devices
         self._checkCmd("ssm create /dev/sda /dev/sdb", [],
-            "mkfs.btrfs -L {0} -f /dev/sda /dev/sdb".format(default_pool))
+            "mkfs.btrfs -L {0} --force /dev/sda /dev/sdb".format(default_pool))
 
         # Create volume using single device from existing pool
         self._addPool(default_pool, ['/dev/sdb', '/dev/sdd'])
@@ -151,15 +151,15 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         # in the pool
         self._checkCmd("ssm create", ['-n myvolume', '/dev/sda /dev/sdb'],
             "btrfs subvolume create /tmp/mount/myvolume")
-        self._cmdEq("btrfs device add /dev/sda /tmp/mount", -2)
+        self._cmdEq("btrfs device add --force /dev/sda /tmp/mount", -2)
 
         self._checkCmd("ssm create", ['-p my_pool', '-n myvolume', '/dev/sdc2 /dev/sda'],
             "btrfs subvolume create /tmp/mount/myvolume")
-        self._cmdEq("btrfs device add /dev/sda /mnt/test", -2)
+        self._cmdEq("btrfs device add --force /dev/sda /mnt/test", -2)
 
         self._checkCmd("ssm create", ['-n myvolume', '/dev/sda /dev/sdb /dev/sde'],
             "btrfs subvolume create /tmp/mount/myvolume")
-        self._cmdEq("btrfs device add /dev/sda /dev/sde /tmp/mount", -2)
+        self._cmdEq("btrfs device add --force /dev/sda /dev/sde /tmp/mount", -2)
 
     def test_btrfs_remove(self):
         # Generate some storage data
@@ -267,17 +267,17 @@ class BtrfsFunctionCheck(MockSystemDataSource):
             "btrfs filesystem resize 11723608063K /tmp/mount")
         main.SSM_DEFAULT_BACKEND = 'btrfs'
 
-        self._cmdNotEq("btrfs device add /dev/sde /tmp/mount", -2)
+        self._cmdNotEq("btrfs device add --force /dev/sde /tmp/mount", -2)
 
 	# Resize with enough space in the pool
         self._checkCmd("ssm resize --size +1g", ['my_pool /dev/sde'],
             "btrfs filesystem resize 1073052017K /mnt/test1")
-        self._cmdNotEq("btrfs device add /dev/sde /mnt/test1", -2)
+        self._cmdNotEq("btrfs device add --force /dev/sde /mnt/test1", -2)
 
 	# Resize without enough space in the pool
         self._checkCmd("ssm resize --size +1t", ['my_pool /dev/sde'],
             "btrfs filesystem resize 2145745265K /mnt/test1")
-        self._cmdEq("btrfs device add /dev/sde /mnt/test1", -2)
+        self._cmdEq("btrfs device add --force /dev/sde /mnt/test1", -2)
 
         # Shrink volume
         self._checkCmd("ssm resize", ['-s-100G', 'default_pool'],
@@ -285,7 +285,7 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         self._checkCmd("ssm resize -s-500G", ['my_pool /dev/sde'],
             "btrfs filesystem resize 547715441K /mnt/test1")
         self.assertNotEqual(self.run_data[-2],
-            "btrfs device add /dev/sde /mnt/test1")
+            "btrfs device add --force /dev/sde /mnt/test1")
 
         # Set volume size
         self._checkCmd("ssm resize", ['-s 10M', 'default_pool'],
@@ -297,32 +297,32 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         self._checkCmd("ssm resize -s 20T default_pool /dev/sdc1 /dev/sde",
             [], "btrfs filesystem resize 21474836480K /tmp/mount")
         self.assertNotEqual(self.run_data[-2],
-            "btrfs device add /dev/sdc1 /dev/sde /tmp/mount")
+            "btrfs device add --force /dev/sdc1 /dev/sde /tmp/mount")
 
         self._checkCmd("ssm resize -s 22T default_pool /dev/sdc1 /dev/sde",
             [], "btrfs filesystem resize 23622320128K /tmp/mount")
         self.assertEqual(self.run_data[-2],
-            "btrfs device add /dev/sdc1 /dev/sde /tmp/mount")
+            "btrfs device add --force /dev/sdc1 /dev/sde /tmp/mount")
 
         self._checkCmd("ssm resize -s 3T my_pool /dev/sdc1 /dev/sde",
             [], "btrfs filesystem resize 3221225472K /mnt/test1")
         self.assertEqual(self.run_data[-2],
-            "btrfs device add /dev/sdc1 /dev/sde /mnt/test1")
+            "btrfs device add --force /dev/sdc1 /dev/sde /mnt/test1")
 
         self._checkCmd("ssm resize -s 3T my_pool /dev/sde /dev/sdc2",
             [], "btrfs filesystem resize 3221225472K /mnt/test1")
         self.assertEqual(self.run_data[-2],
-            "btrfs device add /dev/sde /mnt/test1")
+            "btrfs device add --force /dev/sde /mnt/test1")
 
         # Set volume in without the need adding more devices
         self._checkCmd("ssm resize -s 10G default_pool /dev/sdc1 /dev/sde",
             [], "btrfs filesystem resize 10485760K /tmp/mount")
         self.assertNotEqual(self.run_data[-2],
-            "btrfs device add /dev/sdc1 /dev/sde /tmp/mount")
+            "btrfs device add --force /dev/sdc1 /dev/sde /tmp/mount")
         self._checkCmd("ssm resize -s 10G my_pool /dev/sdd /dev/sde",
             [], "btrfs filesystem resize 10485760K /mnt/test1")
         self.assertNotEqual(self.run_data[-2],
-            "btrfs device add /dev/sdc1 /dev/sde /mnt/test1")
+            "btrfs device add --force /dev/sdc1 /dev/sde /mnt/test1")
 
         self._checkCmd("ssm list",
             [], "btrfs filesystem resize 12247891967K /tmp/mount")
@@ -330,23 +330,23 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         self._checkCmd("ssm resize -s +500G default_pool /dev/sdc1 /dev/sde",
             [], "btrfs filesystem resize 12247891967K /tmp/mount")
         self.assertEqual(self.run_data[-2],
-            "btrfs device add /dev/sdc1 /dev/sde /tmp/mount")
+            "btrfs device add --force /dev/sdc1 /dev/sde /tmp/mount")
 
         # Extend volume in without the need adding more devices
         self._checkCmd("ssm resize -s 1k default_pool /dev/sdc1 /dev/sde",
             [], "btrfs filesystem resize 1K /tmp/mount")
         self.assertNotEqual(self.run_data[-2],
-            "btrfs device add /dev/sdc1 /dev/sde /tmp/mount")
+            "btrfs device add --force /dev/sdc1 /dev/sde /tmp/mount")
         self.assertNotEqual(self.run_data[-2],
-            "btrfs device add /dev/sdc1 /dev/sde /tmp/mount")
+            "btrfs device add --force /dev/sdc1 /dev/sde /tmp/mount")
 
         # Shrink volume with devices provided
         self._checkCmd("ssm resize -s-10G default_pool /dev/sdc1 /dev/sde",
             [], "btrfs filesystem resize 11713118207K /tmp/mount")
         self.assertNotEqual(self.run_data[-2],
-            "btrfs device add /dev/sdc1 /dev/sde /tmp/mount")
+            "btrfs device add --force /dev/sdc1 /dev/sde /tmp/mount")
         self.assertNotEqual(self.run_data[-2],
-            "btrfs device add /dev/sdc1 /dev/sde /tmp/mount")
+            "btrfs device add --force /dev/sdc1 /dev/sde /tmp/mount")
 
     def test_btrfs_add(self):
         default_pool = btrfs.SSM_BTRFS_DEFAULT_POOL
@@ -354,39 +354,39 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         # Adding to non existent pool
         # Add device into default pool
         self._checkCmd("ssm add", ['/dev/sda'],
-            "mkfs.btrfs -L {0} -f /dev/sda".format(default_pool))
+            "mkfs.btrfs -L {0} --force /dev/sda".format(default_pool))
 
         # Specify backend
         self._checkCmd("ssm --backend btrfs add", ['/dev/sda'],
-            "mkfs.btrfs -L {0} -f /dev/sda".format(default_pool))
+            "mkfs.btrfs -L {0} --force /dev/sda".format(default_pool))
 
         main.SSM_DEFAULT_BACKEND = 'lvm'
         self._checkCmd("ssm -b btrfs add", ['/dev/sda'],
-            "mkfs.btrfs -L {0} -f /dev/sda".format(default_pool))
+            "mkfs.btrfs -L {0} --force /dev/sda".format(default_pool))
         main.SSM_DEFAULT_BACKEND = 'btrfs'
 
         # Add more devices into default pool
         self._checkCmd("ssm add", ['/dev/sda /dev/sdc1'],
-            "mkfs.btrfs -L {0} -f /dev/sda /dev/sdc1".format(default_pool))
+            "mkfs.btrfs -L {0} --force /dev/sda /dev/sdc1".format(default_pool))
         # Add device into defined pool
         self._checkCmd("ssm add", ['-p my_pool', '/dev/sda'],
-            "mkfs.btrfs -L my_pool -f /dev/sda")
+            "mkfs.btrfs -L my_pool --force /dev/sda")
         self._checkCmd("ssm add", ['--pool my_pool', '/dev/sda'],
-            "mkfs.btrfs -L my_pool -f /dev/sda")
+            "mkfs.btrfs -L my_pool --force /dev/sda")
         # Add more devices into defined pool
         self._checkCmd("ssm add", ['-p my_pool', '/dev/sda /dev/sdc1'],
-            "mkfs.btrfs -L my_pool -f /dev/sda /dev/sdc1")
+            "mkfs.btrfs -L my_pool --force /dev/sda /dev/sdc1")
         self._checkCmd("ssm add", ['--pool my_pool', '/dev/sda /dev/sdc1'],
-            "mkfs.btrfs -L my_pool -f /dev/sda /dev/sdc1")
+            "mkfs.btrfs -L my_pool --force /dev/sda /dev/sdc1")
 
         # Adding to existing default pool
         self._addPool(default_pool, ['/dev/sdb', '/dev/sdd'])
         # Add device into default pool
         self._checkCmd("ssm add", ['/dev/sda'],
-            "btrfs device add /dev/sda /tmp/mount")
+            "btrfs device add --force /dev/sda /tmp/mount")
         # Add more devices into default pool
         self._checkCmd("ssm add", ['/dev/sda /dev/sdc1'],
-            "btrfs device add /dev/sda /dev/sdc1 /tmp/mount")
+            "btrfs device add --force /dev/sda /dev/sdc1 /tmp/mount")
 
         # Adding to existing defined pool
         self._addPool('my_pool', ['/dev/sdc2', '/dev/sdc3'])
@@ -394,25 +394,25 @@ class BtrfsFunctionCheck(MockSystemDataSource):
                     '/mnt/test1')
         # Add device into defined pool
         self._checkCmd("ssm add", ['-p my_pool', '/dev/sda'],
-            "btrfs device add /dev/sda /mnt/test1")
+            "btrfs device add --force /dev/sda /mnt/test1")
         self._checkCmd("ssm add", ['--pool my_pool', '/dev/sda'],
-            "btrfs device add /dev/sda /mnt/test1")
+            "btrfs device add --force /dev/sda /mnt/test1")
         # Add more devices into defined pool
         self._checkCmd("ssm add", ['-p my_pool', '/dev/sda /dev/sdc1'],
-            "btrfs device add /dev/sda /dev/sdc1 /mnt/test1")
+            "btrfs device add --force /dev/sda /dev/sdc1 /mnt/test1")
         self._checkCmd("ssm add", ['--pool my_pool', '/dev/sda /dev/sdc1'],
-            "btrfs device add /dev/sda /dev/sdc1 /mnt/test1")
+            "btrfs device add --force /dev/sda /dev/sdc1 /mnt/test1")
         # Add verbose
         self._checkCmd("ssm -v add", ['--pool {0}'.format(default_pool),
             '/dev/sda /dev/sdc1'],
-            "btrfs device add /dev/sda /dev/sdc1 /tmp/mount")
+            "btrfs device add --force /dev/sda /dev/sdc1 /tmp/mount")
 
         # Add two devices into existing pool (one of the devices already is in
         # the pool
         self._checkCmd("ssm add", ['--pool my_pool', '/dev/sdc2 /dev/sda'],
-            "btrfs device add /dev/sda /mnt/test1")
+            "btrfs device add --force /dev/sda /mnt/test1")
         self._checkCmd("ssm add", ['/dev/sda /dev/sdb'],
-            "btrfs device add /dev/sda /tmp/mount")
+            "btrfs device add --force /dev/sda /tmp/mount")
 
     def test_btrfs_mount(self):
         self._addDir("/mnt/test")
