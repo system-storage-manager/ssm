@@ -119,6 +119,13 @@ class Btrfs(template.Backend):
                 fs_used = float(misc.get_real_size(array[6]))
 
             elif array[0] == 'devid':
+                # This is ugly hack to fix a problem with test suite and btrfs
+                # where ?sometimes? btrfs prints out device name in the path
+                # of the test suite rather than path in the real '/dev/'
+                # directory. This should cover that without any impact on
+                # real usage
+                if not os.path.islink(array[7]):
+                    array[7] = re.sub(r'.*/dev/', '/dev/', array[7])
                 dev['dev_name'] = misc.get_real_device(array[7])
 
                 if not pool_name:
