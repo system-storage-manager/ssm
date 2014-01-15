@@ -93,7 +93,7 @@ export SSM_DEFAULT_BACKEND='btrfs'
 not check btrfs_fs_field $pool1 label $pool1
 not check btrfs_vol_field $mnt1 subvolume $vol1
 not check btrfs_vol_field $mnt2 subvolume $vol2
-check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count 5
+check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count 4
 umount_all
 ssm -f remove --all
 
