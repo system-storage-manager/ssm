@@ -119,7 +119,7 @@ class Btrfs(template.Backend):
                 fs_used = float(misc.get_real_size(array[6]))
 
             elif array[0] == 'devid':
-                dev['dev_name'] = array[7]
+                dev['dev_name'] = misc.get_real_device(array[7])
 
                 if not pool_name:
                     pool_name = self._find_uniq_pool_name(label, array[7])
