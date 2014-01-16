@@ -363,18 +363,8 @@ def get_dmnumber(name):
 def wipefs(device, signatures):
     if type(signatures) is not list:
         signatures = [signatures]
-    command = ['wipefs', '-p', device]
-    output = run(command)[1]
-    offset = []
-    for line in output[1:].split('\n'):
-        if not line:
-            continue
-        array = line.split(",")
-        if array[-1] in signatures:
-            offset.extend(['--offset', array[0]])
-    if len(offset) > 1:
-        command = ['wipefs'] + offset + [device]
-        run(command)
+    command = ['wipefs', '-a', '-t', ','.join(signatures), device]
+    run(command)
 
 
 def humanize_size(arg):
