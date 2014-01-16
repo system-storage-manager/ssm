@@ -19,7 +19,22 @@
 
 import os
 import sys
+import traceback
 from ssmlib import problem
+
+
+# Should we print backtrace on error, or suppress it ?
+# Suppress it by default.
+try:
+    SSM_PRINT_BACKTRACE = os.environ['SSM_PRINT_BACKTRACE']
+    if SSM_PRINT_BACKTRACE.upper() in ['YES', 'TRUE', '1']:
+        SSM_PRINT_BACKTRACE = True
+    else:
+        SSM_PRINT_BACKTRACE = False
+except KeyError:
+    SSM_PRINT_BACKTRACE = False
+
+
 
 try:
     from ssmlib import main
@@ -32,5 +47,8 @@ try:
                 sys.exit("\nRoot privileges required to run this script!\n")
         sys.exit(main.main())
 except problem.SsmError, err:
-    print str(err)
+    if SSM_PRINT_BACKTRACE is True:
+        traceback.print_exc(file=sys.stdout)
+    else:
+        print str(err)
     sys.exit(err.errcode)
