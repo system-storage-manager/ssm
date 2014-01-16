@@ -24,6 +24,7 @@ import stat
 import tempfile
 import threading
 import subprocess
+from ssmlib import problem
 
 # List of temporary mount points which should be cleaned up
 # before exiting
@@ -480,7 +481,7 @@ def run(cmd, show_cmd=False, stdout=False, stderr=True, can_fail=False,
             print output
         if error is not None:
             print error
-        raise RuntimeError(err_msg)
+        raise problem.CommandFailed(err_msg)
 
     if not return_stdout:
         output = None
