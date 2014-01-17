@@ -18,11 +18,8 @@
 # md module for System Storage Manager
 
 import os
-import stat
 import socket
-import datetime
 from ssmlib import misc
-from ssmlib import problem
 from ssmlib.backends import template
 
 try:

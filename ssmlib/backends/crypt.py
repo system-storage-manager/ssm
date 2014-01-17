@@ -21,7 +21,6 @@ import re
 import os
 import stat
 from ssmlib import misc
-from ssmlib import problem
 from ssmlib.backends import template
 
 __all__ = ["DmCryptVolume"]
@@ -240,7 +239,7 @@ class DmCryptDevice(DmObject, template.BackendDevice):
             device = {}
             devname = "/dev/" + line[3]
             signature = misc.get_signature(devname)
-            if misc.get_signature(devname) in CRYPT_SIGNATURES:
+            if signature in CRYPT_SIGNATURES:
                 device['hide'] = False
                 device['dev_name'] = devname
                 device['pool_name'] = self.default_pool_name
@@ -250,4 +249,4 @@ class DmCryptDevice(DmObject, template.BackendDevice):
 
 
     def remove(self, devices):
-        misc.wipefs(device, CRYPT_SIGNATURES)
+        misc.wipefs(devices, CRYPT_SIGNATURES)

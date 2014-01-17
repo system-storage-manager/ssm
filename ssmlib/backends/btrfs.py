@@ -19,10 +19,8 @@
 
 import re
 import os
-import sys
 import datetime
 from ssmlib import misc
-from ssmlib import problem
 from ssmlib.backends import template
 
 __all__ = ["BtrfsVolume", "BtrfsPool", "BtrfsDev"]
@@ -37,7 +35,7 @@ def get_btrfs_version():
     try:
         output = misc.run(['btrfs', '--version'], can_fail=True)[1]
         output = output.strip().split("\n")[-1]
-        version = re.search('(?<=v)\d+\.\d+', output).group(0)
+        version = re.search(r'(?<=v)\d+\.\d+', output).group(0)
     except (OSError, AttributeError):
         version = "0.0"
     return float(version)
@@ -262,7 +260,7 @@ class Btrfs(template.Backend):
                 new['hide'] = False
                 # Store snapshot info
                 if 'mount' in new and \
-                    re.match("snap-\d{4}-\d{2}-\d{2}-T\d{6}",
+                    re.match(r"snap-\d{4}-\d{2}-\d{2}-T\d{6}",
                              os.path.basename(new['mount'])):
                     new['snap_name'] = "{0}:{1}".format(name,
                             os.path.basename(new['path']))
@@ -279,8 +277,8 @@ class Btrfs(template.Backend):
                 continue
             # For the version with screwed 'subvolume list' command
             line = re.sub("<FS_TREE>/*", "", line)
-            volume['ID'] = re.search('(?<=ID )\d+', line).group(0)
-            volume['top_level'] = re.search('(?<=top level )\d+', line).group(0)
+            volume['ID'] = re.search(r'(?<=ID )\d+', line).group(0)
+            volume['top_level'] = re.search(r'(?<=top level )\d+', line).group(0)
             volume['path'] = re.search('(?<=path ).*$', line).group(0)
             volume['subvolume'] = True
             yield volume
@@ -450,7 +448,7 @@ class BtrfsPool(Btrfs, template.BackendPool):
                 command.extend(['-m', 'raid10', '-d', 'raid10'])
             else:
                 raise Exception("Btrfs backed currently does not support " +
-                                "RAID level {0}".format(raid['level']))
+                                "RAID level {0}".format(options['raid']))
 
         if size:
             command.extend(['-b', "{0}".format(int(float(size) * 1024))])

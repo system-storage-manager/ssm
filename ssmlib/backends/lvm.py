@@ -22,7 +22,6 @@ import os
 import stat
 import datetime
 from ssmlib import misc
-from ssmlib import problem
 from ssmlib.backends import template
 
 __all__ = ["PvsInfo", "VgsInfo", "LvsInfo"]
@@ -47,7 +46,7 @@ def get_lvm_version():
         for line in output:
             if pattern.match(line.strip()):
                 match = " ".join(line.split())
-                tmp = re.search('(?<=LVM version: )\d+\.\d+\.\d+',
+                tmp = re.search(r'(?<=LVM version: )\d+\.\d+\.\d+',
                                     match).group(0)
                 version = map(int, tmp.split(".", 3))
     except (OSError, AttributeError):

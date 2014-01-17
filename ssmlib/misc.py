@@ -77,9 +77,9 @@ def get_unit_size(string):
     unit = re.sub(r'^\+?-?\d+(\.\d*)?', '', string)
     if len(unit) > 0 and unit[0].upper() in units:
         mult = units[unit[0].upper()]
-    all_units = {'B', 'K', 'M', 'G', 'T', 'P',
+    all_units = ['B', 'K', 'M', 'G', 'T', 'P',
                  'KB', 'MB', 'GB', 'TB', 'PB',
-                 'KIB', 'MIB', 'GIB', 'TIB', 'PIB'}
+                 'KIB', 'MIB', 'GIB', 'TIB', 'PIB']
     if unit.upper() in all_units:
         return mult, unit
     else:
@@ -198,9 +198,9 @@ def get_device_by_uuid(uuid):
 
 def get_major_minor(device):
     real_dev = get_real_device(device)
-    stat = os.stat(real_dev)
-    major = os.major(stat.st_rdev)
-    minor = os.minor(stat.st_rdev)
+    info = os.stat(real_dev)
+    major = os.major(info.st_rdev)
+    minor = os.minor(info.st_rdev)
     return major, minor
 
 
@@ -579,7 +579,7 @@ def terminal_size(default=(25, 80)):
             except:
                 pass
         if not cr:
-            cr = (25, 80)
+            cr = default
     return int(cr[1]), int(cr[0])
 
 

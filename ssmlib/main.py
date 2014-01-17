@@ -1284,7 +1284,7 @@ class StorageHandle(object):
                 try:
                     pool.remove()
                     removed += 1
-                except (RuntimeError, problem.SsmError), ex:
+                except (RuntimeError, problem.SsmError):
                     PR.info("Unable to remove '{0}'".format(pool['pool_name']))
                     ret = False
             if removed == 0:
@@ -1378,7 +1378,6 @@ class StorageHandle(object):
         dev = self.dev[real]
         if dev and 'fs_info' in dev:
             return dev
-        err = "'{0}' does not contain valid file system".format(real)
         return False
 
     def _find_device_record(self, path):
@@ -1544,6 +1543,7 @@ def valid_resize_size(size):
 
 def is_directory(string):
     if string is None:
+        err = "Directory name not defined."
         raise argparse.ArgumentTypeError(err)
     try:
         mode = os.stat(string).st_mode
@@ -1847,7 +1847,7 @@ def main(args=None):
     sys.exitfunc = misc.do_cleanup
 
     if args.dry_run:
-        return 0;
+        return 0
 
     try:
         args.func(args)
