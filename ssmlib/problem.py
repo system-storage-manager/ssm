@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # (C)2012 Red Hat, Inc., Lukas Czerner <lczerner@redhat.com>
 #
 # This program is free software: you can redistribute it and/or modify
