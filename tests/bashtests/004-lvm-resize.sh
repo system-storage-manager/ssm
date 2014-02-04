@@ -215,6 +215,14 @@ ssm -f resize -s +$((DEV_SIZE/2))M  $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2 $dev3
 check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 3
 ssm -f remove --all
 
+# Try to resize inactive volume
+ssm create --fs ext4 --size ${DEV_SIZE}M $dev1 $dev2 $dev3
+lvchange -a n $SSM_LVM_DEFAULT_POOL/$lvol1
+ssm resize --size +${DEV_SIZE}M $DM_DEV_DIR/$SSM_LVM_DEFAULT_POOL/$lvol1
+not ssm resize -s-${DEV_SIZE}M $DM_DEV_DIR/$SSM_LVM_DEFAULT_POOL/$lvol1
+ssm -f resize -s-${DEV_SIZE}M $DM_DEV_DIR/$SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${DEV_SIZE}.00m
+ssm -f remove --all
 
 # Use device already used in different pool
 ssm create $dev1

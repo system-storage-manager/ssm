@@ -230,12 +230,12 @@ class MockSystemDataSource(unittest.TestCase):
                 'vol_count': '0'}
 
     def _addVol(self, vol_name, vol_size, stripes, pool_name, devices,
-                mount=None):
+                mount=None, active=True):
         pool_data = self.pool_data[pool_name]
         pool_free = float(pool_data['pool_free']) - vol_size
         pool_used = float(pool_data['pool_used']) + vol_size
-	pool_data['pool_free'] = pool_free
-	pool_data['pool_used'] = pool_used
+        pool_data['pool_free'] = pool_free
+        pool_data['pool_used'] = pool_used
         if mount:
             self.pool_data[pool_name]['mount'] = mount
             self._addDir(mount)
@@ -276,8 +276,15 @@ class MockSystemDataSource(unittest.TestCase):
             vol_type = "linear"
             stripesize = 0
         vol_name = "/dev/{0}/{1}".format(pool_name, vol_name)
+        attr="-wi------"
+        if active == True:
+            tmp = list(attr)
+            tmp[4] = 'a'
+            attr = "".join(tmp)
         self.vol_data[vol_name] = {'dm_name': vol_name,
                 'real_dev': vol_name, 'stripes': stripes, 'dev_name': vol_name,
                 'stripesize': 0, 'pool_name': pool_name, 'vol_size': vol_size,
                 'dev_size': vol_size, 'type': vol_type, 'origin': "",
-                'mount': mount}
+                'mount': mount, 'attr': attr}
+
+

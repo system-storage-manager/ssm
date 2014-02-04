@@ -20,6 +20,7 @@ import os
 import stat
 import datetime
 from ssmlib import misc
+from ssmlib import problem
 from ssmlib.backends import template
 
 __all__ = ["PvsInfo", "VgsInfo", "LvsInfo"]
@@ -62,6 +63,21 @@ class LvmInfo(template.Backend):
         self.attrs = []
         self.binary = misc.check_binary('lvm')
         self.default_pool_name = SSM_LVM_DEFAULT_POOL
+        self.init_local_problem_set()
+
+    def parse_attr(self, lv, attr):
+        if attr[4] == 'a':
+            lv['active'] = True
+        else:
+            lv['active'] = False
+
+    def init_local_problem_set(self):
+        self.DEVICE_INACTIVE = \
+            ['Device \'{0}\' is not active! It might contain filesystem we\'re unable to detect and it may be destroyed by this operation.',
+             problem.PROMPT_CONTINUE,
+             problem.FL_DEFAULT_NO | problem.FL_EXIT_ON_NO | problem.FL_FORCE_YES,
+             problem.GeneralError]
+
 
     def run_lvm(self, command, noforce=False):
         if not self.binary:
@@ -283,9 +299,9 @@ class LvsInfo(LvmInfo, template.BackendVolume):
         super(LvsInfo, self).__init__(*args, **kwargs)
         command = ["lvm", "lvs", "--separator", "|", "--noheadings",
                    "--nosuffix", "--units", "k", "-o",
-                   "vg_name,lv_size,stripes,stripesize,segtype,lv_name,origin"]
+                   "vg_name,lv_size,stripes,stripesize,segtype,lv_name,origin,lv_attr"]
         self.attrs = ['pool_name', 'vol_size', 'stripes',
-                      'stripesize', 'type', 'lv_name', 'origin']
+                      'stripesize', 'type', 'lv_name', 'origin', 'attr']
         self.handle_fs = True
         self.mounts = misc.get_mounts('{0}/mapper'.format(DM_DEV_DIR))
         self._parse_data(command)
@@ -295,6 +311,7 @@ class LvsInfo(LvmInfo, template.BackendVolume):
                                               lv['lv_name'])
         if lv['origin']:
             lv['hide'] = True
+
         lv['real_dev'] = misc.get_real_device(lv['dev_name'])
 
         sysfile = "/sys/block/{0}/dm/name".format(
@@ -312,6 +329,7 @@ class LvsInfo(LvmInfo, template.BackendVolume):
 
         if lv['real_dev'] in self.mounts:
             lv['mount'] = self.mounts[lv['real_dev']]['mp']
+        self.parse_attr(lv, lv['attr'])
 
     def __getitem__(self, name):
         if name in self.data.iterkeys():
@@ -349,6 +367,10 @@ class LvsInfo(LvmInfo, template.BackendVolume):
     def resize(self, lv, size, resize_fs=True):
         lv = self._get_dev_name(lv)
         command = ['lvresize', '-L', str(size) + 'k', lv]
+        vol = self[lv]
+        if vol['active'] == False and \
+           size < float(vol['vol_size']):
+            self.problem.check(self.DEVICE_INACTIVE, lv)
         if resize_fs:
             command.insert(1, '-r')
         self.run_lvm(command)
@@ -372,10 +394,10 @@ class SnapInfo(LvmInfo):
         command = ["lvm", "lvs", "--separator", "|", "--noheadings",
                    "--nosuffix", "--units", "k", "-o",
                    "vg_name,lv_size,stripes,stripesize,segtype," +
-                   "lv_name,origin,snap_percent"]
+                   "lv_name,origin,snap_percent,lv_attr"]
         self.attrs = ['pool_name', 'vol_size', 'stripes',
                       'stripesize', 'type', 'lv_name', 'origin',
-                      'snap_size']
+                      'snap_size', 'attr']
         self.handle_fs = True
         self.mounts = misc.get_mounts('{0}/mapper'.format(DM_DEV_DIR))
         self._parse_data(command)
@@ -414,3 +436,5 @@ class SnapInfo(LvmInfo):
 
         if snap['dm_name'] in self.mounts:
             snap['mount'] = self.mounts[snap['dm_name']]['mp']
+
+        self.parse_attr(snap, snap['attr'])

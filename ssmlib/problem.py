@@ -31,6 +31,7 @@ PROMPT_IGNORE =         3
 PROMPT_REMOVE =         4
 PROMPT_ADJUST =         5
 PROMPT_USE =            6
+PROMPT_CONTINUE =       7
 
 PROMPT_MSG = [
         None,
@@ -40,6 +41,7 @@ PROMPT_MSG = [
         'Remove',
         'Adjust',
         'Use anyway',
+        'Continue',
         ]
 
 # Define problem flags
@@ -312,10 +314,11 @@ class ProblemSet(object):
 
         if ((flags & FL_EXIT_ON_NO) and (not res)) or \
            ((flags & FL_EXIT_ON_YES) and res):
+            msg = "Terminated by user!"
             if exc:
-                raise exc(message)
+                raise exc(msg)
             else:
-                raise Exception(message)
+                raise Exception(msg)
 
         return res
 

@@ -58,10 +58,10 @@ class LvmFunctionCheck(MockSystemDataSource):
                         data['pool_size'], data['pool_free'], data['vol_count'])
         elif cmd[1] == 'lvs':
             for vol, data in self.vol_data.iteritems():
-                output += "{0}|{1}|{2}|{3}|{4}|{5}|{6}\n".format(data['pool_name'],
+                output += "{0}|{1}|{2}|{3}|{4}|{5}|{6}|{7}\n".format(data['pool_name'],
                         data['vol_size'], data['stripes'], data['stripesize'],
                         data['type'], data['dev_name'].split("/")[-1],
-                        data['origin'])
+                        data['origin'], data['attr'])
         if 'return_stdout' in kwargs and not kwargs['return_stdout']:
             output = None
         return (0, output)
@@ -331,6 +331,15 @@ class LvmFunctionCheck(MockSystemDataSource):
         # it will be resized successfully
         self._checkCmd("ssm resize -s +1.5T /dev/my_pool/vol001 /dev/sdb /dev/sda /dev/sdc1",
             [], "lvm lvresize -L 1613595352.0k /dev/my_pool/vol001")
+
+        # Test resize on inactive volume
+        self._addVol('vol004', 8192, 1, 'default_pool', ['/dev/sdd'], None, False)
+        self._checkCmd("ssm resize", ['--size +4m', '/dev/default_pool/vol004'],
+            "lvm lvresize -L 12288.0k /dev/default_pool/vol004")
+        self.assertRaises(Exception, main.main, "ssm resize -s-2m /dev/default_pool/vol004")
+        # We can force it though
+        self._checkCmd("ssm -f resize", ['-s-2m', '/dev/default_pool/vol004'],
+            "lvm lvresize -f -L 6144.0k /dev/default_pool/vol004")
 
     def test_lvm_add(self):
         default_pool = lvm.SSM_LVM_DEFAULT_POOL
