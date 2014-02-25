@@ -254,6 +254,7 @@ prepare_devs() {
 	#	dmsetup table $name
 	#done
 
+	udev_wait
         echo $devs > DEVICES
         echo "ok"
 }

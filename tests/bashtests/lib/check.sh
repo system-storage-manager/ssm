@@ -25,6 +25,16 @@
 
 set -e -o pipefail
 
+udev_wait() {
+	pgrep udev >/dev/null || return 0
+	which udevadm >/dev/null || return 0
+	if test -n "$1" ; then
+		udevadm settle --exit-if-exists=$1
+	else
+		udevadm settle --timeout=15
+	fi
+}
+
 trim()
 {
     trimmed=${1%% }
@@ -220,7 +230,7 @@ lv_exists() {
 pv_field()
 {
     actual=$(trim $(pvs --noheadings $4 -o $2 $1))
-
+    udev_wait
     test "$actual" = "$3" || {
         echo "pv_field: PV=$1, field=$2, actual=$actual, expected=$3"
         exit 1
@@ -230,6 +240,7 @@ pv_field()
 vg_field()
 {
     actual=$(trim $(vgs --noheadings $4 -o $2 $1))
+    udev_wait
     test "$actual" = "$3" || {
         echo "vg_field: vg=$1, field=$2, actual=$actual, expected=$3"
         exit 1
@@ -239,6 +250,7 @@ vg_field()
 lv_field()
 {
     actual=$(trim $(lvs --noheadings $4 -o $2 $1))
+    udev_wait
     test "$actual" = "$3" || {
         echo "lv_field: lv=$1, field=$2, actual=$actual, expected=$3"
         exit 1
@@ -314,6 +326,7 @@ crypt_vol_field()
 			exit 1
 			;;
 	esac
+	udev_wait
 
 	test "$actual" = "$expected" || {
 		echo "crypt_vol_field: volume=$1, field=$2, actual=$actual, expected=$expected"
@@ -337,6 +350,7 @@ btrfs_fs_field()
 			exit 1
 			;;
 	esac
+	udev_wait
 
 	test "$actual" = "$3" || {
 		echo "btrfs_fs_field: label=$1, field=$2, actual=$actual, expected=$3"
@@ -365,8 +379,10 @@ btrfs_vol_field()
 	test "$actual" = "$3" || {
 		btrfs subvolume list $1
 		echo "btrfs_fs_field: mount=$1, field=$2, actual=$actual, expected=$3"
+		udev_wait
 		exit 1
 	}
+	udev_wait
 }
 
 list_table()
@@ -378,6 +394,7 @@ list_table()
     row=($(echo "$1" | sed 's/\(.[0-9][0-9]\).\(.B\)/\1\2/g' | \
         sed 's/\( \+\)/ /g' | grep "$2 ")) || {
             echo "table_list_failed: pattern \"$2\" not found"
+            udev_wait
             exit 1
         }
     counter=1
@@ -386,11 +403,13 @@ list_table()
             if [[ ! ${row[$counter]} =~ $arg ]] ; then
                 echo "table_list_failed: field=$(($counter + 1)), \
                     actual=${row[$counter]}, expected=$arg"
+                udev_wait
                 exit 1
             fi
         fi
         counter=$(($counter + 1))
     done
+    udev_wait
 }
 
 mountpoint()
