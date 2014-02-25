@@ -308,10 +308,13 @@ class Btrfs(template.Backend):
             if self.problem.check(self.problem.FS_MOUNTED,
                                   [name, self._vol[name]['mount']]):
                 misc.do_umount(self._vol[name]['real_dev'], all_targets=True)
+        devices = []
         for dev in self._dev.itervalues():
             if dev['pool_name'] != name:
                 continue
-            misc.wipefs(dev['dev_name'], 'btrfs')
+            devices.append(dev['dev_name'])
+        if len(devices) > 0:
+            misc.wipefs(devices, 'btrfs')
 
 
 class BtrfsVolume(Btrfs, template.BackendVolume):

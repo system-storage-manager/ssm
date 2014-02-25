@@ -358,10 +358,14 @@ def get_dmnumber(name):
     return dmnumber
 
 
-def wipefs(device, signatures):
+def wipefs(devices, signatures):
+    if type(devices) is not list:
+        devices = [devices]
     if type(signatures) is not list:
         signatures = [signatures]
-    command = ['wipefs', '-a', '-t', ','.join(signatures), device]
+    command = ['wipefs', '-a', '-t', ','.join(signatures)] + devices
+    # Avoid race with udev
+    run(['udevadm', 'settle'], stderr=False, can_fail=True)
     run(command)
 
 
