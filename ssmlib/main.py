@@ -155,7 +155,11 @@ class FsInfo(object):
         return func(*args, **kwargs)
 
     def fsck(self):
-        return self._get_fs_func("fsck")
+        try:
+            ret = self._get_fs_func("fsck")
+        except problem.ToolMissing:
+            ret = 0
+        return ret
 
     def resize(self, *args, **kwargs):
         return self._get_fs_func("resize", *args, **kwargs)
@@ -187,7 +191,7 @@ class FsInfo(object):
         if not misc.check_binary(command[0]):
             PR.warn("\'{0}\' tool does not exist. ".format(command[0]) +
                     "File system will not be checked")
-            return 1
+            raise problem.ToolMissing("fsck.{0}".format(self.fstype))
         if self.options.force:
             command.append('-f')
         if self.options.verbose:
@@ -245,11 +249,11 @@ class FsInfo(object):
         self.data['fs_used'] = (bcount - fbcount) * bsize / 1024
 
     def xfs_fsck(self):
-        command = ['xfs_check']
+        command = ['xfs_repair', '-n']
         if not misc.check_binary(command[0]):
             PR.warn("\'{0}\' tool does not exist. ".format(command[0]) +
                     "File system will not be checked")
-            return 1
+            raise problem.ToolMissing("xfs_repair")
         if self.options.verbose:
             command.append('-v')
         command.append(self.device)
