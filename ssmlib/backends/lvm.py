@@ -416,8 +416,10 @@ class SnapInfo(LvmInfo):
                                                 snap['lv_name'])
         snap['hide'] = False
         snap['snap_path'] = snap['dev_name']
-        size = float(snap['vol_size']) * float(snap['snap_size'])
-        snap['snap_size'] = str(size / 100.00)
+
+        if snap['type'] != "thin":
+            size = float(snap['vol_size']) * float(snap['snap_size'])
+            snap['snap_size'] = str(size / 100.00)
 
         snap['real_dev'] = misc.get_real_device(snap['dev_name'])
 
