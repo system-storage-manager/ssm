@@ -164,6 +164,8 @@ class DmCryptVolume(DmObject, template.BackendVolume):
                 break
             dm = {}
             array = line.split()
+            if len(array) == 1:
+                continue
             dm['type'] = array[3]
             if dm['type'] != 'crypt':
                 continue
