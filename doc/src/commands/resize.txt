@@ -1,13 +1,13 @@
-Change size of the **volume** and file system. If there is no file system only
-the **volume** itself will be resized. You can specify **device** to add into
-the **volume** pool prior the resize. Note that **device** will only be added
+Change size of the **volume** and file system. If there is no file system, only
+the **volume** itself will be resized. You can specify a **device** to add into
+the **volume** pool prior the resize. Note that the **device** will only be added
 into the pool if the **volume** size is going to grow.
 
-If the **device** is already used in the different pool, then **ssm** will
-ask you whether you want to remove it from the original pool.
+If the **device** is already used in a different pool, then **ssm** will
+ask you whether or not you want to remove it from the original pool.
 
-In some cases file system has to be mounted in order to resize. This will be
-handled by **ssm** automatically by mounting the **volume** temporarily.
+In some cases, the file system has to be mounted in order to resize. This will
+be handled by **ssm** automatically by mounting the **volume** temporarily.
 
 Note that resizing btrfs subvolume is not supported, only the whole file
 system can be resized.

@@ -78,9 +78,9 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 \fBssm\fP \fBmount\fP [\fB\-h\fP] [\fB\-o\fP OPTIONS] \fBvolume\fP directory
 .SH DESCRIPTION
 .sp
-System Storage Manager provides easy to use command line interface to manage
-your storage using various technologies like lvm, btrfs, encrypted volumes and
-more.
+System Storage Manager provides an easy to use command line interface to
+manage your storage using various technologies like lvm, btrfs, encrypted
+volumes and more.
 .sp
 In more sophisticated enterprise storage environments, management with Device
 Mapper (dm), Logical Volume Manager (LVM), or Multiple Devices (md) is
@@ -124,38 +124,38 @@ privileges.
 .SH SYSTEM STORAGE MANAGER COMMANDS
 .SS Introduction
 .sp
-System Storage Manager have several commands you can specify on the command
-line as a first argument to the ssm. They all have specific use and its own
-arguments, but global ssm arguments are propagated to all commands.
+System Storage Manager has several commands that you can specify on the
+command line as a first argument to ssm. They all have a specific use and
+their own arguments, but global ssm arguments are propagated to all commands.
 .SS Create command
 .sp
 \fBssm\fP \fBcreate\fP [\fB\-h\fP] [\fB\-s\fP SIZE] [\fB\-n\fP NAME] [\fB\-\-fstype\fP FSTYPE] [\fB\-r\fP LEVEL] [\fB\-I\fP STRIPESIZE] [\fB\-i\fP STRIPES] [\fB\-p\fP POOL] [\fB\-e\fP [{luks,plain}]] [\fBdevice\fP [\fBdevice\fP ...]] [mount]
 .sp
-This command creates a new volume with defined parameters. If \fBdevice\fP is
-provided it will be used to create a volume, hence it will be added into the
-\fBpool\fP prior the volume creation (See \fIAdd command section\fP). More devices can be used to create a volume.
+This command creates a new volume with defined parameters. If a \fBdevice\fP is
+provided it will be used to create the volume, hence it will be added into the
+\fBpool\fP prior to volume creation (See \fIAdd command section\fP). More than one device can be used to create a volume.
 .sp
-If the \fBdevice\fP is already used in the different pool, then \fBssm\fP will
+If the \fBdevice\fP is already being used in a different pool, then \fBssm\fP will
 ask you whether you want to remove it from the original pool. If you decline,
-or the removal fails, then the \fBvolume\fP creation fails if the \fISIZE\fP was
-not provided. On the other hand, if the \fISIZE\fP is provided and some devices
-can not be added to the \fBpool\fP the volume creation might succeed if there
+or the removal fails, then the \fBvolume\fP creation fails if the \fISIZE\fP was not
+provided. On the other hand, if the \fISIZE\fP is provided and some devices can
+not be added to the \fBpool\fP, the volume creation might still succeed if there
 is enough space in the \fBpool\fP\&.
 .sp
-\fIPOOL\fP name can be specified as well. If the pool exists new volume will be
-created from that pool (optionally adding \fBdevice\fP into the pool). However
-if the \fIPOOL\fP does not exist \fBssm\fP will attempt to create a new pool with
-provided \fBdevice\fP and then create a new volume from this pool. If
-\fB\-\-backend\fP argument is omitted, the default \fBssm\fP backend will be used.
-Default backend is \fIlvm\fP\&.
+The \fIPOOL\fP name can be specified as well. If the pool exists, a new volume
+will be created from that pool (optionally adding \fBdevice\fP into the pool).
+However if the \fIPOOL\fP does not exist, then \fBssm\fP will attempt to create a
+new pool with the provided \fBdevice\fP, and then create a new volume from this
+pool. If the \fB\-\-backend\fP argument is omitted, the default \fBssm\fP backend
+will be used. The default backend is \fIlvm\fP\&.
 .sp
-\fBssm\fP also supports creating RAID configuration, however some back\-ends
-might not support all the levels, or it might not support RAID at all. In
+\fBssm\fP also supports creating a RAID configuration, however some back\-ends
+might not support all RAID levels, or may not even support RAID at all. In
 this case, volume creation will fail.
 .sp
-If \fBmount\fP point is provided \fBssm\fP will attempt to mount the volume after
-it is created. However it will fail if mountable file system is not present
-on the volume.
+If a \fBmount\fP point is provided, \fBssm\fP will attempt to mount the volume
+after it is created. However it will fail if mountable file system is not
+present on the volume.
 .INDENT 0.0
 .TP
 .B \-h\fP,\fB  \-\-help
@@ -214,19 +214,19 @@ specified.
 .sp
 \fBssm\fP \fBlist\fP [\fB\-h\fP] [{volumes,vol,dev,devices,pool,pools,fs,filesystems,snap,snapshots}]
 .sp
-List informations about all detected devices, pools, volumes and snapshots found
-in the system. \fBlist\fP command can be used either alone to list all the
-information, or you can request specific section only.
+Lists information about all detected devices, pools, volumes and snapshots found
+on the system. The \fBlist\fP command can be used either alone to list all of the
+information, or you can request specific sections only.
 .sp
-Following sections can be specified:
+The following sections can be specified:
 .INDENT 0.0
 .TP
 .B {volumes | vol}
 List information about all \fBvolumes\fP found in the system.
 .TP
 .B {devices | dev}
-List information about all \fBdevices\fP found in the system. Some devices are
-intentionally hidden, like for example cdrom, or DM/MD devices since those
+List information about all \fBdevices\fP found on the system. Some devices
+are intentionally hidden, like for example cdrom or DM/MD devices since those
 are actually listed as volumes.
 .TP
 .B {pools | pool}
@@ -237,12 +237,12 @@ List information about all volumes containing \fBfilesystems\fP found in
 the system.
 .TP
 .B {snapshots | snap}
-List information about all \fBsnapshots\fP found in the system. Note that some
-back\-ends does not support snapshotting and some can not distinguish between
-snapshot and regular volume. in this case \fBssm\fP will try to recognize
-volume name in order to identify \fBsnapshot\fP, but if the \fBssm\fP regular
-expression does not match the snapshot pattern, this snapshot will not be
-recognized.
+List information about all \fBsnapshots\fP found in the system. Note that
+some back\-ends do not support snapshotting and some cannot distinguish
+snapshot from regular volumes. In this case, \fBssm\fP will try to recognize the
+volume name in order to identify a \fBsnapshot\fP, but if the \fBssm\fP regular
+expression does not match the snapshot pattern, the problematic snapshot will
+not be recognized.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -253,25 +253,26 @@ show this help message and exit
 .sp
 \fBssm\fP \fBremove\fP [\fB\-h\fP] [\fB\-a\fP] [\fBitems\fP [\fBitems\fP ...]]
 .sp
-This command removes \fBitem\fP from the system. Multiple items can be specified.
-If the \fBitem\fP can not be removed for some reason, it will be skipped.
+This command removes an \fBitem\fP from the system. Multiple items can be
+specified.  If the \fBitem\fP cannot be removed for some reason, it will be
+skipped.
 .sp
-\fBitem\fP can represent:
+An \fBitem\fP can be any of the following:
 .INDENT 0.0
 .TP
 .B device
-Remove \fBdevice\fP from the pool. Note that this can not be done in some
-cases where the device is used by pool. You can use \fB\-f\fP argument to
+Remove a \fBdevice\fP from the pool. Note that this cannot be done in some
+cases where the device is being used by the pool. You can use the \fB\-f\fP argument to
 \fIforce\fP removal. If the device does not belong to any pool, it will be
 skipped.
 .TP
 .B pool
-Remove the \fBpool\fP from the system. This will also remove all volumes
+Remove a \fBpool\fP from the system. This will also remove all volumes
 created from that pool.
 .TP
 .B volume
-Remove the \fBvolume\fP from the system. Note that this will fail if the
-\fBvolume\fP is mounted and it can not be \fIforced\fP with \fB\-f\fP\&.
+Remove a \fBvolume\fP from the system. Note that this will fail if the
+\fBvolume\fP is mounted and cannot be \fIforced\fP with \fB\-f\fP\&.
 .UNINDENT
 .INDENT 0.0
 .TP
@@ -285,16 +286,16 @@ Remove all pools in the system.
 .sp
 \fBssm\fP \fBresize\fP [\fB\-h\fP] [\fB\-s\fP SIZE] \fBvolume\fP [\fBdevice\fP [\fBdevice\fP ...]]
 .sp
-Change size of the \fBvolume\fP and file system. If there is no file system only
-the \fBvolume\fP itself will be resized. You can specify \fBdevice\fP to add into
-the \fBvolume\fP pool prior the resize. Note that \fBdevice\fP will only be added
+Change size of the \fBvolume\fP and file system. If there is no file system, only
+the \fBvolume\fP itself will be resized. You can specify a \fBdevice\fP to add into
+the \fBvolume\fP pool prior the resize. Note that the \fBdevice\fP will only be added
 into the pool if the \fBvolume\fP size is going to grow.
 .sp
-If the \fBdevice\fP is already used in the different pool, then \fBssm\fP will
-ask you whether you want to remove it from the original pool.
+If the \fBdevice\fP is already used in a different pool, then \fBssm\fP will
+ask you whether or not you want to remove it from the original pool.
 .sp
-In some cases file system has to be mounted in order to resize. This will be
-handled by \fBssm\fP automatically by mounting the \fBvolume\fP temporarily.
+In some cases, the file system has to be mounted in order to resize. This will
+be handled by \fBssm\fP automatically by mounting the \fBvolume\fP temporarily.
 .sp
 Note that resizing btrfs subvolume is not supported, only the whole file
 system can be resized.
@@ -320,9 +321,9 @@ Check the file system consistency on the \fBvolume\fP\&. You can specify multipl
 volumes to check. If there is no file system on the \fBvolume\fP, this \fBvolume\fP
 will be skipped.
 .sp
-In some cases file system has to be mounted in order to check the file system
-This will be handled by \fBssm\fP automatically by mounting the \fBvolume\fP
-temporarily.
+In some cases the file system has to be mounted in order to check the file
+system.  This will be handled by \fBssm\fP automatically by mounting the
+\fBvolume\fP temporarily.
 .INDENT 0.0
 .TP
 .B \-h\fP,\fB  \-\-help
@@ -332,12 +333,12 @@ show this help message and exit
 .sp
 \fBssm\fP \fBsnapshot\fP [\fB\-h\fP] [\fB\-s\fP SIZE] [\fB\-d\fP DEST | \fB\-n\fP NAME] volume
 .sp
-Take a snapshot of existing \fBvolume\fP\&. This operation will fail if back\-end
-which the \fBvolume\fP belongs to does not support snapshotting. Note that
-you can not specify both \fINAME\fP and \fIDESC\fP since those options are mutually
-exclusive.
+Take a snapshot of an existing \fBvolume\fP\&. This operation will fail if the
+back\-end to which the \fBvolume\fP belongs to does not support snapshotting.
+Note that you cannot specify both \fINAME\fP and \fIDESC\fP since those options are
+mutually exclusive.
 .sp
-In some cases file system has to be mounted in order to take a snapshot of
+In some cases the file system has to be mounted in order to take a snapshot of
 the \fBvolume\fP\&. This will be handled by \fBssm\fP automatically by mounting the
 \fBvolume\fP temporarily.
 .INDENT 0.0
@@ -367,13 +368,13 @@ specified default backend policy will be performed.
 .sp
 \fBssm\fP \fBadd\fP [\fB\-h\fP] [\fB\-p\fP POOL] \fBdevice\fP [\fBdevice\fP ...]
 .sp
-This command adds \fBdevice\fP into the pool. The \fBdevice\fP will not be added if
-it\(aqs already part of different pool by default, but user will be asked whether
-to remove the device from it\(aqs pool. When multiple devices are provided,
-all of them are added into the pool. If one of the devices can not be added
-into the pool for any reason, add command will fail. If no pool is specified,
-default pool will be chosen. In the case of non existing pool, it will be
-created using provided devices.
+This command adds a \fBdevice\fP into the pool. By default, the \fBdevice\fP will
+not be added if it\(aqs already a part of a different pool, but the user will be
+asked whether or not to remove the device from its pool. When multiple devices
+are provided, all of them are added into the pool. If one of the devices
+cannot be added into the pool for any reason, the add command will fail. If no
+pool is specified, the default pool will be chosen. In the case of a non
+existing pool, it will be created using the provided devices.
 .INDENT 0.0
 .TP
 .B \-h\fP,\fB  \-\-help
@@ -387,13 +388,13 @@ pool is used.
 .sp
 \fBssm\fP \fBmount\fP [\fB\-h\fP] [\fB\-o\fP OPTIONS] \fBvolume\fP directory
 .sp
-This command will mount the \fBvolume\fP at specified \fBdirectory\fP\&. The
-\fBvolume\fP can be specified in the same way as with \fBmount(8)\fP, however
-in addition one can also specify \fBvolume\fP in the format as it appear in
-the \fBssm list\fP table.
+This command will mount the \fBvolume\fP at the specified \fBdirectory\fP\&. The
+\fBvolume\fP can be specified in the same way as with \fBmount(8)\fP, however in
+addition, one can also specify a \fBvolume\fP in the format as it appears in the
+\fBssm list\fP table.
 .sp
 For example, instead of finding out what the device and subvolume id of the
-btrfs subvolume "btrfs_pool:vol001" is in order to mount it, on can simply
+btrfs subvolume "btrfs_pool:vol001" is in order to mount it, one can simply
 call \fBssm mount btrfs_pool:vol001 /mnt/test\fP\&.
 .sp
 One can also specify \fIOPTIONS\fP in the same way as with \fBmount(8)\fP\&.
@@ -410,14 +411,14 @@ equivalent to the same mount(8) option.
 .SH BACK-ENDS
 .SS Introduction
 .sp
-Ssm aims to create unified user interface for various technologies like Device
+Ssm aims to create a unified user interface for various technologies like Device
 Mapper (dm), Btrfs file system, Multiple Devices (md) and possibly more. In
 order to do so we have a core abstraction layer in \fBssmlib/main.py\fP\&. This
 abstraction layer should ideally know nothing about the underlying technology,
-but rather comply with \fBdevice\fP, \fBpool\fP and \fBvolume\fP abstraction.
+but rather comply with \fBdevice\fP, \fBpool\fP and \fBvolume\fP abstractions.
 .sp
 Various backends can be registered in \fBssmlib/main.py\fP in order to handle
-specific storage technology implementing methods like \fIcreate\fP, \fIsnapshot\fP, or
+specific storage technology, implementing methods like \fIcreate\fP, \fIsnapshot\fP, or
 \fIremove\fP volumes and pools. The core will then call these methods to manage
 the storage without needing to know what lies underneath it. There are already
 several backends registered in ssm.
@@ -433,61 +434,60 @@ is what it means from the btrfs point of view:
 .INDENT 0.0
 .TP
 .B pool
-Pool is actually a btrfs file system itself, because it can be extended
-by adding more devices, or shrink by removing devices from it. Subvolumes
-and snapshots can also be created. When the new btrfs pool should be created
-\fBssm\fP simply creates a btrfs file system, which means that every new
-btrfs pool has one volume of the same name as the pool itself which can
-not be removed without removing the entire pool. Default btrfs pool name is
-\fBbtrfs_pool\fP\&.
+A pool is actually a btrfs file system itself, because it can be extended
+by adding more devices, or shrunk by removing devices from it. Subvolumes
+and snapshots can also be created. When the new btrfs pool should be
+created, \fBssm\fP simply creates a btrfs file system, which means that every
+new btrfs pool has one volume of the same name as the pool itself which can
+not be removed without removing the entire pool. The default btrfs pool
+name is \fBbtrfs_pool\fP\&.
 .sp
-When creating new btrfs pool, the name of the pool is used as the file
-system label. If there is already existing btrfs file system in the system
-without a label, btrfs pool name will be generated for internal use
-in the following format "btrfs_{device base name}".
+When creating a new btrfs pool, the name of the pool is used as the file
+system label. If there is an already existing btrfs file system in the system
+without a label, a btrfs pool name will be generated for internal use in the
+following format "btrfs_{device base name}".
 .sp
-Btrfs pool is created when \fBcreate\fP or \fBadd\fP command is used with
-devices specified and non existing pool name.
+A btrfs pool is created when the \fBcreate\fP or \fBadd\fP command is used
+with specified devices and non existing pool name.
 .TP
 .B volume
-Volume in btrfs back\-end is actually just btrfs subvolume with the
-exception of the first volume created on btrfs pool creation, which is
-the file system itself. Subvolumes can only be created on btrfs file
-system when it is mounted, but user does not have to
-worry about that since \fBssm\fP will automatically mount the file
-system temporarily in order to create a new subvolume.
+A volume in the btrfs back\-end is actually just btrfs subvolume with the
+exception of the first volume created on btrfs pool creation, which is the
+file system itself. Subvolumes can only be created on the btrfs file system
+when it is mounted, but the user does not have to worry about that since
+\fBssm\fP will automatically mount the file system temporarily in order to
+create a new subvolume.
 .sp
-Volume name is used as subvolume path in the btrfs file system and every
-object in this path must exists in order to create a volume. Volume name
-for internal tracking and for representing to the user is generated in
-the format "{pool_name}:{volume name}", but volumes can be also referenced
-with its mount point.
+The volume name is used as subvolume path in the btrfs file system and
+every object in this path must exist in order to create a volume. The volume
+name for internal tracking and that is visible to the user is generated in the
+format "{pool_name}:{volume name}", but volumes can be also referenced by its
+mount point.
 .sp
-Btrfs volumes are only shown in the \fIlist\fP output, when the file system is
+The btrfs volumes are only shown in the \fIlist\fP output, when the file system is
 mounted, with the exception of the main btrfs volume \- the file system
 itself.
 .sp
-Also note that btrfs volumes and subvolumes can not be resized. This is
-mainly limitation of the btrfs tools which currently does not work
-reliably.
+Also note that btrfs volumes and subvolumes cannot be resized. This is
+mainly limitation of the btrfs tools which currently do not work reliably.
 .sp
-New btrfs volume can be created with \fBcreate\fP command.
+A new btrfs volume can be created with the \fBcreate\fP command.
 .TP
 .B snapshot
-Btrfs file system support subvolume snapshotting, so you can take a snapshot
-of any btrfs volume in the system with \fBssm\fP\&. However btrfs does not
-distinguish between subvolumes and snapshots, because snapshot actually is
-just a subvolume with some block shared with different subvolume. It means,
-that \fBssm\fP is not able to recognize btrfs snapshot directly, but instead
-it is trying to recognize special name format of the btrfs volume. However,
-if the \fINAME\fP is specified when creating snapshot which does not match the
-special pattern, snapshot will not be recognized by the \fBssm\fP and it will
-be listed as regular btrfs volume.
+The btrfs file system supports subvolume snapshotting, so you can take a
+snapshot of any btrfs volume in the system with \fBssm\fP\&. However btrfs does
+not distinguish between subvolumes and snapshots, because a snapshot is
+actually just a subvolume with some blocks shared with a different subvolume.
+This means, that \fBssm\fP is not able to directly recognize a btrfs snapshot.
+Instead, \fBssm\fP will try to recognize a special name format of the btrfs
+volume that denotes it is a snapshot. However, if the \fINAME\fP is specified when
+creating snapshot which does not match the special pattern, snapshot will not
+be recognized by the \fBssm\fP and it will be listed as regular btrfs volume.
 .sp
-New btrfs snapshot can be created with \fBsnapshot\fP command.
+A new btrfs snapshot can be created with the \fBsnapshot\fP command.
 .TP
 .B device
-Btrfs does not require any special device to be created on.
+Btrfs does not require a special device to be created on.
 .UNINDENT
 .SS Lvm backend
 .sp
@@ -496,32 +496,32 @@ the lvm abstraction.
 .INDENT 0.0
 .TP
 .B pool
-Lvm pool is just \fIvolume group\fP in lvm language. It means that it is
-grouping devices and new logical volumes can be created out of the lvm
-pool. Default lvm pool name is \fBlvm_pool\fP\&.
+An lvm pool is just a \fIvolume group\fP in lvm language. It means that it is
+grouping devices and new logical volumes can be created out of the lvm pool.
+The default lvm pool name is \fBlvm_pool\fP\&.
 .sp
-Lvm pool is created when \fBcreate\fP or \fBadd\fP command is used with
-devices specified and non existing pool name.
+An lvm pool is created when the \fBcreate\fP or \fBadd\fP commands are used
+with specified devices and a non existing pool name.
 .TP
 .B volume
-Lvm volume is just \fIlogical volume\fP in lvm language. Lvm volume can be
-created wit \fBcreate\fP command.
+An lvm volume is just a \fIlogical volume\fP in lvm language. An lvm volume
+can be created with the \fBcreate\fP command.
 .TP
 .B snapshot
 Lvm volumes can be snapshotted as well. When a snapshot is created from
-the lvm volume, new \fIsnapshot\fP volume is created, which can be handled as
+the lvm volume, a new \fIsnapshot\fP volume is created, which can be handled as
 any other lvm volume. Unlike \fIbtrfs\fP lvm is able
 to distinguish snapshot from regular volume, so there is no need for a
 snapshot name to match special pattern.
 .TP
 .B device
-Lvm requires \fIphysical device\fP to be created on the device, but with
+Lvm requires a \fIphysical device\fP to be created on the device, but with
 \fBssm\fP this is transparent for the user.
 .UNINDENT
 .SS Crypt backend
 .sp
-Crypt backend in \fBssm\fP uses cryptsetup and dm\-crypt target to manage
-encrypted volumes. Crypt backend can be used as a regular backend for
+The crypt backend in \fBssm\fP uses cryptsetup and dm\-crypt target to manage
+encrypted volumes. The crypt backend can be used as a regular backend for
 creating encrypted volumes on top of regular block devices, or even other
 volumes (lvm or md volumes for example). Or it can be used to create
 encrypted lvm volumes right away in a single step.
@@ -531,35 +531,35 @@ support pooling and does not require special devices.
 .INDENT 0.0
 .TP
 .B pool
-Crypt backend does not support pooling it is not possible to create
-crypt pool or add a device into a pool.
+The crypt backend does not support pooling, and it is not possible to
+create crypt pool or add a device into a pool.
 .TP
 .B volume
-Volume in crypt backend is the volume created by dm\-crypt which
-represent the data on the original encrypted device in unencrypted form.
-Crypt backend does not support pooling, so only one device can be used
+A volume in the crypt backend is the volume created by dm\-crypt which
+represents the data on the original encrypted device in unencrypted form.
+The crypt backend does not support pooling, so only one device can be used
 to create crypt volume. It also does not support raid or any device
 concatenation.
 .sp
-Currently two modes, or extensions are supported luks and plain. Luks
-is used by default.For more information about the extensions please see
+Currently two modes, or extensions are supported: luks and plain. Luks
+is used by default. For more information about the extensions, please see
 \fBcryptsetup\fP manual page.
 .TP
 .B snapshot
-Crypt backend does not support snapshotting, however if the encrypted
-volume is created on top of the lvm volume, the lvm volume itself can
+The crypt backend does not support snapshotting, however if the encrypted
+volume is created on top of an lvm volume, the lvm volume itself can
 be snapshotted. The snapshot can be then opened by using \fBcryptsetup\fP\&.
 It is possible that this might change in the future so that \fBssm\fP will
 be able to activate the volume directly without the extra step.
 .TP
 .B device
-Crypt backend does not require any special device to be created on.
+The crypt backend does not require a special device to be created on.
 .UNINDENT
 .SS MD backend
 .sp
 MD backend in \fBssm\fP is currently limited to only gather the information
 about MD volumes in the system. You can not create or manage MD volumes
-or pools, but it will be extended in the future.
+or pools, but this functionality will be extended in the future.
 .SH EXAMPLES
 .sp
 \fBList\fP system storage information:
@@ -586,7 +586,7 @@ or pools, but it will be extended in the future.
 .UNINDENT
 .UNINDENT
 .sp
-\fBCreate\fP a new 100GB \fBvolume\fP with default lvm backend using \fI/dev/sda\fP and
+\fBCreate\fP a new 100GB \fBvolume\fP with the default lvm backend using \fI/dev/sda\fP and
 \fI/dev/sdb\fP with xfs file system:
 .INDENT 0.0
 .INDENT 3.5
@@ -599,7 +599,7 @@ or pools, but it will be extended in the future.
 .UNINDENT
 .UNINDENT
 .sp
-\fBCreate\fP a new \fBvolume\fP with btrfs backend using \fI/dev/sda\fP and \fI/dev/sdb\fP and
+\fBCreate\fP a new \fBvolume\fP with a btrfs backend using \fI/dev/sda\fP and \fI/dev/sdb\fP and
 let the volume to be RAID 1:
 .INDENT 0.0
 .INDENT 3.5
@@ -612,7 +612,7 @@ let the volume to be RAID 1:
 .UNINDENT
 .UNINDENT
 .sp
-Using lvm backend \fBcreate\fP a RAID 0 \fBvolume\fP with devices \fI/dev/sda\fP and
+Using the lvm backend \fBcreate\fP a RAID 0 \fBvolume\fP with devices \fI/dev/sda\fP and
 \fI/dev/sdb\fP with 128kB stripe size, ext4 file system and mount it on
 \fI/home\fP:
 .INDENT 0.0
@@ -704,21 +704,21 @@ Using lvm backend \fBcreate\fP a RAID 0 \fBvolume\fP with devices \fI/dev/sda\fP
 .TP
 .B SSM_DEFAULT_BACKEND
 Specify which backend will be used by default. This can be overridden by
-specifying \fB\-b\fP or \fB\-\-backend\fP argument. Currently only \fIlvm\fP and \fIbtrfs\fP
-is supported.
+specifying the \fB\-b\fP or \fB\-\-backend\fP argument. Currently only \fIlvm\fP and
+\fIbtrfs\fP are supported.
 .TP
 .B SSM_LVM_DEFAULT_POOL
-Name of the default lvm pool to be used if \fB\-p\fP or \fB\-\-pool\fP argument
-is omitted.
+Name of the default lvm pool to be used if the \fB\-p\fP or \fB\-\-pool\fP
+argument is omitted.
 .TP
 .B SSM_BTRFS_DEFAULT_POOL
-Name of the default btrfs pool to be used if \fB\-p\fP or \fB\-\-pool\fP argument
-is omitted.
+Name of the default btrfs pool to be used if the \fB\-p\fP or \fB\-\-pool\fP
+argument is omitted.
 .TP
 .B SSM_PREFIX_FILTER
-When this is set \fBssm\fP will filter out all devices, volumes and pools
-which name does not start with this prefix. It is used mainly in \fBssm\fP
-test suite to make sure that we do not scramble local system
+When this is set, \fBssm\fP will filter out all devices, volumes and pools
+whose name does not start with this prefix. It is used mainly in the \fBssm\fP
+test suite to make sure that we do not scramble the local system
 configuration.
 .UNINDENT
 .SH LICENCE
@@ -740,11 +740,11 @@ along with this program.  If not, see <\fI\%http://www.gnu.org/licenses/\fP>.
 .SH REQUIREMENTS
 .sp
 Python 2.6 or higher is required to run this tool. System Storage Manager
-can only be run as root since most of the commands requires root privileges.
+can only be run as root since most of the commands require root privileges.
 .sp
-There are other requirements listed bellow, but note that you do not
-necessarily need all dependencies for all backends, however if some of the
-tools required by the backend is missing, the backend would not work.
+There are other requirements listed below, but note that you do not
+necessarily need all dependencies for all backends. However if some of the
+tools required by a backend are missing, that backend will not work.
 .SS Python modules
 .INDENT 0.0
 .IP \(bu 2

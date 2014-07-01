@@ -1,20 +1,21 @@
-This command removes **item** from the system. Multiple items can be specified.
-If the **item** can not be removed for some reason, it will be skipped.
+This command removes an **item** from the system. Multiple items can be
+specified.  If the **item** cannot be removed for some reason, it will be
+skipped.
 
-**item** can represent:
+An **item** can be any of the following:
 
 device
-    Remove **device** from the pool. Note that this can not be done in some
-    cases where the device is used by pool. You can use **-f** argument to
+    Remove a **device** from the pool. Note that this cannot be done in some
+    cases where the device is being used by the pool. You can use the **-f** argument to
     *force* removal. If the device does not belong to any pool, it will be
     skipped.
 
 pool
-    Remove the **pool** from the system. This will also remove all volumes
+    Remove a **pool** from the system. This will also remove all volumes
     created from that pool.
 
 volume
-    Remove the **volume** from the system. Note that this will fail if the
-    **volume** is mounted and it can not be *forced* with **-f**.
+    Remove a **volume** from the system. Note that this will fail if the
+    **volume** is mounted and cannot be *forced* with **-f**.
 
 

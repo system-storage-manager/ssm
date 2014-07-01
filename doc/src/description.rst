@@ -1,9 +1,9 @@
 Description
 ===========
 
-System Storage Manager provides easy to use command line interface to manage
-your storage using various technologies like lvm, btrfs, encrypted volumes and
-more.
+System Storage Manager provides an easy to use command line interface to
+manage your storage using various technologies like lvm, btrfs, encrypted
+volumes and more.
 
 In more sophisticated enterprise storage environments, management with Device
 Mapper (dm), Logical Volume Manager (LVM), or Multiple Devices (md) is

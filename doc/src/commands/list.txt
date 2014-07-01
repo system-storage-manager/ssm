@@ -1,15 +1,15 @@
-List informations about all detected devices, pools, volumes and snapshots found
-in the system. **list** command can be used either alone to list all the
-information, or you can request specific section only.
+Lists information about all detected devices, pools, volumes and snapshots found
+on the system. The **list** command can be used either alone to list all of the
+information, or you can request specific sections only.
 
-Following sections can be specified:
+The following sections can be specified:
 
 {volumes | vol}
     List information about all **volumes** found in the system.
 
 {devices | dev}
-    List information about all **devices** found in the system. Some devices are
-    intentionally hidden, like for example cdrom, or DM/MD devices since those
+    List information about all **devices** found on the system. Some devices
+    are intentionally hidden, like for example cdrom or DM/MD devices since those
     are actually listed as volumes.
 
 {pools | pool}
@@ -20,10 +20,10 @@ Following sections can be specified:
     the system.
 
 {snapshots | snap}
-    List information about all **snapshots** found in the system. Note that some
-    back-ends does not support snapshotting and some can not distinguish between
-    snapshot and regular volume. in this case **ssm** will try to recognize
-    volume name in order to identify **snapshot**, but if the **ssm** regular
-    expression does not match the snapshot pattern, this snapshot will not be
-    recognized.
+    List information about all **snapshots** found in the system. Note that
+    some back-ends do not support snapshotting and some cannot distinguish
+    snapshot from regular volumes. In this case, **ssm** will try to recognize the
+    volume name in order to identify a **snapshot**, but if the **ssm** regular
+    expression does not match the snapshot pattern, the problematic snapshot will
+    not be recognized.
 

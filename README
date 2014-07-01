@@ -8,8 +8,8 @@ A single tool to manage your storage.
 Description
 ***********
 
-System Storage Manager provides easy to use command line interface to
-manage your storage using various technologies like lvm, btrfs,
+System Storage Manager provides an easy to use command line interface
+to manage your storage using various technologies like lvm, btrfs,
 encrypted volumes and more.
 
 In more sophisticated enterprise storage environments, management with
@@ -51,39 +51,42 @@ Commands
 Introduction
 ************
 
-System Storage Manager have several commands you can specify on the
-command line as a first argument to the ssm. They all have specific
-use and its own arguments, but global ssm arguments are propagated to
-all commands.
+System Storage Manager has several commands that you can specify on
+the command line as a first argument to ssm. They all have a specific
+use and their own arguments, but global ssm arguments are propagated
+to all commands.
 
 
 Create command
 **************
 
-This command creates a new volume with defined parameters. If
-**device** is provided it will be used to create a volume, hence it
-will be added into the **pool** prior the volume creation (See *Add
-command section*). More devices can be used to create a volume.
+This command creates a new volume with defined parameters. If a
+**device** is provided it will be used to create the volume, hence it
+will be added into the **pool** prior to volume creation (See *Add
+command section*). More than one device can be used to create a
+volume.
 
-If the **device** is already used in the different pool, then **ssm**
-will ask you whether you want to remove it from the original pool. If
-you decline, or the removal fails, then the **volume** creation fails
-if the *SIZE* was not provided. On the other hand, if the *SIZE* is
-provided and some devices can not be added to the **pool** the volume
-creation might succeed if there is enough space in the **pool**.
+If the **device** is already being used in a different pool, then
+**ssm** will ask you whether you want to remove it from the original
+pool. If you decline, or the removal fails, then the **volume**
+creation fails if the *SIZE* was not provided. On the other hand, if
+the *SIZE* is provided and some devices can not be added to the
+**pool**, the volume creation might still succeed if there is enough
+space in the **pool**.
 
-*POOL* name can be specified as well. If the pool exists new volume
-will be created from that pool (optionally adding **device** into the
-pool). However if the *POOL* does not exist **ssm** will attempt to
-create a new pool with provided **device** and then create a new
-volume from this pool. If **--backend** argument is omitted, the
-default **ssm** backend will be used. Default backend is *lvm*.
+The *POOL* name can be specified as well. If the pool exists, a new
+volume will be created from that pool (optionally adding **device**
+into the pool). However if the *POOL* does not exist, then **ssm**
+will attempt to create a new pool with the provided **device**, and
+then create a new volume from this pool. If the **--backend** argument
+is omitted, the default **ssm** backend will be used. The default
+backend is *lvm*.
 
-**ssm** also supports creating RAID configuration, however some back-
-ends might not support all the levels, or it might not support RAID at
-all. In this case, volume creation will fail.
+**ssm** also supports creating a RAID configuration, however some
+back-ends might not support all RAID levels, or may not even support
+RAID at all. In this case, volume creation will fail.
 
-If **mount** point is provided **ssm** will attempt to mount the
+If a **mount** point is provided, **ssm** will attempt to mount the
 volume after it is created. However it will fail if mountable file
 system is not present on the volume.
 
@@ -91,19 +94,19 @@ system is not present on the volume.
 List command
 ************
 
-List informations about all detected devices, pools, volumes and
-snapshots found in the system. **list** command can be used either
-alone to list all the information, or you can request specific section
-only.
+Lists information about all detected devices, pools, volumes and
+snapshots found on the system. The **list** command can be used either
+alone to list all of the information, or you can request specific
+sections only.
 
-Following sections can be specified:
+The following sections can be specified:
 
 {volumes | vol}
    List information about all **volumes** found in the system.
 
 {devices | dev}
-   List information about all **devices** found in the system. Some
-   devices are intentionally hidden, like for example cdrom, or DM/MD
+   List information about all **devices** found on the system. Some
+   devices are intentionally hidden, like for example cdrom or DM/MD
    devices since those are actually listed as volumes.
 
 {pools | pool}
@@ -115,52 +118,54 @@ Following sections can be specified:
 
 {snapshots | snap}
    List information about all **snapshots** found in the system. Note
-   that some back-ends does not support snapshotting and some can not
-   distinguish between snapshot and regular volume. in this case
-   **ssm** will try to recognize volume name in order to identify
+   that some back-ends do not support snapshotting and some cannot
+   distinguish snapshot from regular volumes. In this case, **ssm**
+   will try to recognize the volume name in order to identify a
    **snapshot**, but if the **ssm** regular expression does not match
-   the snapshot pattern, this snapshot will not be recognized.
+   the snapshot pattern, the problematic snapshot will not be
+   recognized.
 
 
 Remove command
 **************
 
-This command removes **item** from the system. Multiple items can be
-specified. If the **item** can not be removed for some reason, it will
-be skipped.
+This command removes an **item** from the system. Multiple items can
+be specified.  If the **item** cannot be removed for some reason, it
+will be skipped.
 
-**item** can represent:
+An **item** can be any of the following:
 
 device
-   Remove **device** from the pool. Note that this can not be done in
-   some cases where the device is used by pool. You can use **-f**
-   argument to *force* removal. If the device does not belong to any
-   pool, it will be skipped.
+   Remove a **device** from the pool. Note that this cannot be done in
+   some cases where the device is being used by the pool. You can use
+   the **-f** argument to *force* removal. If the device does not
+   belong to any pool, it will be skipped.
 
 pool
-   Remove the **pool** from the system. This will also remove all
+   Remove a **pool** from the system. This will also remove all
    volumes created from that pool.
 
 volume
-   Remove the **volume** from the system. Note that this will fail if
-   the **volume** is mounted and it can not be *forced* with **-f**.
+   Remove a **volume** from the system. Note that this will fail if
+   the **volume** is mounted and cannot be *forced* with **-f**.
 
 
 Resize command
 **************
 
 Change size of the **volume** and file system. If there is no file
-system only the **volume** itself will be resized. You can specify
+system, only the **volume** itself will be resized. You can specify a
 **device** to add into the **volume** pool prior the resize. Note that
-**device** will only be added into the pool if the **volume** size is
-going to grow.
+the **device** will only be added into the pool if the **volume** size
+is going to grow.
 
-If the **device** is already used in the different pool, then **ssm**
-will ask you whether you want to remove it from the original pool.
+If the **device** is already used in a different pool, then **ssm**
+will ask you whether or not you want to remove it from the original
+pool.
 
-In some cases file system has to be mounted in order to resize. This
-will be handled by **ssm** automatically by mounting the **volume**
-temporarily.
+In some cases, the file system has to be mounted in order to resize.
+This will be handled by **ssm** automatically by mounting the
+**volume** temporarily.
 
 Note that resizing btrfs subvolume is not supported, only the whole
 file system can be resized.
@@ -173,20 +178,20 @@ Check the file system consistency on the **volume**. You can specify
 multiple volumes to check. If there is no file system on the
 **volume**, this **volume** will be skipped.
 
-In some cases file system has to be mounted in order to check the file
-system This will be handled by **ssm** automatically by mounting the
-**volume** temporarily.
+In some cases the file system has to be mounted in order to check the
+file system.  This will be handled by **ssm** automatically by
+mounting the **volume** temporarily.
 
 
 Snapshot command
 ****************
 
-Take a snapshot of existing **volume**. This operation will fail if
-back-end which the **volume** belongs to does not support
-snapshotting. Note that you can not specify both *NAME* and *DESC*
+Take a snapshot of an existing **volume**. This operation will fail if
+the back-end to which the **volume** belongs to does not support
+snapshotting. Note that you cannot specify both *NAME* and *DESC*
 since those options are mutually exclusive.
 
-In some cases file system has to be mounted in order to take a
+In some cases the file system has to be mounted in order to take a
 snapshot of the **volume**. This will be handled by **ssm**
 automatically by mounting the **volume** temporarily.
 
@@ -194,14 +199,14 @@ automatically by mounting the **volume** temporarily.
 Add command
 ***********
 
-This command adds **device** into the pool. The **device** will not be
-added if it's already part of different pool by default, but user will
-be asked whether to remove the device from it's pool. When multiple
-devices are provided, all of them are added into the pool. If one of
-the devices can not be added into the pool for any reason, add command
-will fail. If no pool is specified, default pool will be chosen. In
-the case of non existing pool, it will be created using provided
-devices.
+This command adds a **device** into the pool. By default, the
+**device** will not be added if it's already a part of a different
+pool, but the user will be asked whether or not to remove the device
+from its pool. When multiple devices are provided, all of them are
+added into the pool. If one of the devices cannot be added into the
+pool for any reason, the add command will fail. If no pool is
+specified, the default pool will be chosen. In the case of a non
+existing pool, it will be created using the provided devices.
 
 
 Backends
@@ -211,18 +216,19 @@ Backends
 Introduction
 ************
 
-Ssm aims to create unified user interface for various technologies
+Ssm aims to create a unified user interface for various technologies
 like Device Mapper (dm), Btrfs file system, Multiple Devices (md) and
 possibly more. In order to do so we have a core abstraction layer in
 "ssmlib/main.py". This abstraction layer should ideally know nothing
 about the underlying technology, but rather comply with **device**,
-**pool** and **volume** abstraction.
+**pool** and **volume** abstractions.
 
 Various backends can be registered in "ssmlib/main.py" in order to
-handle specific storage technology implementing methods like *create*,
-*snapshot*, or *remove* volumes and pools. The core will then call
-these methods to manage the storage without needing to know what lies
-underneath it. There are already several backends registered in ssm.
+handle specific storage technology, implementing methods like
+*create*, *snapshot*, or *remove* volumes and pools. The core will
+then call these methods to manage the storage without needing to know
+what lies underneath it. There are already several backends registered
+in ssm.
 
 
 Btrfs backend
@@ -237,64 +243,66 @@ Pools, volumes and snapshots can be created with btrfs backend and
 here is what it means from the btrfs point of view:
 
 pool
-   Pool is actually a btrfs file system itself, because it can be
-   extended by adding more devices, or shrink by removing devices from
+   A pool is actually a btrfs file system itself, because it can be
+   extended by adding more devices, or shrunk by removing devices from
    it. Subvolumes and snapshots can also be created. When the new
-   btrfs pool should be created **ssm** simply creates a btrfs file
+   btrfs pool should be created, **ssm** simply creates a btrfs file
    system, which means that every new btrfs pool has one volume of the
    same name as the pool itself which can not be removed without
-   removing the entire pool. Default btrfs pool name is
+   removing the entire pool. The default btrfs pool name is
    **btrfs_pool**.
 
-   When creating new btrfs pool, the name of the pool is used as the
-   file system label. If there is already existing btrfs file system
-   in the system without a label, btrfs pool name will be generated
-   for internal use in the following format "btrfs_{device base
-   name}".
+   When creating a new btrfs pool, the name of the pool is used as the
+   file system label. If there is an already existing btrfs file
+   system in the system without a label, a btrfs pool name will be
+   generated for internal use in the following format "btrfs_{device
+   base name}".
 
-   Btrfs pool is created when **create** or **add** command is used
-   with devices specified and non existing pool name.
+   A btrfs pool is created when the **create** or **add** command is
+   used with specified devices and non existing pool name.
 
 volume
-   Volume in btrfs back-end is actually just btrfs subvolume with the
-   exception of the first volume created on btrfs pool creation, which
-   is the file system itself. Subvolumes can only be created on btrfs
-   file system when it is mounted, but user does not have to worry
-   about that since **ssm** will automatically mount the file system
-   temporarily in order to create a new subvolume.
+   A volume in the btrfs back-end is actually just btrfs subvolume
+   with the exception of the first volume created on btrfs pool
+   creation, which is the file system itself. Subvolumes can only be
+   created on the btrfs file system when it is mounted, but the user
+   does not have to worry about that since **ssm** will automatically
+   mount the file system temporarily in order to create a new
+   subvolume.
 
-   Volume name is used as subvolume path in the btrfs file system and
-   every object in this path must exists in order to create a volume.
-   Volume name for internal tracking and for representing to the user
-   is generated in the format "{pool_name}:{volume name}", but volumes
-   can be also referenced with its mount point.
+   The volume name is used as subvolume path in the btrfs file system
+   and every object in this path must exist in order to create a
+   volume. The volume name for internal tracking and that is visible
+   to the user is generated in the format "{pool_name}:{volume name}",
+   but volumes can be also referenced by its mount point.
 
-   Btrfs volumes are only shown in the *list* output, when the file
-   system is mounted, with the exception of the main btrfs volume -
-   the file system itself.
+   The btrfs volumes are only shown in the *list* output, when the
+   file system is mounted, with the exception of the main btrfs volume
+   - the file system itself.
 
-   Also note that btrfs volumes and subvolumes can not be resized.
-   This is mainly limitation of the btrfs tools which currently does
-   not work reliably.
+   Also note that btrfs volumes and subvolumes cannot be resized. This
+   is mainly limitation of the btrfs tools which currently do not work
+   reliably.
 
-   New btrfs volume can be created with **create** command.
+   A new btrfs volume can be created with the **create** command.
 
 snapshot
-   Btrfs file system support subvolume snapshotting, so you can take a
-   snapshot of any btrfs volume in the system with **ssm**. However
-   btrfs does not distinguish between subvolumes and snapshots,
-   because snapshot actually is just a subvolume with some block
-   shared with different subvolume. It means, that **ssm** is not able
-   to recognize btrfs snapshot directly, but instead it is trying to
-   recognize special name format of the btrfs volume. However, if the
-   *NAME* is specified when creating snapshot which does not match the
+   The btrfs file system supports subvolume snapshotting, so you can
+   take a snapshot of any btrfs volume in the system with **ssm**.
+   However btrfs does not distinguish between subvolumes and
+   snapshots, because a snapshot is actually just a subvolume with
+   some blocks shared with a different subvolume. This means, that
+   **ssm** is not able to directly recognize a btrfs snapshot.
+   Instead, **ssm** will try to recognize a special name format of the
+   btrfs volume that denotes it is a snapshot. However, if the *NAME*
+   is specified when creating snapshot which does not match the
    special pattern, snapshot will not be recognized by the **ssm** and
    it will be listed as regular btrfs volume.
 
-   New btrfs snapshot can be created with **snapshot** command.
+   A new btrfs snapshot can be created with the **snapshot** command.
 
 device
-   Btrfs does not require any special device to be created on.
+   Btrfs does not require a special device to be created on.
 
 
 Lvm backend
@@ -304,66 +312,68 @@ Pools, volumes and snapshots can be created with lvm, which pretty
 much match the lvm abstraction.
 
 pool
-   Lvm pool is just *volume group* in lvm language. It means that it
-   is grouping devices and new logical volumes can be created out of
-   the lvm pool. Default lvm pool name is **lvm_pool**.
+   An lvm pool is just a *volume group* in lvm language. It means that
+   it is grouping devices and new logical volumes can be created out
+   of the lvm pool. The default lvm pool name is **lvm_pool**.
 
-   Lvm pool is created when **create** or **add** command is used with
-   devices specified and non existing pool name.
+   An lvm pool is created when the **create** or **add** commands are
+   used with specified devices and a non existing pool name.
 
 volume
-   Lvm volume is just *logical volume* in lvm language. Lvm volume can
-   be created wit **create** command.
+   An lvm volume is just a *logical volume* in lvm language. An lvm
+   volume can be created with the **create** command.
 
 snapshot
    Lvm volumes can be snapshotted as well. When a snapshot is created
-   from the lvm volume, new *snapshot* volume is created, which can be
-   handled as any other lvm volume. Unlike *btrfs* lvm is able to
+   from the lvm volume, a new *snapshot* volume is created, which can
+   be handled as any other lvm volume. Unlike *btrfs* lvm is able to
    distinguish snapshot from regular volume, so there is no need for a
    snapshot name to match special pattern.
 
 device
-   Lvm requires *physical device* to be created on the device, but
+   Lvm requires a *physical device* to be created on the device, but
    with **ssm** this is transparent for the user.
 
 
 Crypt backend
 *************
 
-Crypt backend in **ssm** uses cryptsetup and dm-crypt target to manage
-encrypted volumes. Crypt backend can be used as a regular backend for
-creating encrypted volumes on top of regular block devices, or even
-other volumes (lvm or md volumes for example). Or it can be used to
-create encrypted lvm volumes right away in a single step.
+The crypt backend in **ssm** uses cryptsetup and dm-crypt target to
+manage encrypted volumes. The crypt backend can be used as a regular
+backend for creating encrypted volumes on top of regular block
+devices, or even other volumes (lvm or md volumes for example). Or it
+can be used to create encrypted lvm volumes right away in a single
+step.
 
 Only volumes can be created with crypt backend. This backend does not
 support pooling and does not require special devices.
 
 pool
-   Crypt backend does not support pooling it is not possible to create
-   crypt pool or add a device into a pool.
+   The crypt backend does not support pooling, and it is not possible
+   to create crypt pool or add a device into a pool.
 
 volume
-   Volume in crypt backend is the volume created by dm-crypt which
-   represent the data on the original encrypted device in unencrypted
-   form. Crypt backend does not support pooling, so only one device
-   can be used to create crypt volume. It also does not support raid
-   or any device concatenation.
+   A volume in the crypt backend is the volume created by dm-crypt
+   which represents the data on the original encrypted device in
+   unencrypted form. The crypt backend does not support pooling, so
+   only one device can be used to create crypt volume. It also does
+   not support raid or any device concatenation.
 
-   Currently two modes, or extensions are supported luks and plain.
-   Luks is used by default.For more information about the extensions
+   Currently two modes, or extensions are supported: luks and plain.
+   Luks is used by default. For more information about the extensions,
    please see **cryptsetup** manual page.
 
 snapshot
-   Crypt backend does not support snapshotting, however if the
-   encrypted volume is created on top of the lvm volume, the lvm
-   volume itself can be snapshotted. The snapshot can be then opened
-   by using **cryptsetup**. It is possible that this might change in
-   the future so that **ssm** will be able to activate the volume
-   directly without the extra step.
+   The crypt backend does not support snapshotting, however if the
+   encrypted volume is created on top of an lvm volume, the lvm volume
+   itself can be snapshotted. The snapshot can be then opened by using
+   **cryptsetup**. It is possible that this might change in the future
+   so that **ssm** will be able to activate the volume directly
+   without the extra step.
 
 device
-   Crypt backend does not require any special device to be created on.
+   The crypt backend does not require a special device to be created
+   on.
 
 
 Environment variables
@@ -371,22 +381,22 @@ Environment variables
 
 SSM_DEFAULT_BACKEND
    Specify which backend will be used by default. This can be
-   overridden by specifying **-b** or **--backend** argument.
-   Currently only *lvm* and *btrfs* is supported.
+   overridden by specifying the **-b** or **--backend** argument.
+   Currently only *lvm* and *btrfs* are supported.
 
 SSM_LVM_DEFAULT_POOL
-   Name of the default lvm pool to be used if **-p** or **--pool**
+   Name of the default lvm pool to be used if the **-p** or **--pool**
    argument is omitted.
 
 SSM_BTRFS_DEFAULT_POOL
-   Name of the default btrfs pool to be used if **-p** or **--pool**
-   argument is omitted.
+   Name of the default btrfs pool to be used if the **-p** or
+   **--pool** argument is omitted.
 
 SSM_PREFIX_FILTER
-   When this is set **ssm** will filter out all devices, volumes and
-   pools which name does not start with this prefix. It is used mainly
-   in **ssm** test suite to make sure that we do not scramble local
-   system configuration.
+   When this is set, **ssm** will filter out all devices, volumes and
+   pools whose name does not start with this prefix. It is used mainly
+   in the **ssm** test suite to make sure that we do not scramble the
+   local system configuration.
 
 
 Quick examples
@@ -418,8 +428,9 @@ List system storage:
    /dev/sda5               49.44 GB  ext4  49.44 GB  29.77 GB  part   /mnt/test
    ------------------------------------------------------------------------------
 
-Creating a volume of defined size with the defined file system. The
-default back-end is set to lvm and lvm default pool name is lvm_pool:
+Create a volume of the defined size with the defined file system. The
+default back-end is set to lvm and the lvm default pool name (volume
+group) is lvm_pool:
 
    # ssm create --fs ext4 -s 15G /dev/loop0 /dev/loop1
 
@@ -428,17 +439,18 @@ volume to 10GB:
 
    # ssm resize -s-5G /dev/lvm_pool/lvol001
 
-Resize the volume to 100G, but it would require to add more devices
-into the pool:
+Resize the volume to 100G, but it may require adding more devices into
+the pool:
 
-   # ssm resize -s 25G /dev/lvm_pool/lvol001 /dev/loop2
+   # ssm resize -s 100G /dev/lvm_pool/lvol001 /dev/loop2
 
-Now we can try to create new lvm volume named 'myvolume' from the
-remaining pool space with xfs file system and mount it to /mnt/test1:
+Now we can try to create a new lvm volume named 'myvolume' from the
+remaining pool space with the xfs file system and mount it to
+/mnt/test1:
 
    # ssm create --fs xfs --name myvolume /mnt/test1
 
-List all volumes with file system:
+List all volumes with file systems:
 
    # ssm list filesystems
    -----------------------------------------------------------------------------------------------
@@ -451,19 +463,19 @@ List all volumes with file system:
    /dev/sda5                              49.44 GB  ext4   49.44 GB  29.77 GB  part    /mnt/test
    -----------------------------------------------------------------------------------------------
 
-You can then easily remove the old volume by:
+You can then easily remove the old volume with:
 
    # ssm remove /dev/lvm_pool/lvol001
 
-Now lest try to create btrfs volume. Btrfs is separate backend, not
-just a file system. That is because btrfs itself have integrated
-volume manager. Defaul btrfs pool name is btrfs_pool.:
+Now let's try to create a btrfs volume. Btrfs is a separate backend,
+not just a file system. That is because btrfs itself has an integrated
+volume manager. The default btrfs pool name is btrfs_pool.:
 
    # ssm -b btrfs create /dev/loop3 /dev/loop4
 
-Now create we btrfs subvolumes. Note that btrfs file system has to be
-mounted in order to create subvolumes. However ssm will handle it for
-you.:
+Now we create btrfs subvolumes. Note that the btrfs file system has to
+be mounted in order to create subvolumes. However ssm will handle this
+for you.:
 
    # ssm create -p btrfs_pool
    # ssm create -n new_subvolume -p btrfs_pool
@@ -502,10 +514,10 @@ you.:
    /dev/sda5                              49.44 GB  ext4   49.44 GB  29.77 GB  part    /mnt/test
    -----------------------------------------------------------------------------------------------
 
-Now let's free up some of the loop devices so we cat try to add them
-into then btrfs_pool. So we'll simply remove lvm mvolume and resize
-lvol001 so we can remove /dev/loop2. Note that myvolume is mounted so
-we have to unmount it first.:
+Now let's free up some of the loop devices so that we can try to add
+them into the btrfs_pool. So we'll simply remove lvm myvolume and
+resize lvol001 so we can remove /dev/loop2. Note that myvolume is
+mounted so we have to unmount it first.:
 
    # umount /mnt/test1
    # ssm remove /dev/lvm_pool/myvolume
@@ -516,8 +528,8 @@ Add device to the btrfs file system:
 
    # ssm add /dev/loop2 -p btrfs_pool
 
-Set' see what happend. Note that to actually see btrfs subvolumes you
-have to mount the file system first:
+Now let's see what happened. Note that to actually see btrfs
+subvolumes you have to mount the file system first:
 
    # mount -L btrfs_pool /mnt/test1/
    # ssm list volumes
@@ -533,9 +545,9 @@ have to mount the file system first:
    /dev/sda5                                     49.44 GB  ext4   49.44 GB  29.77 GB  part    /mnt/test
    ------------------------------------------------------------------------------------------------------------------------
 
-Remove the whole lvm pool and one of the btrfs subvolume, and one
-unused device from the btrfs pool btrfs_loop3. Note that with btrfs,
-pool have the same name as the volume:
+Remove the whole lvm pool, one of the btrfs subvolumes, and one unused
+device from the btrfs pool btrfs_loop3. Note that with btrfs, pools
+have the same name as their volumes:
 
    # ssm remove lvm_pool /dev/loop2 /mnt/test1/new_subvolume/
 
@@ -546,14 +558,14 @@ Snapshots can also be done with ssm:
 
 With lvm, you can also create snapshots:
 
-   root# ssm create -s 10G /dev/loop[01]
+   # ssm create -s 10G /dev/loop[01]
    # ssm snapshot /dev/lvm_pool/lvol001
 
 Now list all snapshots. Note that btrfs snapshots are actually just
 subvolumes with some blocks shared with the original subvolume, so
-there currently no way to distinguish between those. ssm is using a
-little trick to search for name patters to recognize snapshots, so if
-you specify your own name for the snapshot ssm will not recognize it
+there is currently no way to distinguish between those. ssm is using a
+little trick to search for name patterns to recognize snapshots, so if
+you specify your own name for the snapshot, ssm will not recognize it
 as snapshot, but rather as regular volume (subvolume). This problem
 does not exist with lvm.:
 
@@ -574,10 +586,10 @@ To install System Storage Manager into your system simply run:
    python setup.py install
 
 as root in the System Storage Manager directory. Make sure that your
-system configuration meet the *requirements* in order for ssm to work
+system configuration meets the *requirements* in order for ssm to work
 correctly.
 
-Note that you can run **ssm** even without installation from using the
+Note that you can run **ssm** even without installation by using the
 local sources with:
 
    bin/ssm.local
@@ -587,12 +599,12 @@ Requirements
 ************
 
 Python 2.6 or higher is required to run this tool. System Storage
-Manager can only be run as root since most of the commands requires
+Manager can only be run as root since most of the commands require
 root privileges.
 
-There are other requirements listed bellow, but note that you do not
-necessarily need all dependencies for all backends, however if some of
-the tools required by the backend is missing, the backend would not
+There are other requirements listed below, but note that you do not
+necessarily need all dependencies for all backends. However if some of
+the tools required by a backend are missing, that backend will not
 work.
 
 
@@ -665,7 +677,7 @@ Crypt backend
 For developers
 **************
 
-We are accepting patches! If you're interested contributing to the
+We are accepting patches! If you're interested in contributing to the
 System Storage Manager code, just checkout the git repository located
 on SourceForge. Please, base all of your work on the "devel" branch
 since it is more up-to-date and it will save us some work when merging
@@ -680,9 +692,9 @@ are appreciated. See *Mailing list section* section.
 Tests
 =====
 
-System Storage Manager contains regression testing suite to make sure
-that we do not break thing that should already work. And we recommend
-every developer to run tests before sending patches:
+System Storage Manager contains a regression testing suite to make
+sure that we do not break things that should already work. We
+recommend that every developer run these tests before sending patches:
 
    python test.py
 
@@ -707,26 +719,26 @@ Tests in System Storage Manager are divided into four levels.
 
 4. And finally there are real bash tests located in "tests/bashtests".
    Bash tests are divided into files. Each file tests one command for
-   one backend and it containing series of test cases followed by
-   checks whether the command created the expected result. In order to
-   test real system commands we have to create system device to test
-   on and not touch any of the existing system configuration.
+   one backend and it contains a series of test cases followed by
+   checks as to whether the command created the expected result. In
+   order to test real system commands we have to create a system
+   device to test on and not touch the existing system configuration.
 
    Before each test a number of devices are created using *dmsetup* in
    the test directory. These devices will be used in test cases
-   instead of real devices. Real operation are performed in those
-   devices as it would on the real system devices. It implies that
-   this phase requires root privileges and it would not be run
-   otherwise. In order to make sure that **ssm** does not touch any
-   existing system configuration, each device, poor and volume name is
-   include special prefix and SSM_PREFIX_FILTER environment variable
-   is set to make **ssm** to exclude all items which does not match
-   this filter.
+   instead of real devices.  Real operations are performed in those
+   devices as they would be on the real system devices. This phase
+   requires root privileges and it will not be run otherwise. In order
+   to make sure that **ssm** does not touch any existing system
+   configuration, each device, pool and volume name includes a special
+   prefix, and the SSM_PREFIX_FILTER environment variable is set to
+   make **ssm** to exclude all items which does not match this special
+   prefix.
 
-   Even though we tried hard to make sure that the bash tests does not
-   change any of your system configuration the recommendation is
-   **not** to run tests as with root privileges on your work or
-   production system, but rather run it on your testing machine.
+   Even though we tried hard to make sure that the bash tests do not
+   change your system configuration, we recommend you **not** to run
+   tests with root privileges on your work or production system, but
+   rather to run them on your testing machine.
 
 If you change or create new functionality, please make sure that it is
 covered by the System Storage Manager regression test suite to make
@@ -740,20 +752,21 @@ Important: Please, make sure to run full tests before you send a patch to the
 Documentation
 =============
 
-System Storage Manager documentation is stored in "doc/" directory.
-The documentation is build using **sphinx** software which help us not
-to duplicate texts for different type of documentation (man page, html
-pages, readme). If you are going to modify documentation, please make
-sure not to modify manual page, html pages or README directly, but
-rather modify "doc/*.rst" and "doc/src/*.rst" files accordingly so the
-change is propagated to all documents.
+System Storage Manager documentation is stored in the "doc/"
+directory. The documentation is built using **sphinx** software which
+helps us not to duplicate text for different types of documentation
+(man page, html pages, readme). If you are going to modify
+documentation, please make sure not to modify manual page, html pages
+or README directly, but rather modify the "doc/*.rst" and
+"doc/src/*.rst" files accordingly so that the change is propagated to
+all documents.
 
 Moreover, parts of the documentation such as *synopsis* or ssm command
-*options* are parsed directly from the ssm help output. It means that
-when you're going to add or change argument into **ssm** the only
-thing you have to do is to add or change it in the "ssmlib/main.py"
-source code and then run "make dist" in the "doc/" directory and all
-the documents should be updated automatically.
+*options* are parsed directly from the ssm help output. This means
+that when you're going to add or change arguments into **ssm** the
+only thing you have to do is to add or change it in the
+"ssmlib/main.py" source code and then run "make dist" in the "doc/"
+directory and all the documents should be updated automatically.
 
 Important: Please make sure you update the documentation when you add or change
   **ssm** functionality if the format of the change requires it. Then
@@ -765,34 +778,34 @@ Mailing list
 ============
 
 System Storage Manager developers communicate via the mailing list.
-Address of our mailing list is storagemanager-
+The address of our mailing list is storagemanager-
 devel@lists.sourceforge.net and you can subscribe on the SourceForge
 project page https://lists.sourceforge.net/lists/listinfo
 /storagemanager-devel. Mailing list archives can be found here
 http://sourceforge.net/mailarchive/forum.php?forum_name
 =storagemanager-devel.
 
-This is also the list where to send patches and where the review
-process is happening. We do not have separate *user* mailing list, so
-feel free to drop your questions there as well.
+This is also the list where patches are sent and where the review
+process is happening. We do not have a separate *user* mailing list,
+so feel free to drop your questions there as well.
 
 
 Posting patches
 ===============
 
 As already mentioned, we are accepting patches! And we are very happy
-for every contribution. If you're going to send a path in, please make
-sure to follow some simple rules:
+for every contribution. If you're going to send a patch in, please
+make sure to follow some simple rules:
 
 1. Before you're going to post a patch, please run our regression
    testing suite to make sure that your change does not break someone
-   else work. See *Tests section*
+   else's work. See *Tests section*
 
 2. If you're making a change that might require documentation update,
    please update the documentation as well. See *Documentation
    section*
 
-3. Make sure your patch have all the requisites such as *short
+3. Make sure your patch has all the requisites such as a *short
    description* preferably 50 characters long at max describing the
    main idea of the change. *Long description* describing what was
    changed with and why and finally Signed-off-by tag.
