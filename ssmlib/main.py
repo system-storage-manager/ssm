@@ -1619,7 +1619,7 @@ class SsmParser(object):
                      Note that with this option ssm will not perform all the
                      check as some of them are done by the backends
                      themselves. This option is mainly used for debugging
-                     purposes.''',
+                     purposes, but still requires root privileges.''',
                 action="store_true")
         return parser
 
