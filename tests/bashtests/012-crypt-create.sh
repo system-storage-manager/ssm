@@ -47,6 +47,13 @@ pass() {
 	echo -e "${passwd}\n${passwd}"
 }
 
+fs1=ext4
+fs2=ext4
+fs3=ext4
+fs4=ext4
+which mkfs.ext2 && grep -E "^\sext[234]$" /proc/filesystems && fs2=ext2
+which mkfs.ext3 && grep -E "^\sext[34]$" /proc/filesystems && fs3=ext3
+which mkfs.xfs  && grep -E "^\sxfs$" /proc/filesystems && fs4=xfs
 
 # Create encrypted volume
 pass | ssm create $dev1
@@ -64,21 +71,21 @@ check crypt_vol_field $crypt_vol3 type LUKS1
 check crypt_vol_field $crypt_vol3 device $dev3
 check list_table "$(ssm list vol)" $crypt_vol3 $SSM_CRYPT_DEFAULT_POOL none crypt
 
-pass | ssm create --fs ext4 -e plain $dev4 $mnt1
+pass | ssm create --fs $fs1 -e plain $dev4 $mnt1
 check mountpoint $crypt_vol4 $mnt1
 check crypt_vol_field $crypt_vol4 type PLAIN
 check crypt_vol_field $crypt_vol4 device $dev4
-check list_table "$(ssm list vol)" $crypt_vol4 $SSM_CRYPT_DEFAULT_POOL none ext4 none none crypt
+check list_table "$(ssm list vol)" $crypt_vol4 $SSM_CRYPT_DEFAULT_POOL none $fs1 none none crypt
 ssm list
 umount $mnt1
 ssm -f remove ${DEV}/$crypt_vol1
 
-pass | ssm create --fs ext3 -s 50M -e plain $dev1 $mnt1
+pass | ssm create --fs $fs2 -s 50M -e plain $dev1 $mnt1
 check mountpoint $crypt_vol1 $mnt1
 check crypt_vol_field $crypt_vol1 type PLAIN
 check crypt_vol_field $crypt_vol1 device $dev1
 check crypt_vol_field $crypt_vol1 size 102400
-check list_table "$(ssm list vol)" $crypt_vol1 $SSM_CRYPT_DEFAULT_POOL none ext3 none none crypt
+check list_table "$(ssm list vol)" $crypt_vol1 $SSM_CRYPT_DEFAULT_POOL none $fs2 none none crypt
 umount $mnt1
 
 ssm remove ${DEV}/$crypt_vol1 ${DEV}/$crypt_vol3 ${DEV}/$crypt_vol2 ${DEV}/$crypt_vol4
@@ -95,11 +102,11 @@ lvol3=${LVOL_PREFIX}003
 lvol4=${LVOL_PREFIX}004
 export SSM_DEFAULT_BACKEND='lvm'
 
-pass | ssm create --fs xfs $dev1 $dev2 $mnt1 -e
+pass | ssm create --fs $fs3 $dev1 $dev2 $mnt1 -e
 check mountpoint $crypt_vol1 $mnt1
 check crypt_vol_field $crypt_vol1 type LUKS1
 check crypt_vol_field $crypt_vol1 device ${SSM_LVM_DEFAULT_POOL}-$lvol1
-check list_table "$(ssm list vol)" $crypt_vol1 $SSM_CRYPT_DEFAULT_POOL none xfs none none crypt
+check list_table "$(ssm list vol)" $crypt_vol1 $SSM_CRYPT_DEFAULT_POOL none $fs3 none none crypt
 check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$lvol1 $SSM_LVM_DEFAULT_POOL none linear
 check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 2
 
@@ -117,11 +124,11 @@ check list_table "$(ssm list vol)" $crypt_vol3 $SSM_CRYPT_DEFAULT_POOL none cryp
 check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$lvol3 $SSM_LVM_DEFAULT_POOL none linear
 check lv_field $SSM_LVM_DEFAULT_POOL/$lvol3 pv_count 5
 
-pass | ssm create -e plain --fs xfs -r10 -s ${DEV_SIZE}M $dev6 $dev7 $dev8 $dev9 $mnt2
+pass | ssm create -e plain --fs $fs4 -r10 -s ${DEV_SIZE}M $dev6 $dev7 $dev8 $dev9 $mnt2
 check mountpoint $crypt_vol4 $mnt2
 check crypt_vol_field $crypt_vol4 type PLAIN
 check crypt_vol_field $crypt_vol4 device ${SSM_LVM_DEFAULT_POOL}-$lvol4
-check list_table "$(ssm list vol)" $crypt_vol4 $SSM_CRYPT_DEFAULT_POOL 104.00M xfs none none crypt
+check list_table "$(ssm list vol)" $crypt_vol4 $SSM_CRYPT_DEFAULT_POOL 104.00M $fs4 none none crypt
 check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$lvol4 $SSM_LVM_DEFAULT_POOL 104.00M raid10
 check lv_field $SSM_LVM_DEFAULT_POOL/$lvol4 pv_count 9
 
