@@ -50,7 +50,7 @@ class MdRaid(template.Backend):
         mdnumber = misc.get_dmnumber("md")
 
         for line in misc.get_partitions():
-            devname = '/dev/' + line[3]
+            devname = line[3]
             devsize = int(line[2])
             if line[0] == mdnumber:
                 self._vol[devname] = self.get_volume_data(devname)

@@ -150,7 +150,7 @@ class Btrfs(template.Backend):
                 fs_size += float(misc.get_real_size(array[3]))
 
                 dev_size = \
-                    int(partitions[dev['dev_name'].rpartition("/")[-1]][2])
+                    int(partitions[dev['dev_name']][2])
                 pool_size += dev_size
                 dev['dev_free'] = dev_size - dev_used
                 self._dev[dev['dev_name']] = dev

@@ -150,7 +150,7 @@ class MockSystemDataSource(unittest.TestCase):
         partitions = []
         for name, data in self.dev_data.iteritems():
             partitions.append([data['major'], data['minor'], data['dev_size'],
-                              data['dev_name'].rpartition("/")[2]])
+                              data['dev_name']])
         return partitions
 
     def mock_is_directory(self, string):

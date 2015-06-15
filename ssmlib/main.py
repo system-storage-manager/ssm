@@ -305,7 +305,7 @@ class DeviceInfo(object):
         for items in misc.get_partitions():
             devices = dict(zip(self.attrs, items))
             devices['vol_size'] = devices['dev_size']
-            devices['dev_name'] = "/dev/" + devices['dev_name']
+            devices['dev_name'] = devices['dev_name']
             if devices['major'] in hide_dmnumbers:
                 devices['hide'] = True
             if devices['dev_name'] in self.data:

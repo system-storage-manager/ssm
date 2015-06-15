@@ -237,7 +237,7 @@ class DmCryptDevice(DmObject, template.BackendDevice):
 
         for line in misc.get_partitions():
             device = {}
-            devname = "/dev/" + line[3]
+            devname = line[3]
             signature = misc.get_signature(devname)
             if signature in CRYPT_SIGNATURES:
                 device['hide'] = False

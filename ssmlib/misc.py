@@ -297,9 +297,16 @@ def get_swaps():
 
 def get_partitions():
     partitions = []
-    with open('/proc/partitions', 'r') as f:
-        for line in f.readlines()[2:]:
-            partitions.append(line.split())
+    new_line = []
+    output = run(["lsblk","-l","-b","-n","-p","-o","MAJ:MIN,SIZE,KNAME"], stdout=False)
+
+    for line in output[1].splitlines():
+        new_line = re.split('\s+|:',line.strip())
+        if len(new_line) == 4:
+            new_line[2] = int(new_line[2])/1024
+            partitions.append(new_line)
+        else:
+            pass
     return partitions
 
 
