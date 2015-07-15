@@ -235,7 +235,7 @@ class BtrfsFunctionCheck(MockSystemDataSource):
 
     def test_btrfs_resize(self):
 	# Btrfs resize not supported for now because it simply does not work
-	return
+        return
         # Generate some storage data
         self._addPool('default_pool', ['/dev/sda', '/dev/sdb'])
         self._addPool('my_pool', ['/dev/sdc2', '/dev/sdc3'])

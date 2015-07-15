@@ -644,7 +644,7 @@ class Storage(object):
 class Pool(Storage):
     """
     Store Pools from all the backends. When new backend is added into the ssm
-    it should be registered withing this class with appropriate name.
+    it should be registered within this class with appropriate name.
     """
 
     def __init__(self, *args, **kwargs):
@@ -678,7 +678,7 @@ class Pool(Storage):
 class Devices(Storage):
     """
     Store Devices from all the backends. When new backend is added into the ssm
-    it should be registered withing this class with appropriate name.
+    it should be registered within this class with appropriate name.
 
     If the backend only have new information about the device which is already
     discovered by the DeviceInfo() class then it should just add the
@@ -1506,6 +1506,7 @@ class StorageHandle(object):
         err = "'{0}' is not valid pool nor volume".format(string)
         raise argparse.ArgumentTypeError(err)
 
+
 def valid_size(size):
     """ Validate that the 'size' is usable size argument. This is almost the
     same as valid_resize_size() except we do not allow '+' and '-' signs
@@ -1521,6 +1522,7 @@ def valid_size(size):
     except:
         raise argparse.ArgumentTypeError(err)
     return ret
+
 
 def valid_resize_size(size):
     """

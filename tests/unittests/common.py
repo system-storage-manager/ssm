@@ -128,10 +128,11 @@ class MockSystemDataSource(unittest.TestCase):
             cmd = command + " " + " ".join(case)
             main.main(cmd)
             if expected:
-		if NotEq:
-			self._cmdNotEq(expected)
-		else:
-			self._cmdEq(expected)
+                if NotEq:
+                    self._cmdNotEq(expected)
+                else:
+                    self._cmdEq(expected)
+
 
     def mock_run(self, cmd, *args, **kwargs):
         self.run_data.append(" ".join(cmd))

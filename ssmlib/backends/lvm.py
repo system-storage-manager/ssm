@@ -79,7 +79,6 @@ class LvmInfo(template.Backend):
              problem.FL_DEFAULT_NO | problem.FL_EXIT_ON_NO | problem.FL_FORCE_YES,
              problem.GeneralError]
 
-
     def run_lvm(self, command, noforce=False):
         if not self.binary:
             self.problem.check(self.problem.TOOL_MISSING, 'lvm')

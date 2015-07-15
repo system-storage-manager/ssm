@@ -32,4 +32,3 @@ setup(
                 ('/usr/share/doc/{0}-{1}'.format(NAME, VERSION),
                     ['README', 'CHANGES', 'COPYING', 'AUTHORS', 'INSTALL'])]
 )
-
