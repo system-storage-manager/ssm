@@ -436,7 +436,7 @@ class SnapInfo(LvmInfo):
         except IOError:
             snap['dm_name'] = snap['real_dev']
 
-        if snap['dm_name'] in self.mounts:
-            snap['mount'] = self.mounts[snap['dm_name']]['mp']
+        if snap['real_dev'] in self.mounts:
+            snap['mount'] = self.mounts[snap['real_dev']]['mp']
 
         self.parse_attr(snap, snap['attr'])

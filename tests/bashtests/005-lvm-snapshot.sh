@@ -40,6 +40,7 @@ pool1=$vg2
 pool2=$vg3
 
 TEST_MNT=$TESTDIR/mnt
+TEST_MNT2=$TESTDIR/mnt2
 
 # Create volume with all devices at once
 size=$(($DEV_SIZE*6))
@@ -102,10 +103,13 @@ check lv_field $SSM_LVM_DEFAULT_POOL/$snap2 lv_size ${snap_size}.00m
 ssm snapshot --name $snap3 $TEST_MNT
 check lv_field $SSM_LVM_DEFAULT_POOL/$snap3 lv_size ${snap_size}.00m
 check vg_field $SSM_LVM_DEFAULT_POOL lv_count 4
+# Mount snapshot
+[ ! -d $TEST_MNT2 ] && mkdir $TEST_MNT2 &> /dev/null
+ssm mount $SSM_LVM_DEFAULT_POOL/$snap3 $TEST_MNT2
 ssm_output=$(ssm list snap)
 check list_table "$ssm_output" $snap1 $lvol1 $SSM_LVM_DEFAULT_POOL ${snap_size}.00MB none linear
 check list_table "$ssm_output" $snap2 $lvol1 $SSM_LVM_DEFAULT_POOL ${snap_size}.00MB none linear
-check list_table "$ssm_output" $snap3 $lvol1 $SSM_LVM_DEFAULT_POOL ${snap_size}.00MB none linear
+check list_table "$ssm_output" $snap3 $lvol1 $SSM_LVM_DEFAULT_POOL ${snap_size}.00MB none linear $TEST_MNT2
 check list_table "$(ssm list fs)" $lvol1 $SSM_LVM_DEFAULT_POOL ${size}.00MB ext4 ${size}.00MB none linear $TEST_MNT
 
 # Remove the snapshot volumes
@@ -122,6 +126,7 @@ check lv_field $SSM_LVM_DEFAULT_POOL/$snap3 lv_size ${snap_size}.00m
 check vg_field $SSM_LVM_DEFAULT_POOL lv_count 4
 
 umount $TEST_MNT
+not umount $TEST_MNT2
 
 ssm -f remove --all
 
