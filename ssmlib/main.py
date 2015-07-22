@@ -988,7 +988,10 @@ class StorageHandle(object):
                         continue
                 signature = misc.get_fs_type(dev)
                 if signature and \
-                   not PR.check(PR.EXISTING_FILESYSTEM, [signature, dev]):
+                   PR.check(PR.EXISTING_FILESYSTEM, [signature, dev]):
+                    misc.wipefs(dev, signature)
+                    args.device.append(dev)
+                elif signature:
                     devices.remove(dev)
                     continue
                 else:
@@ -1258,8 +1261,10 @@ class StorageHandle(object):
                     else:
                         signature = misc.get_fs_type(dev)
                         if signature and \
-                           not PR.check(PR.EXISTING_FILESYSTEM,
+                           PR.check(PR.EXISTING_FILESYSTEM,
                                         [signature, dev]):
+                            misc.wipefs(dev, signature)
+                        elif signature:
                             args.device.remove(dev)
                             continue
 
