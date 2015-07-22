@@ -777,7 +777,7 @@ class Snapshots(Storage):
             PR.warn(err)
             PR.warn("Can not get information about btrfs snapshots")
 
-        self.header = ['Snapshot', 'Origin', 'Pool', 'Volume size', 'Size',
+        self.header = ['Snapshot', 'Origin', 'Pool', 'Volume size', 'Used',
                        'Type', 'Mount point']
         self.attrs = ['dev_name', 'origin', 'pool_name', 'vol_size',
                       'snap_size', 'type', 'mount']
