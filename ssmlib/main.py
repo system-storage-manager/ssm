@@ -151,7 +151,11 @@ class FsInfo(object):
         fstype = self.fstype
         if re.match("ext[2|3|4]", self.fstype):
             fstype = "extN"
-        func = getattr(self, "{0}_{1}".format(fstype, func))
+        try:
+            func = getattr(self, "{0}_{1}".format(fstype, func))
+        except AttributeError:
+            msg = "{0} file system is not yet supported.".format(fstype)
+            raise problem.NotSupported(msg)
         return func(*args, **kwargs)
 
     def fsck(self):
