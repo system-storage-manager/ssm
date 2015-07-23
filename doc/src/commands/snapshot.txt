@@ -1,6 +1,6 @@
 Take a snapshot of an existing **volume**. This operation will fail if the
 back-end to which the **volume** belongs to does not support snapshotting.
-Note that you cannot specify both *NAME* and *DESC* since those options are
+Note that you cannot specify both *NAME* and *DEST* since those options are
 mutually exclusive.
 
 In some cases the file system has to be mounted in order to take a snapshot of
