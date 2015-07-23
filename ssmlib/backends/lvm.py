@@ -334,6 +334,8 @@ class LvsInfo(LvmInfo, template.BackendVolume):
     def __getitem__(self, name):
         if name in self.data.iterkeys():
             return self.data[name]
+        if DM_DEV_DIR + "/" + name in self.data:
+            return self.data[DM_DEV_DIR + "/" + name]
         device = name
         if not os.path.exists(name):
             device = DM_DEV_DIR + "/" + name

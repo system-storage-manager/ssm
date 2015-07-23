@@ -80,6 +80,7 @@ ssm add -p $pool3 $dev{5,6,7,8}
 ssm create -p $pool3 -s ${size4}m -n $vol4
 ssm create -p $pool3 -s ${size5}m -n $vol5
 ssm create -p $pool3 -s ${size6}m -n $vol6
+lvchange -an $pool3/$vol6
 
 # We shouldn't see ssm list fs here
 test `ssm list fs | wc -l` -le 1

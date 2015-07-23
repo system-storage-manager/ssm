@@ -54,6 +54,13 @@ check lv_field $DEFAULT_VOLUME lv_name $lvol1
 ssm -f remove $DEFAULT_VOLUME
 not check lv_field $DEFAULT_VOLUME lv_name $lvol1
 
+# Remove inactive logical volume
+ssm create $TEST_DEVS
+check lv_field $DEFAULT_VOLUME lv_name $lvol1
+lvchange -an $DEFAULT_VOLUME
+ssm -f remove $DEFAULT_VOLUME
+not check lv_field $DEFAULT_VOLUME lv_name $lvol1
+
 # Remove volume group
 ssm create $TEST_DEVS
 check vg_field $SSM_LVM_DEFAULT_POOL vg_name $SSM_LVM_DEFAULT_POOL
