@@ -329,7 +329,7 @@ def get_mountinfo(regex=".*"):
                 continue
             array = line.split(None, 6)
             row = dict([(names[index], array[index])
-                for index in min(range(len(array) - 1), range(len(names)))])
+                for index in min(list(range(len(array) - 1)), list(range(len(names))))])
             array = line.rsplit(None, 3)
             row['fs'] = array[1]
             row['dev'] = array[2]
@@ -513,18 +513,39 @@ def chain(*iterables):
             yield element
 
 
-def izip(*iterables):
-    """
-    Make an iterator that aggregates elements from each of the iterables.
-    Like zip() except that it returns an iterator instead of a list. Used
-    for lock-step iteration over several iterables at a time. This code has
-    been taken from itertools python module.
+if sys.version < '3':
+    def izip(*iterables):
+        """
+        Make an iterator that aggregates elements from each of the iterables.
+        Like zip() except that it returns an iterator instead of a list. Used
+        for lock-step iteration over several iterables at a time. This code has
+        been taken from itertools python module (Python 2).
 
-    izip('ABCD', 'xy') --> Ax By
-    """
-    iterators = map(iter, iterables)
-    while iterators:
-        yield tuple(map(next, iterators))
+        izip('ABCD', 'xy') --> Ax By
+        """
+        iterators = map(iter, iterables)
+        while iterators:
+            yield tuple(map(next, iterators))
+else:
+    def izip(*iterables):
+        """
+        Make an iterator that aggregates elements from each of the iterables.
+        Like zip() except that it returns an iterator instead of a list. Used
+        for lock-step iteration over several iterables at a time. This code has
+        been taken from itertools python module (Python 3).
+
+        izip('ABCD', 'xy') --> Ax By
+        """
+        sentinel = object()
+        iterators = [iter(it) for it in iterables]
+        while iterators:
+            result = []
+            for it in iterators:
+                elem = next(it, sentinel)
+                if elem is sentinel:
+                    return
+                result.append(elem)
+            yield tuple(result)
 
 
 def compress(data, selectors):
@@ -552,8 +573,8 @@ def permutations(iterable, r=None):
     r = n if r is None else r
     if r > n:
         return
-    indices = range(n)
-    cycles = range(n, n - r, -1)
+    indices = list(range(n))
+    cycles = list(range(n, n - r, -1))
     yield tuple(pool[i] for i in indices[:r])
     while n:
         for i in reversed(range(r)):

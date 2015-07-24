@@ -45,6 +45,13 @@ try:
 except KeyError:
     SSM_NONINTERACTIVE = not os.isatty(sys.stdout.fileno())
 
+if sys.version < '3':
+    def __next__(iter):
+        return iter.next()
+else:
+    def __next__(iter):
+        return next(iter)
+
 
 class Options(object):
     """
@@ -625,7 +632,7 @@ class Storage(object):
         # line.
         for i, line in enumerate(lines):
             line = misc.compress(line, columns)
-            tmp1 = line.next()
+            tmp1 = __next__(line)
             if len(tmp1) > alignment[0]:
                 print(tmp1)
                 print(fmt.format('', *line))

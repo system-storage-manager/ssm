@@ -42,12 +42,13 @@ def get_lvm_version():
         output = misc.run(['lvm', 'version'], can_fail=True)[1]
         output = output.strip().split("\n")
         pattern = re.compile("LVM version:")
+        version = [0, 0, 0]
         for line in output:
             if pattern.match(line.strip()):
                 match = " ".join(line.split())
                 tmp = re.search(r'(?<=LVM version: )\d+\.\d+\.\d+',
                                     match).group(0)
-                version = map(int, tmp.split(".", 3))
+                version = list(map(int, tmp.split(".", 3)))
     except (OSError, AttributeError):
         version = [0, 0, 0]
     return version

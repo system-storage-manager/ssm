@@ -49,7 +49,7 @@ MAX_DEVS = 999
 def get_cryptsetup_version():
     try:
         output = misc.run(['cryptsetup', '--version'], can_fail=True)[1]
-        version = map(int, output.strip().split()[-1].split('.', 3))
+        version = list(map(int, output.strip().split()[-1].split('.', 3)))
     except (OSError, AttributeError):
         version = [0, 0, 0]
     return version
