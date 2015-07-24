@@ -155,7 +155,7 @@ class StorageHandleSanityCheck(BaseStorageHandleInit):
             self.assert_(len(source.attrs) >  0)
             self.assert_(isinstance(source.types, list))
             self.assert_(len(source.types) >  0)
-            for item  in source._data.itervalues():
+            for item  in source._data.values():
                 self.assertTrue(item.options.force)
                 self.assertTrue(item.options.verbose)
                 self.assertTrue(item.options.yes)
@@ -196,7 +196,7 @@ class StorageHandleSanityCheck(BaseStorageHandleInit):
             self.assert_(len(source.attrs) > 0)
             self.assert_(isinstance(source.types, list))
             self.assert_(len(source.types) > 0)
-            for item  in source._data.itervalues():
+            for item  in source._data.values():
                 self.assertFalse(item.options.force)
                 self.assertFalse(item.options.verbose)
                 self.assertFalse(item.options.yes)
@@ -218,7 +218,7 @@ class StorageHandleSanityCheck(BaseStorageHandleInit):
             self.assert_("header" in obj)
             self.assert_("attrs" in obj)
             self.assert_("types" in obj)
-            for bknd in source._data.itervalues():
+            for bknd in source._data.values():
                 obj = dir(bknd)
                 self.assert_("__iter__" in obj)
                 self.assert_("__getitem__" in obj)
@@ -231,12 +231,12 @@ class StorageHandleSanityCheck(BaseStorageHandleInit):
                     self.assert_("default_pool_name" in obj)
 
     def test_volumes_specific_methods(self):
-        for bknd in self.vol._data.itervalues():
+        for bknd in self.vol._data.values():
             obj = dir(bknd)
             self.assert_("remove" in obj)
 
     def test_pool_specific_methods(self):
-        for bknd in self.pool._data.itervalues():
+        for bknd in self.pool._data.values():
             obj = dir(bknd)
             self.assert_("reduce" in obj)
             self.assert_("remove" in obj)
@@ -721,11 +721,11 @@ class MyInfo(object):
         return 'verbose' if self.options.verbose else ''
 
     def __iter__(self):
-        for item in sorted(self.data.iterkeys()):
+        for item in sorted(self.data):
             yield item
 
     def __getitem__(self, key):
-        if key in self.data.iterkeys():
+        if key in self.data:
             return self.data[key]
 
 

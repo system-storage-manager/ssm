@@ -41,11 +41,11 @@ class Backend(object):
         return repr(self.data)
 
     def __iter__(self):
-        for item in sorted(self.data.iterkeys()):
+        for item in sorted(self.data):
             yield item
 
     def __getitem__(self, key):
-        if key in self.data.iterkeys():
+        if key in self.data:
             return self.data[key]
 
 

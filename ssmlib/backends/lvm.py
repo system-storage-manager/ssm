@@ -332,7 +332,7 @@ class LvsInfo(LvmInfo, template.BackendVolume):
         self.parse_attr(lv, lv['attr'])
 
     def __getitem__(self, name):
-        if name in self.data.iterkeys():
+        if name in self.data:
             return self.data[name]
         if DM_DEV_DIR + "/" + name in self.data:
             return self.data[DM_DEV_DIR + "/" + name]
@@ -342,7 +342,7 @@ class LvsInfo(LvmInfo, template.BackendVolume):
             if not os.path.exists(device):
                 return None
         device = misc.get_real_device(device)
-        if device in self.data.iterkeys():
+        if device in self.data:
             return self.data[device]
         return None
 

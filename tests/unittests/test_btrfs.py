@@ -57,11 +57,11 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         self.run_data.append(" ".join(cmd))
         output = ""
         if cmd[:3] == ['btrfs', 'filesystem', 'show']:
-            for pool, p_data in self.pool_data.iteritems():
+            for (pool, p_data) in self.pool_data.items():
                 output += "Label: {0} uuid: some_random_uuid\n".format(pool)
                 count = 0
                 d_output = ""
-                for dev, d_data in sorted(self.dev_data.iteritems()):
+                for (dev, d_data) in sorted(self.dev_data.items()):
                     if 'pool_name' not in d_data or \
                        d_data['pool_name'] != pool:
                            continue
@@ -72,11 +72,11 @@ class BtrfsFunctionCheck(MockSystemDataSource):
                 output += d_output
         elif cmd[:3] == ['btrfs', 'subvolume', 'list']:
             mpoint = cmd[-1]
-            for pool, p_data in self.pool_data.iteritems():
+            for (pool, p_data) in self.pool_data.items():
                 if 'mount' not in p_data or p_data['mount'] != mpoint:
                     continue
                 count = 0
-                for vol, v_data in iter(sorted(self.vol_data.iteritems())):
+                for (vol, v_data) in iter(sorted(self.vol_data.items())):
                     if v_data['pool_name'] != pool:
                         continue
                     count += 1

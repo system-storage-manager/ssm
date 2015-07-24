@@ -48,16 +48,16 @@ class LvmFunctionCheck(MockSystemDataSource):
         self.run_data.append(" ".join(cmd))
         output = ""
         if cmd[1] == 'pvs':
-            for dev, data in self.dev_data.iteritems():
+            for (dev, data) in self.dev_data.items():
                 if 'pool_name' in data:
                     output += "{0}|{1}|{2}|{3}\n".format(dev, data['pool_name'],
                             data['dev_free'], data['dev_used'])
         elif cmd[1] == 'vgs':
-            for pool, data in self.pool_data.iteritems():
+            for (pool, data) in self.pool_data.items():
                 output += "{0}|{1}|{2}|{3}|{4}\n".format(pool, data['dev_count'],
                         data['pool_size'], data['pool_free'], data['vol_count'])
         elif cmd[1] == 'lvs':
-            for vol, data in self.vol_data.iteritems():
+            for (vol, data) in self.vol_data.items():
                 output += "{0}|{1}|{2}|{3}|{4}|{5}|{6}|{7}\n".format(data['pool_name'],
                         data['vol_size'], data['stripes'], data['stripesize'],
                         data['type'], data['dev_name'].split("/")[-1],

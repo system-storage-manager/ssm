@@ -326,7 +326,7 @@ class DeviceInfo(object):
             if item[0] in self.data:
                 self.data[item[0]]['mount'] = "SWAP"
 
-        for i, dev in enumerate(self.data.itervalues()):
+        for i, dev in enumerate(self.data.values()):
             if 'minor' in dev and dev['minor'] != '0':
                 continue
             part = 0
@@ -356,12 +356,12 @@ class DeviceInfo(object):
         self.options = options
 
     def __iter__(self):
-        for item in sorted(self.data.iterkeys()):
+        for item in sorted(self.data):
             yield item
 
     def __getitem__(self, name):
         device = misc.get_real_device(name)
-        if device in self.data.iterkeys():
+        if device in self.data:
             return self.data[device]
         return None
 
@@ -454,7 +454,7 @@ class Storage(object):
         self.set_globals(options)
 
     def __iter__(self):
-        for source in self._data.itervalues():
+        for source in self._data.values():
             for item in source:
                 yield Item(source, item)
 
@@ -465,7 +465,7 @@ class Storage(object):
             return False
 
     def __getitem__(self, name):
-        for source in self._data.itervalues():
+        for source in self._data.values():
             item = source[name]
             if item:
                 return Item(source, name)
@@ -484,7 +484,7 @@ class Storage(object):
         if not SSM_PREFIX_FILTER:
             return
         reg = re.compile("^{0}".format(SSM_PREFIX_FILTER))
-        for source in self._data.itervalues():
+        for source in self._data.values():
             for item in source:
                 if reg.search(os.path.basename(item)):
                     continue
@@ -503,7 +503,7 @@ class Storage(object):
         self.options = options
         if self._data is None:
             return
-        for source in self._data.itervalues():
+        for source in self._data.values():
             source.options = options
 
     def filesystems(self):
@@ -709,10 +709,10 @@ class Devices(Storage):
             my_crypt = Struct()
             my_crypt.data = {}
 
-        self._data['dev'] = DeviceInfo(data=dict(my_lvm.data.items() +
-                                                 my_btrfs.data.items() +
-                                                 my_md.data.items() +
-                                                 my_crypt.data.items()),
+        self._data['dev'] = DeviceInfo(data=dict(list(my_lvm.data.items()) +
+                                                 list(my_btrfs.data.items()) +
+                                                 list(my_md.data.items()) +
+                                                 list(my_crypt.data.items())),
                                        options=self.options)
         self.header = ['Device', 'Free', 'Used',
                        'Total', 'Pool', 'Mount point']

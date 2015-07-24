@@ -203,7 +203,7 @@ class Btrfs(template.Backend):
             return
         if self._subvolumes:
             return
-        for name, vol in self._vol.iteritems():
+        for (name, vol) in self._vol.items():
             pool_name = vol['pool_name']
             real_dev = vol['real_dev']
             pool = self._pool[pool_name]
@@ -309,7 +309,7 @@ class Btrfs(template.Backend):
                                   [name, self._vol[name]['mount']]):
                 misc.do_umount(self._vol[name]['real_dev'], all_targets=True)
         devices = []
-        for dev in self._dev.itervalues():
+        for dev in self._dev.values():
             if dev['pool_name'] != name:
                 continue
             devices.append(dev['dev_name'])
@@ -563,7 +563,7 @@ class BtrfsSnap(Btrfs):
         super(BtrfsSnap, self).__init__(*args, **kwargs)
 
         self._fill_subvolumes(list_snapshots=True)
-        for name, vol in self._subvolumes.iteritems():
+        for (name, vol) in self._subvolumes.items():
             if BTRFS_VERSION < 0.20:
                 if 'snap_name' in vol:
                     self._snap[vol['snap_name']] = vol.copy()
