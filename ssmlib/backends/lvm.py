@@ -237,7 +237,7 @@ class VgsInfo(LvmInfo, template.BackendPool):
                     if len(devices) % 2 != 0:
                         self.problem.error("Number of devices should be " +
                                            "even in raid 10 setup")
-                    options['stripes'] = str(len(devices)/2)
+                    options['stripes'] = str(len(devices)//2)
                 if not options['stripes']:
                     self.problem.error("Devices or number of " +
                                        "stripes should be defined")

@@ -216,7 +216,7 @@ def get_file_size(path):
     file and returning offset. The returning size is in kilobytes.
     """
     with open(path, 'r') as f:
-        return os.lseek(f.fileno(), os.SEEK_SET, os.SEEK_END) / 1024
+        return os.lseek(f.fileno(), os.SEEK_SET, os.SEEK_END) // 1024
 
 
 def check_binary(name):
@@ -311,7 +311,7 @@ def get_partitions():
     for line in output[1].splitlines():
         new_line = re.split('\s+|:',line.strip())
         if len(new_line) == 4:
-            new_line[2] = int(new_line[2])/1024
+            new_line[2] = int(new_line[2])//1024
             partitions.append(new_line)
         else:
             pass
@@ -623,5 +623,5 @@ def get_device_size(device):
     major, minor = divmod(info.st_rdev, 256)
     with open("/sys/dev/block/{0}:{1}/size".format(major, minor), 'r') as f:
         for line in f:
-            size = int(line)/2
+            size = int(line)//2
             return size

@@ -242,7 +242,7 @@ class MockSystemDataSource(unittest.TestCase):
             self.mount_data[devices[0]] = {'dev': devices[0], 'mp': mount,
                                            'root': "/"}
 
-        space_per_dev = vol_size / stripes
+        space_per_dev = vol_size // stripes
 
         size = vol_size
         for dev in devices:

@@ -186,9 +186,9 @@ class FsInfo(object):
         bcount = int(self.fs_info['Block count'])
         rbcount = int(self.fs_info['Reserved block count'])
         fbcount = int(self.fs_info['Free blocks'])
-        self.data['fs_size'] = bcount * bsize / 1024
-        self.data['fs_free'] = (fbcount - rbcount) * bsize / 1024
-        self.data['fs_used'] = (bcount - fbcount) * bsize / 1024
+        self.data['fs_size'] = bcount * bsize // 1024
+        self.data['fs_free'] = (fbcount - rbcount) * bsize // 1024
+        self.data['fs_used'] = (bcount - fbcount) * bsize // 1024
 
     def extN_fsck(self):
         command = ['fsck.{0}'.format(self.fstype), '-f', '-n']
@@ -248,9 +248,9 @@ class FsInfo(object):
         agcount = int(self.fs_info['agcount'])
         fbcount = int(self.fs_info['fdblocks'])
         fbcount -= 4 + (4 + agcount)
-        self.data['fs_size'] = bcount * bsize / 1024
-        self.data['fs_free'] = fbcount * bsize / 1024
-        self.data['fs_used'] = (bcount - fbcount) * bsize / 1024
+        self.data['fs_size'] = bcount * bsize // 1024
+        self.data['fs_free'] = fbcount * bsize // 1024
+        self.data['fs_used'] = (bcount - fbcount) * bsize // 1024
 
     def xfs_fsck(self):
         command = ['xfs_repair', '-n']
