@@ -220,14 +220,14 @@ class FsInfo(object):
         # offline.
         if self.mounted and (self.fstype == "ext2" or
            new_size < self.data['fs_size']):
-            raise Exception(
-                "{0} is mounted on {1}".format(self.device, self.mounted) +
+            raise problem.FsMounted(
+                "{0} is mounted on {1}.".format(self.device, self.mounted) +
                 " In this case, mounted file system can not be resized.")
         ret = self.fsck()
         if ret:
-            raise Exception("File system on {0} is not ".format(self.device) +
-                            "clean, I will not attempt to resize it. Please," +
-                            "fix the problem first.")
+            raise PR.error("File system on {0} is not ".format(self.device) +
+                           "clean, I will not attempt to resize it. Please," +
+                           "fix the problem first")
         return misc.run(command, stdout=True)[0]
 
     def xfs_get_info(self, dev):
@@ -272,10 +272,10 @@ class FsInfo(object):
         if new_size:
             command.insert(1, ['-D', new_size + 'K'])
         if not self.mounted:
-            raise Exception("Xfs file system on {0}".format(self.device) +
-                            " has to be mounted to perform an resize.")
+            raise PR.error("Xfs file system on {0}".format(self.device) +
+                           " has to be mounted to perform an resize")
         elif new_size and new_size < self.data['fs_size']:
-            raise Exception("Xfs file system can not shrink.")
+            raise PR.error("Xfs file system can not shrink")
         else:
             misc.run(command, stdout=True)
 
@@ -350,7 +350,7 @@ class DeviceInfo(object):
     def remove(self, device):
         PR.error("It is not clear what do you want " +
                  "to achieve by removing " +
-                 "{0}!".format(device))
+                 "{0}".format(device))
 
     def set_globals(self, options):
         self.options = options
@@ -962,7 +962,7 @@ class StorageHandle(object):
                         args.device.append(dev)
                         changed = True
                     elif new_size is None:
-                        PR.error("Device \'{0}\' can not be used!".format(dev))
+                        PR.error("Device \'{0}\' can not be used".format(dev))
                     else:
                         devices.remove(dev)
                         continue
@@ -974,7 +974,7 @@ class StorageHandle(object):
                 # would be different than what user expected, so we should fail
                 # right away.
                 elif new_size is None:
-                    PR.error("Device \'{0}\' can not be used!".format(dev))
+                    PR.error("Device \'{0}\' can not be used".format(dev))
                 else:
                     devices.remove(dev)
                     continue
@@ -1299,7 +1299,7 @@ class StorageHandle(object):
                     PR.info("Unable to remove '{0}'".format(pool['pool_name']))
                     ret = False
             if removed == 0:
-                PR.error("Nothing was removed!")
+                PR.error("Nothing was removed")
             return ret
         if len(args.items) == 0:
             err = "too few arguments"
