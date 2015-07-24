@@ -1026,7 +1026,7 @@ class StorageHandle(object):
         args.pool = self.pool[args.volume['pool_name']]
         vol_size = float(args.volume['vol_size'])
 
-        if args.pool.type == 'btrfs':
+        if args.pool != None and args.pool.type == 'btrfs':
             msg = "Resizing btrfs volume is not supported"
             raise problem.NotSupported(msg)
 
