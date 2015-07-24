@@ -51,44 +51,44 @@ def run_bash_tests():
         if not re.match("^\d\d\d-.*\.sh$", script):
             continue
         count += 1
-        print "{0:<29}".format(script),
+        sys.stdout.write("{0:<29}".format(script) + " ")
         sys.stdout.flush()
         bad_file = re.sub("\.sh$",".bad", script)
         if os.access(bad_file, os.R_OK):
             os.remove(bad_file)
         ret, out = misc.run(['./' + script], stdout=False, can_fail=True)
         if ret:
-            print "\033[91m[FAILED]\033[0m"
+            print("\033[91m[FAILED]\033[0m")
             failed.append(script)
             with open(bad_file, 'w') as f:
                 f.write(out)
         elif re.search("Traceback", out):
             # There should be no tracebacks in the output
             out += "\nWARNING: Traceback in the output!\n"
-            print "\033[93m[WARNING]\033[0m"
+            print("\033[93m[WARNING]\033[0m")
             with open(bad_file, 'w') as f:
                 f.write(out)
         else:
-            print "\033[92m[PASSED]\033[0m"
+            print("\033[92m[PASSED]\033[0m")
             passed.append(script)
     t1 = time.time() - t0
-    print "Ran {0} tests in {1} seconds.".format(count, round(t1, 2))
-    print "{0} tests PASSED: {1}".format(len(passed), ", ".join(passed))
+    print("Ran {0} tests in {1} seconds.".format(count, round(t1, 2)))
+    print("{0} tests PASSED: {1}".format(len(passed), ", ".join(passed)))
     ret = 0
     if len(failed) > 0:
-        print "{0} tests FAILED: {1}".format(len(failed), ", ".join(failed))
-        print "See files with \"bad\" extension for output"
+        print("{0} tests FAILED: {1}".format(len(failed), ", ".join(failed)))
+        print("See files with \"bad\" extension for output")
         ret = 1
     # Show coverage report output if possible
     if misc.check_binary('coverage'):
-        print "[+] Coverage"
+        print("[+] Coverage")
         misc.run(['coverage', 'report'], stdout=True, can_fail=True)
     os.chdir(cur)
     return ret
 
 
 def quick_test():
-    print "[+] Running doctests"
+    print("[+] Running doctests")
     doctest_flags = doctest.IGNORE_EXCEPTION_DETAIL | doctest.ELLIPSIS | \
                     doctest.REPORT_ONLY_FIRST_FAILURE
     result = doctest.testmod(main, exclude_empty=True, report=True,
@@ -101,7 +101,7 @@ def quick_test():
             raise_on_error=False, optionflags=doctest_flags)
     result = doctest.testmod(misc, exclude_empty=True, report=True,
             raise_on_error=False, optionflags=doctest_flags)
-    print "[+] Running unittests"
+    print("[+] Running unittests")
     test_loader = unittest.TestLoader()
     tests_lvm = test_loader.loadTestsFromModule(test_lvm)
     tests_btrfs = test_loader.loadTestsFromModule(test_btrfs)
@@ -114,8 +114,8 @@ def quick_test():
 if __name__ == '__main__':
     quick_test()
     if not os.geteuid() == 0:
-        print "\nRoot privileges required to run more tests!\n"
+        print("\nRoot privileges required to run more tests!\n")
         sys.exit(0)
-    print "[+] Running bash tests"
+    print("[+] Running bash tests")
     result = run_bash_tests()
     sys.exit(result)

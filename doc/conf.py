@@ -11,7 +11,20 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import sys
+import os
+
+# Create u() method to handle the unicode difference in Python 2 & 3
+# Python 3 no longer supports u' syntax as every string in Python 3
+# is already unicode.
+if sys.version < '3':
+    import codecs
+
+    def u(x):
+        return codecs.unicode_escape_decode(x)[0]
+else:
+    def u(x):
+        return x
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -40,8 +53,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'System Storage Manager'
-copyright = u'2012, Red Hat, Inc., Lukáš Czerner <lczerner@redhat.com>'
+project = u('System Storage Manager')
+copyright = u('2015, Red Hat, Inc., Lukáš Czerner <lczerner@redhat.com>')
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -178,8 +191,8 @@ htmlhelp_basename = 'SystemStorageManagerdoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'SystemStorageManager.tex', u'System Storage Manager Documentation',
-   u'Lukáš Czerner', 'manual'),
+  ('index', 'SystemStorageManager.tex', u('System Storage Manager Documentation'),
+   u('Lukáš Czerner'), 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -212,6 +225,6 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('manpage', 'ssm',
-     u'System Storage Manager: a single tool to manage your storage',
-     [u'Lukáš Czerner <lczerner@redhat.com>'], 8)
+     u('System Storage Manager: a single tool to manage your storage'),
+     [u('Lukáš Czerner <lczerner@redhat.com>')], 8)
 ]

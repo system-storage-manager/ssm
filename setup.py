@@ -8,8 +8,8 @@ DOC_BUILD='doc/_build/'
 NAME="system-storage-manager"
 
 if sys.version < '2.6':
-    print "Python version 2.6 or higher is required " + \
-         "for System Storage Manager to run correctly!"
+    print("Python version 2.6 or higher is required " +
+          "for System Storage Manager to run correctly!")
     sys.exit(1)
 
 setup(

@@ -617,9 +617,9 @@ class Storage(object):
                     fmt += "{{{0}:{1}}}  ".format(pos, alignment[i])
             pos += 1
 
-        print "-" * width
-        print fmt.format(*tuple(header))
-        print "-" * width
+        print("-" * width)
+        print(fmt.format(*tuple(header)))
+        print("-" * width)
         # Now print each line of the table. When the first attribute of the
         # line is longer than it should be we know that we have to wrap the
         # line.
@@ -627,11 +627,11 @@ class Storage(object):
             line = misc.compress(line, columns)
             tmp1 = line.next()
             if len(tmp1) > alignment[0]:
-                print tmp1
-                print fmt.format('', *line)
+                print(tmp1)
+                print(fmt.format('', *line))
             else:
-                print fmt.format(tmp1, *line)
-        print "-" * width
+                print(fmt.format(tmp1, *line))
+        print("-" * width)
 
 
 class Pool(Storage):
@@ -907,7 +907,7 @@ class StorageHandle(object):
             # Does backend support check ?
             try:
                 if getattr(dev, "check"):
-                    print "Checking volume \'{0}\'.".format(dev['real_dev'])
+                    print("Checking volume \'{0}\'.".format(dev['real_dev']))
                     ret = dev.check()
                     checked += 1
                     err += ret
@@ -919,8 +919,8 @@ class StorageHandle(object):
             # Do we have a file system to check ?
             if 'fs_info' in dev:
                 fs = dev['fs_info']
-                print "Checking {0} file system on \'{1}\'.".format(fs.fstype,
-                                                                    fs.device)
+                print("Checking {0} file system on \'{1}\'.".format(fs.fstype,
+                                                                    fs.device))
                 ret = fs.fsck()
                 checked += 1
                 err += ret

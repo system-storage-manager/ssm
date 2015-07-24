@@ -23,10 +23,18 @@ import tempfile
 import threading
 import subprocess
 from ssmlib import problem
+from base64 import encode
 
 # List of temporary mount points which should be cleaned up
 # before exiting
 TMP_MOUNTED = []
+
+if sys.version < '3':
+    def __str__(x):
+        return str(x)
+else:
+    def __str__(x):
+        return str(x, encoding='utf-8', errors='strict')
 
 
 def get_unit_size(string):
@@ -470,22 +478,25 @@ def run(cmd, show_cmd=False, stdout=False, stderr=True, can_fail=False,
     err_msg = "ERROR running command: \"{0}\"".format(" ".join(cmd))
     if proc.returncode != 0 and show_cmd:
         if output is not None:
-            print output
+            print(output)
         if error is not None:
-            print error
-        print >> sys.stderr, err_msg
+            print(error)
+        sys.stderr.write(err_msg + '\n')
 
     if proc.returncode != 0 and not can_fail:
         if output is not None:
-            print output
+            print(output)
         if error is not None:
-            print error
+            print(error)
         raise problem.CommandFailed(err_msg)
 
     if not return_stdout:
         output = None
 
-    return (proc.returncode, output)
+    if output is not None:
+        return (proc.returncode, __str__(output))
+    else:
+        return (proc.returncode, output)
 
 
 def chain(*iterables):

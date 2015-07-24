@@ -50,5 +50,5 @@ except problem.SsmError, err:
     if SSM_PRINT_BACKTRACE is True:
         traceback.print_exc(file=sys.stdout)
     else:
-        print str(err)
+        print(str(err))
     sys.exit(err.errcode)

@@ -256,9 +256,10 @@ class ProblemSet(object):
 
     def _ask_question(self, flags):
         if flags & FL_DEFAULT_NO:
-            print "(N/y/q) ?",
+            sys.stdout.write("(N/y/q) ? ")
         else:
-            print "(Y/n/q) ?",
+            sys.stdout.write("(Y/n/q) ? ")
+        sys.stdout.flush()
         ch = ''
         if self.options.force and flags & FL_FORCE_NO:
             ch = 'N'
@@ -276,7 +277,7 @@ class ProblemSet(object):
                 ch = 'N'
             else:
                 ch = 'Y'
-        print ch
+        print(ch)
 
         if ch == 'Y':
             return True
@@ -301,9 +302,10 @@ class ProblemSet(object):
 
         if self._can_print_message(flags) and \
            (flags & FL_MSG_ONLY or prompt_msg is None):
-            print >> sys.stderr, message
+            sys.stderr.write(message + "\n")
         if not flags & FL_MSG_ONLY and prompt_msg is not None:
-            print message, '{0}'.format(prompt_msg),
+            sys.stdout.write(message + " ")
+            sys.stdout.write('{0}'.format(prompt_msg) + " ")
             res = self._ask_question(flags)
 
         if (flags & FL_FATAL):
