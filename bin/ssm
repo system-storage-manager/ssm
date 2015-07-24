@@ -46,7 +46,7 @@ try:
             if not os.geteuid() == 0:
                 sys.exit("\nRoot privileges required to run this script!\n")
         sys.exit(main.main())
-except problem.SsmError, err:
+except problem.SsmError as err:
     if SSM_PRINT_BACKTRACE is True:
         traceback.print_exc(file=sys.stdout)
     else:

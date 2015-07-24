@@ -645,17 +645,17 @@ class Pool(Storage):
 
         try:
             self._data['lvm'] = lvm.VgsInfo(options=self.options)
-        except RuntimeError, err:
+        except RuntimeError as err:
             PR.warn(err)
             PR.warn("Can not get information about LVM pools")
         try:
             self._data['btrfs'] = btrfs.BtrfsPool(options=self.options)
-        except RuntimeError, err:
+        except RuntimeError as err:
             PR.warn(err)
             PR.warn("Can not get information about btrfs pools")
         try:
             self._data['crypt'] = crypt.DmCryptPool(options=self.options)
-        except RuntimeError, err:
+        except RuntimeError as err:
             PR.warn(err)
             PR.warn("Can not get information about crypt pools")
 
@@ -684,26 +684,26 @@ class Devices(Storage):
 
         try:
             my_lvm = lvm.PvsInfo(options=self.options)
-        except RuntimeError, err:
+        except RuntimeError as err:
             PR.warn(err)
             PR.warn("Can not get information about LVM physical volumes")
         try:
             my_btrfs = btrfs.BtrfsDev(options=self.options)
-        except RuntimeError, err:
+        except RuntimeError as err:
             PR.warn(err)
             PR.warn("Can not get information about btrfs devices")
             my_btrfs = Struct()
             my_btrfs.data = {}
         try:
             my_md = md.MdRaidDevice(options=self.options)
-        except RuntimeError, err:
+        except RuntimeError as err:
             PR.warn(err)
             PR.warn("Can not get information about MD devices")
             my_md = Struct()
             my_md.data = {}
         try:
             my_crypt = crypt.DmCryptDevice(options=self.options)
-        except RuntimeError, err:
+        except RuntimeError as err:
             PR.warn(err)
             PR.warn("Can not get information about crypt devices")
             my_crypt = Struct()
@@ -733,22 +733,22 @@ class Volumes(Storage):
 
         try:
             self._data['lvm'] = lvm.LvsInfo(options=self.options)
-        except RuntimeError, err:
+        except RuntimeError as err:
             PR.warn(err)
             PR.warn("Can not get information about LVM volumes")
         try:
             self._data['crypt'] = crypt.DmCryptVolume(options=self.options)
-        except RuntimeError, err:
+        except RuntimeError as err:
             PR.warn(err)
             PR.warn("Can not get information about crypt volumes")
         try:
             self._data['btrfs'] = btrfs.BtrfsVolume(options=self.options)
-        except RuntimeError, err:
+        except RuntimeError as err:
             PR.warn(err)
             PR.warn("Can not get information about btrfs volumes")
         try:
             self._data['md'] = md.MdRaidVolume(options=self.options)
-        except RuntimeError, err:
+        except RuntimeError as err:
             PR.warn(err)
             PR.warn("Can not get information about md raid volumes")
 
@@ -772,12 +772,12 @@ class Snapshots(Storage):
 
         try:
             self._data['lvm'] = lvm.SnapInfo(options=self.options)
-        except RuntimeError, err:
+        except RuntimeError as err:
             PR.warn(err)
             PR.warn("Can not get information about LVM snapshots")
         try:
             self._data['btrfs'] = btrfs.BtrfsSnap(options=self.options)
-        except RuntimeError, err:
+        except RuntimeError as err:
             PR.warn(err)
             PR.warn("Can not get information about btrfs snapshots")
 
@@ -1315,7 +1315,7 @@ class StorageHandle(object):
 
                 item.remove()
                 removed += 1
-            except (RuntimeError, problem.SsmError), ex:
+            except (RuntimeError, problem.SsmError) as ex:
                 PR.info("Unable to remove '{0}'".format(item.name))
                 ret = False
         if removed == 0:
@@ -1584,7 +1584,8 @@ class SsmParser(object):
     def __init__(self, storage, prog=None):
         self.storage = storage
         self.parser = self._get_parser_global(prog)
-        self.subcommands = self.parser.add_subparsers(title="Commands")
+        self.subcommands = self.parser.add_subparsers(title="Commands", dest="too few arguments")
+        self.subcommands.required = True
         self.parser_check = self._get_parser_check()
         self.parser_resize = self._get_parser_resize()
         self.parser_create = self._get_parser_create()
@@ -1862,7 +1863,7 @@ def main(args=None):
 
     try:
         args.func(args)
-    except argparse.ArgumentTypeError, ex:
+    except argparse.ArgumentTypeError as ex:
         ssm_parser.parser.error(ex)
 
     return 0
