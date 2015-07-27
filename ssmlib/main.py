@@ -19,6 +19,7 @@ import re
 import os
 import sys
 import stat
+import atexit
 import argparse
 from ssmlib import misc
 from ssmlib import problem
@@ -1865,7 +1866,7 @@ def main(args=None):
     storage.set_globals(options)
 
     # Register clean-up function on exit
-    sys.exitfunc = misc.do_cleanup
+    atexit.register(misc.do_cleanup)
 
     if args.dry_run:
         return 0
