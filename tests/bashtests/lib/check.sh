@@ -418,7 +418,7 @@ mountpoint()
 		echo usage: mountpoint dev mountpoint
 		exit 1
 	fi
-	if ! grep "$1.*$2" /proc/mounts ; then
+	if ! grep "$1[[:space:]]$2" /proc/mounts ; then
 		echo error creating volume $1 with mountpoint at $2
 		exit 1
 	fi

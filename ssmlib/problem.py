@@ -32,6 +32,7 @@ PROMPT_REMOVE =         4
 PROMPT_ADJUST =         5
 PROMPT_USE =            6
 PROMPT_CONTINUE =       7
+PROMPT_CREATE =         8
 
 PROMPT_MSG = [
         None,
@@ -42,6 +43,7 @@ PROMPT_MSG = [
         'Adjust',
         'Use anyway',
         'Continue',
+        'Create',
         ]
 
 # Define problem flags
@@ -231,6 +233,10 @@ class ProblemSet(object):
         self.NOT_IMPLEMENTED = \
             ['\'{0}\' function is not implemented by {1}!',
             PROMPT_NONE, FL_FATAL, NotImplemented]
+
+        self.CREATE_DIRECTORY = \
+            ['Directory \'{0}\' does not exist!',
+             PROMPT_CREATE, FL_FORCE_YES, None]
 
     def _can_print_message(self, flags):
         if (flags & FL_DEBUG_ONLY):

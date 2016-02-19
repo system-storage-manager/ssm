@@ -23,13 +23,47 @@ export test_description='Various simple test cases'
 export COLUMNS=1024
 DEV_COUNT=10
 aux prepare_devs $DEV_COUNT 10
+aux prepare_mnts 2
 TEST_DEVS=$(cat DEVICES)
 export SSM_DEFAULT_BACKEND='lvm'
 export SSM_LVM_DEFAULT_POOL=$vg1
+export LVOL_PREFIX="lvol"
 export SSM_NONINTERACTIVE='1'
+lvol1=${LVOL_PREFIX}001
+lvol2=${LVOL_PREFIX}002
 
 # e5057e5be14226fd65f8f43bbc08f989b3bf2c58 Fix traceback when calling 'ssm list' with empty dm tables
 ssm list
 dmsetup create $vg2 --notable
 ssm list
 dmsetup remove $vg2
+
+# test ssm create with mount command
+ssm create --fs ext3 $dev1 $mnt1
+check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol1 $mnt1
+ssm -f create --fs ext3 $dev2 $mnt2
+check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol2 $mnt2
+umount $mnt1 $mnt2
+ssm  -f remove --all
+
+# test ssm create with mount command with non existent directory
+ssm create --fs ext3 $dev1 ${mnt1}a
+check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol1 ${mnt1}a
+ssm -f create --fs ext3 $dev2 ${mnt2}b
+check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol2 ${mnt2}b
+umount ${mnt1}a ${mnt2}b
+
+# test ssm mount
+ssm mount $SSM_LVM_DEFAULT_POOL/$lvol1 $mnt1
+check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol1 $mnt1
+ssm -f mount $SSM_LVM_DEFAULT_POOL/$lvol2 $mnt2
+check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol2 $mnt2
+umount $mnt1 $mnt2
+
+ssm mount $SSM_LVM_DEFAULT_POOL/$lvol1 ${mnt1}a
+check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol1 ${mnt1}a
+ssm -f mount $SSM_LVM_DEFAULT_POOL/$lvol2 ${mnt2}b
+check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol2 ${mnt2}b
+umount ${mnt1}a ${mnt2}b
+
+ssm  -f remove --all

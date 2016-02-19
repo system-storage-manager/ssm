@@ -1117,6 +1117,7 @@ class StorageHandle(object):
             if self._create_fs(args.fstype, lvname) != 0:
                 self._mpoint = None
         if self._mpoint:
+            create_directory(self._mpoint)
             self.reinit_vol()
             self._do_mount(self.vol[lvname])
 
@@ -1360,6 +1361,7 @@ class StorageHandle(object):
         """
         Mount a volume at given directory.
         """
+        create_directory(args.directory)
         vol = self.vol[args.volume]
         try:
             if vol:
@@ -1424,8 +1426,8 @@ class StorageHandle(object):
             try:
                 mode = os.stat(path).st_mode
             except OSError:
-                err = "'{0}' does not exist.".format(path)
-                raise argparse.ArgumentTypeError(err)
+                self._mpoint = path
+                return
             if stat.S_ISDIR(mode):
                 self._mpoint = path
                 return
@@ -1563,19 +1565,34 @@ def valid_resize_size(size):
 
 
 def is_directory(string):
+    """
+    Check whether the directory exists, or could be created.
+    """
     if string is None:
         err = "Directory name not defined."
         raise argparse.ArgumentTypeError(err)
     try:
-        mode = os.stat(string).st_mode
+        mode = os.lstat(string).st_mode
     except OSError:
-        err = "'{0}' does not exist.".format(string)
-        raise argparse.ArgumentTypeError(err)
+        return string
     if stat.S_ISDIR(mode):
         return string
     else:
         err = "'{0}' is not directory.".format(string)
         raise argparse.ArgumentTypeError(err)
+
+
+def create_directory(string):
+    # Create directory if it does not exist, the rest of the check
+    # is already done in is_directory
+    if os.path.isdir(string):
+        return
+    if not PR.check(PR.CREATE_DIRECTORY, string):
+        PR.error("Directory '{0}' does not exist".format(string))
+    try:
+        os.mkdir(string)
+    except OSError:
+        PR.error("Directory '{0}' can\'t be created".format(string))
 
 
 def is_supported_fs(fs):
