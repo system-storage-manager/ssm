@@ -38,7 +38,7 @@ dmsetup create $vg2 --notable
 ssm list
 dmsetup remove $vg2
 
-# test ssm create with mount command
+# test ssm create with mount
 ssm create --fs ext3 $dev1 $mnt1
 check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol1 $mnt1
 ssm -f create --fs ext3 $dev2 $mnt2
@@ -46,24 +46,33 @@ check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol2 $mnt2
 umount $mnt1 $mnt2
 ssm  -f remove --all
 
-# test ssm create with mount command with non existent directory
+# test ssm create with mount and non existent directory
 ssm create --fs ext3 $dev1 ${mnt1}a
 check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol1 ${mnt1}a
 ssm -f create --fs ext3 $dev2 ${mnt2}b
 check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol2 ${mnt2}b
 umount ${mnt1}a ${mnt2}b
 
-# test ssm mount
+# test ssm mount command
 ssm mount $SSM_LVM_DEFAULT_POOL/$lvol1 $mnt1
 check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol1 $mnt1
 ssm -f mount $SSM_LVM_DEFAULT_POOL/$lvol2 $mnt2
 check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol2 $mnt2
 umount $mnt1 $mnt2
 
-ssm mount $SSM_LVM_DEFAULT_POOL/$lvol1 ${mnt1}a
-check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol1 ${mnt1}a
-ssm -f mount $SSM_LVM_DEFAULT_POOL/$lvol2 ${mnt2}b
-check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol2 ${mnt2}b
-umount ${mnt1}a ${mnt2}b
+# test ssm mount command with non existent directory
+ssm mount $SSM_LVM_DEFAULT_POOL/$lvol1 ${mnt1}c
+check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol1 ${mnt1}c
+ssm -f mount $SSM_LVM_DEFAULT_POOL/$lvol2 ${mnt2}d
+check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol2 ${mnt2}d
+umount ${mnt1}c ${mnt2}d
+
+# test ssm mount command with options
+ssm mount -o ro,data=journal $SSM_LVM_DEFAULT_POOL/$lvol1 ${mnt1}
+check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol1 ${mnt1} "ro,data=journal"
+umount ${mnt1}
+ssm mount -o ro,data=journal $SSM_LVM_DEFAULT_POOL/$lvol2 ${mnt2}e
+check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol2 ${mnt2}e "ro,data=journal"
+umount ${mnt2}e
 
 ssm  -f remove --all

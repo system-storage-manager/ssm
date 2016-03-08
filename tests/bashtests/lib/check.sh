@@ -422,6 +422,18 @@ mountpoint()
 		echo error creating volume $1 with mountpoint at $2
 		exit 1
 	fi
+	if [ ! $# -gt 2 ] ; then
+		exit 0
+	fi
+	line=$(grep "$1[[:space:]]$2" /proc/mounts)
+	IFS=','
+	for option in $3; do
+		if ! echo $line | grep "$1[[:space:]]$2.*$option" ; then
+			echo "error mounting with mount options $3 \($1 at $2\)"
+			exit 1
+		fi
+		echo "Option $option found!"
+	done
 	exit 0
 }
 

@@ -1100,6 +1100,9 @@ class StorageHandle(object):
         provided as arguments. If the device is not in the selected pool, then
         add() is called on the pool prior to create().
         """
+        if args.mnt_options and not self._mpoint:
+            PR.warn("Mount options are set, but no mount point was " +
+                    "provided. Device will not be mounted")
 
         lvname = self.create_volume(args)
 
@@ -1119,7 +1122,7 @@ class StorageHandle(object):
         if self._mpoint:
             create_directory(self._mpoint)
             self.reinit_vol()
-            self._do_mount(self.vol[lvname])
+            self._do_mount(self.vol[lvname], args.mnt_options)
 
     def create_volume(self, args):
         # Get the size in kilobytes
@@ -1750,6 +1753,10 @@ class SsmParser(object):
                 choices=crypt.SUPPORTED_CRYPT, const=True,
                 help='''Create encrpted volume. Extension to use can be
                      specified.''')
+        parser_create.add_argument('-o', '--mnt-options',
+                help='''Mount options are specified with a -o flag followed
+                     by a comma separated string of options. This option is
+                     equivalent to the -o mount(8) option.''')
         parser_create.add_argument('device', nargs='*',
                 help='''Devices to use for creating the volume. If the device
                      is not in any pool, it is added into the pool prior the
