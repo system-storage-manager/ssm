@@ -103,6 +103,56 @@ class Struct(object):
     def __init__(self):
         pass
 
+def calculate_resize_size(arg_size, volume, pool):
+    vol_size = float(volume['vol_size'])
+
+    # If no size specified we're going to resize to the full
+    # volume size
+    if not arg_size:
+        return vol_size
+
+    # Size argument specified in kilobytes, so simply calculate the size
+    # and return
+    if arg_size[1] == 'K':
+        base_size = float(arg_size[0])
+        if arg_size[0][0] in ['+', '-']:
+            new_size = vol_size + base_size
+        else:
+            new_size = base_size
+        return new_size
+
+    if not pool and arg_size[1] in ['']:
+        # There is no pooling support, but we're not going to need any
+        # pool related information. Everything is volume centric in this
+        # case
+        pool_free = 0
+        pool_used = 0
+    elif not pool and arg_size[1] not in ['']:
+        # FREE and USED is based on pool and since we do not have pooling
+        # support for this volume, we can't proceed
+        raise PR.error("There is no pooling support for volume " +
+                       "\'{0}\'. Size needs to be ".format(volume['dev_name']) +
+                       "specified as a real size, or plain percentage")
+    else:
+        pool_free = float(pool['pool_free'])
+        pool_used = float(pool['pool_used'])
+
+    if arg_size[1] == 'FREE':
+        base_size = pool_free
+    elif arg_size[1] == 'USED':
+        base_size = pool_used
+    elif arg_size[1] == '':
+        base_size = vol_size
+
+    mult = float(arg_size[0]) / 100.00
+    base_size *= mult
+    if arg_size[0][0] in ['+', '-']:
+        new_size = vol_size + base_size
+    else:
+        new_size = base_size
+
+    return new_size
+
 
 class StoreAll(argparse._StoreAction):
     """
@@ -1038,14 +1088,17 @@ class StorageHandle(object):
             msg = "Resizing btrfs volume is not supported"
             raise problem.NotSupported(msg)
 
-        if not args.size:
-            new_size = vol_size
-        elif args.size[0] == '+':
-            new_size = vol_size + float(args.size[1:])
-        elif args.size[0] == '-':
-            new_size = vol_size + float(args.size)
+        # Backend might not support pooling
+        if args.pool is None:
+            pool_free = 0.0
+            pool_name = "none"
         else:
-            new_size = float(args.size)
+            pool_free = float(args.pool['pool_free'])
+            pool_name = args.pool.name
+
+        # Calculate the size from the size argument
+        new_size = calculate_resize_size(args.size, args.volume, args.pool)
+
         size_change = new_size - vol_size
 
         fs = True if 'fs_info' in args.volume else False
@@ -1063,14 +1116,6 @@ class StorageHandle(object):
             else:
                 PR.check(PR.RESIZE_ALREADY_MATCH, [args.volume.name, new_size])
             return
-
-        # Backend might not support pooling
-        if args.pool is None:
-            pool_free = 0.0
-            pool_name = "none"
-        else:
-            pool_free = float(args.pool['pool_free'])
-            pool_name = args.pool.name
 
         # No need to do anything with provided devices since
         # we do have enough space to cover the resize
@@ -1526,9 +1571,13 @@ def valid_size(size):
         if float(ret) < 0:
             raise argparse.ArgumentTypeError(err)
     except:
-        raise argparse.ArgumentTypeError(err)
+        try:
+            ret =  misc.get_perc_size_argument(size)
+            if float(ret[0]) < 0:
+                raise argparse.ArgumentTypeError(err)
+        except:
+            raise argparse.ArgumentTypeError(err)
     return ret
-
 
 def valid_resize_size(size):
     """
@@ -1538,33 +1587,48 @@ def valid_resize_size(size):
     kilobytes. Is no unit is specified, default is kilobytes.
 
     >>> valid_resize_size("3.14")
-    '3.14'
+    ('3.14', 'K')
     >>> valid_resize_size("+3.14")
-    '+3.14'
+    ('+3.14', 'K')
     >>> valid_resize_size("-3.14")
-    '-3.14'
+    ('-3.14', 'K')
     >>> valid_resize_size("3.14k")
-    '3.14'
+    ('3.14', 'K')
     >>> valid_resize_size("+3.14K")
-    '+3.14'
+    ('+3.14', 'K')
     >>> valid_resize_size("-3.14k")
-    '-3.14'
+    ('-3.14', 'K')
     >>> valid_resize_size("3.14G")
-    '3292528.64'
+    ('3292528.64', 'K')
     >>> valid_resize_size("+3.14g")
-    '+3292528.64'
+    ('+3292528.64', 'K')
     >>> valid_resize_size("-3.14G")
-    '-3292528.64'
+    ('-3292528.64', 'K')
+    >>> valid_resize_size("55%FREE")
+    ('55', 'FREE')
+    >>> valid_resize_size("-55%USED")
+    ('-55', 'USED')
+    >>> valid_resize_size("+55%USED")
+    ('+55', 'USED')
+    >>> valid_resize_size("55%")
+    ('55', '')
+    >>> valid_resize_size("-55%")
+    ('-55', '')
+    >>> valid_resize_size("+55%")
+    ('+55', '')
     >>> valid_resize_size("G")
     Traceback (most recent call last):
     ...
     ArgumentTypeError: 'G' is not valid number for the resize.
     """
     try:
-        return misc.get_real_size(size)
+        return (misc.get_real_size(size), 'K')
     except Exception:
-        err = "'{0}' is not valid number for the resize.".format(size)
-        raise argparse.ArgumentTypeError(err)
+        try:
+            return misc.get_perc_size_argument(size)
+        except Exception:
+            err = "'{0}' is not valid number for the resize.".format(size)
+            raise argparse.ArgumentTypeError(err)
 
 
 def is_directory(string):
@@ -1690,7 +1754,11 @@ class SsmParser(object):
                      new volume size. A size suffix of [k|K] for kilobytes,
                      [m|M] for megabytes, [g|G] for gigabytes, [t|T] for
                      terabytes or [p|P] for petabytes is optional. If no unit
-                     is provided the default is kilobytes.''',
+                     is provided the default is kilobytes. Additionally the
+                     new size can be specified as a percentage of the original
+                     volume size [+][-]50%% as a percentage of free pool space
+                     [+][-]50%%FREE, or as a percentage of used pool space
+                     [+][-]50%%USED.''',
                 type=valid_resize_size)
         parser_resize.add_argument("device", nargs='*',
                 help='''Devices to use for extending the volume. If the

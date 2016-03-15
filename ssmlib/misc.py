@@ -185,6 +185,23 @@ def get_real_size(size):
     raise Exception("Not supported unit in the " +
                     "size \'{0}\' argument.".format(size))
 
+def get_perc_size_argument(string):
+    """
+    Get percentage size argument. We now accept size argument in percentages
+    of - free pool/volume space (FREE)
+       - used pool/volume space (USED)
+       - total pool/original volume size
+    The accepted format is INTEGER%STRING where STRING needs to be one of
+    the following (FREE, USED, or empty)
+    """
+    p = re.compile(r'%')
+    perc, word = p.split(string, 1)
+
+    if is_number(perc) and word.upper() in ['FREE', 'USED', '']:
+        return (perc, word.upper())
+    else:
+        raise Exception("Not supported unit in the " +
+                        "size \'{0}\' argument.".format(string))
 
 def get_slaves(devname):
     return ["/dev/{0}".format(fname) for fname in os.listdir("/sys/block/{0}/slaves".format(devname))]

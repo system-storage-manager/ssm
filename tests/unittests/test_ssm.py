@@ -347,17 +347,39 @@ class SsmFunctionCheck(MockSystemDataSource):
         # Extend Volume
         self._checkCmd("ssm resize", ['--size +4m', '/dev/default_pool/vol003'],
             "vol resize /dev/default_pool/vol003 5120.0 False")
+        self._checkCmd("ssm resize", ['--size +50%', '/dev/default_pool/vol003'],
+            "vol resize /dev/default_pool/vol003 1536.0 False")
+        self._checkCmd("ssm resize", ['--size +50%USED', '/dev/default_pool/vol002'],
+            "vol resize /dev/default_pool/vol002 355926849.5 False")
+        self._checkCmd("ssm resize", ['--size +50%free', '/dev/default_pool/vol002'],
+            "vol resize /dev/default_pool/vol002 5980449420.5 False")
 
         # Shrink volume
         self._checkCmd("ssm resize", ['-s-100G', '/dev/default_pool/vol002'],
             "vol resize /dev/default_pool/vol002 132426625.0 False")
+        self._checkCmd("ssm resize", ['-s-50%', '/dev/default_pool/vol003'],
+            "vol resize /dev/default_pool/vol003 512.0 False")
+        self._checkCmd("ssm resize", ['-s-50%USED', '/dev/default_pool/vol002'],
+            "vol resize /dev/default_pool/vol002 118641600.5 False")
+        self._checkCmd("ssm resize", ['-s-1%free', '/dev/default_pool/vol002'],
+            "vol resize /dev/default_pool/vol002 122420921.09 False")
 
         # Set volume size
         self._checkCmd("ssm resize", ['-s 10M', '/dev/my_pool/vol001'],
             "vol resize /dev/my_pool/vol001 10240.0 False")
+        self._checkCmd("ssm resize", ['--size 80%', '/dev/default_pool/vol003'],
+            "vol resize /dev/default_pool/vol003 819.2 False")
+        self._checkCmd("ssm resize", ['--size 50%used', '/dev/default_pool/vol002'],
+            "vol resize /dev/default_pool/vol002 118642624.5 False")
+        self._checkCmd("ssm resize", ['--size 50%FREE', '/dev/default_pool/vol002'],
+            "vol resize /dev/default_pool/vol002 5743165195.5 False")
 
         # Set volume and add devices
         self._checkCmd("ssm resize -s 12T /dev/default_pool/vol003 /dev/sdc1 /dev/sde",
+            [], "vol resize /dev/default_pool/vol003 12884901888.0 False")
+        self.assertEqual(self.run_data[-2],
+            "pool extend default_pool /dev/sdc1 /dev/sde")
+        self._checkCmd("ssm resize -s 1258291200% /dev/default_pool/vol003 /dev/sdc1 /dev/sde",
             [], "vol resize /dev/default_pool/vol003 12884901888.0 False")
         self.assertEqual(self.run_data[-2],
             "pool extend default_pool /dev/sdc1 /dev/sde")
@@ -373,6 +395,10 @@ class SsmFunctionCheck(MockSystemDataSource):
             [], "vol resize /dev/default_pool/vol003 12884902912.0 False")
         self.assertEqual(self.run_data[-2],
             "pool extend default_pool /dev/sdc1 /dev/sde")
+        self._checkCmd("ssm resize -s +1258291100% /dev/default_pool/vol003 /dev/sdc1 /dev/sde",
+            [], "vol resize /dev/default_pool/vol003 12884901888.0 False")
+        self.assertEqual(self.run_data[-2],
+            "pool extend default_pool /dev/sdc1 /dev/sde")
 
         # Shrink volume with devices provided
         self._checkCmd("ssm resize -s-10G /dev/default_pool/vol002 /dev/sdc1 /dev/sde",
@@ -381,10 +407,17 @@ class SsmFunctionCheck(MockSystemDataSource):
             "pool extend default_pool /dev/sdc1 /dev/sde")
         self.assertNotEqual(self.run_data[-2],
             "pool extend default_pool /dev/sdc1")
+        self._checkCmd("ssm resize -s-50% /dev/default_pool/vol002 /dev/sdc1 /dev/sde",
+            [], "vol resize /dev/default_pool/vol002 118642112.5 False")
+        self.assertNotEqual(self.run_data[-2],
+            "pool extend default_pool /dev/sdc1 /dev/sde")
+        self.assertNotEqual(self.run_data[-2],
+            "pool extend default_pool /dev/sdc1")
 
         # Test that we do not use devices which are already used in different
         # pool
         self.assertRaises(Exception, main.main, "ssm resize -s +1.5T /dev/my_pool/vol001 /dev/sdb /dev/sda")
+        self.assertRaises(Exception, main.main, "ssm resize -s +200%FREE /dev/my_pool/vol001 /dev/sdb /dev/sda")
 
         # If the device we are able to use can cover the size, then
         # it will be resized successfully

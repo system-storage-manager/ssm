@@ -227,7 +227,7 @@ class MockSystemDataSource(unittest.TestCase):
         dev_count += len(devices)
         self.pool_data[pool_name] = {'pool_name': pool_name,
                 'pool_size': str(pool_size), 'pool_used': str(pool_used),
-                'dev_count': str(dev_count), 'pool_free': str(pool_size),
+                'dev_count': str(dev_count), 'pool_free': str(pool_free),
                 'vol_count': '0'}
 
     def _addVol(self, vol_name, vol_size, stripes, pool_name, devices,

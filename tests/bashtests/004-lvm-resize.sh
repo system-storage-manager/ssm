@@ -169,6 +169,45 @@ ssm resize --size +${DEV_SIZE}M $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2 $dev3
 check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 3
 ssm -f remove $SSM_LVM_DEFAULT_POOL
 
+# Resize using percentage of the size
+ssm create $TEST_DEVS
+size=$(($TEST_MAX_SIZE/2))
+ssm -f resize -s-50% $SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+size=$(($size+($size/4)))
+ssm resize -s +25% $SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+size=$TEST_MAX_SIZE
+ssm resize -s +100%FREE $SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+size=$(($TEST_MAX_SIZE/2))
+ssm -f resize -s-50%USED $SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+size=$((($TEST_MAX_SIZE/2)+($size/2)))
+ssm resize -s +50%USED $SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+size=$(($size-($size/2)))
+ssm -f resize -s-50%USED $SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+
+# Resize using percentage of the size
+size=$TEST_MAX_SIZE
+ssm resize -s +100%FREE $SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+size=$(($TEST_MAX_SIZE/4))
+ssm -f resize --size 25% $SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+size=$(($TEST_MAX_SIZE/2))
+ssm resize --size 200% $SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+size=$(($TEST_MAX_SIZE/4))
+ssm -f resize --size 50%free $SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+size=$(($TEST_MAX_SIZE/2))
+ssm resize --size 200%used $SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+not ssm resize --size +1000% $SSM_LVM_DEFAULT_POOL/$lvol1
+ssm -f remove $SSM_LVM_DEFAULT_POOL
 
 ssm add $dev{1,2,3}
 ssm create -s ${DEV_SIZE}M

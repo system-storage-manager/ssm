@@ -9,5 +9,10 @@ ask you whether or not you want to remove it from the original pool.
 In some cases, the file system has to be mounted in order to resize. This will
 be handled by **ssm** automatically by mounting the **volume** temporarily.
 
+In addition to specifying new size of the volume directly, percentage can be
+specified as well. Specify **--size 70%** to resize the volume to 70% of it's
+original size. Additionally, percentage of the used, or free pool space can
+be specified as well using keywords FREE, or USED respectively.
+
 Note that resizing btrfs subvolume is not supported, only the whole file
 system can be resized.
