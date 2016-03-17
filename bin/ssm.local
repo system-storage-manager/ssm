@@ -24,4 +24,4 @@
 SSMDIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )/../" && pwd )"
 export PYTHONPATH="$SSMDIR"
 
-python $SSMDIR/bin/ssm $@
+python $SSMDIR/bin/ssm "$@"
