@@ -292,6 +292,7 @@ class FsInfo(object):
 
     def extN_resize(self, new_size=None):
         command = ['resize2fs', self.device]
+        new_size = int(new_size)
         if not misc.check_binary(command[0]):
             PR.warn("\'{0}\' tool does not exist. ".format(command[0]) +
                     "File system will not be resized")
@@ -301,7 +302,7 @@ class FsInfo(object):
         if self.options.verbose:
             command.insert(1, "-p")
         if new_size:
-            command.append(new_size)
+            command.append(str(new_size) + 'K')
         # Ext3/4 can resize offline in both directions, but It can not shrink
         # the file system while online. In addition ext2 can only resize
         # offline.
@@ -351,6 +352,7 @@ class FsInfo(object):
         return misc.run(command, stdout=True, can_fail=True)[0]
 
     def xfs_resize(self, new_size=None):
+        new_size = int(new_size)
         command = ['xfs_growfs', self.device]
         if not misc.check_binary(command[0]):
             PR.warn("\'{0}\' tool does not exist. ".format(command[0]) +
@@ -1545,13 +1547,10 @@ class StorageHandle(object):
             pool = self.pool.default
         return pool
 
-    def is_volume(self, string):
+    def can_resize(self, string):
         vol = self.vol[string]
         if vol:
             return vol
-        dev = self.dev[string]
-        if dev and 'fs_info' in dev:
-            return dev
         err = "'{0}' is not a valid volume to resize".format(string)
         raise argparse.ArgumentTypeError(err)
 
@@ -1828,7 +1827,7 @@ class SsmParser(object):
         parser_resize = self.subcommands.add_parser("resize",
                 help="Change or set the volume and file system size.")
         parser_resize.add_argument("volume", help="Volume to resize.",
-                type=self.storage.is_volume)
+                type=self.storage.can_resize)
         parser_resize.add_argument('-s', '--size',
                 help='''New size of the volume. With the + or - sign the
                      value is added to or subtracted from the actual size of
