@@ -187,7 +187,7 @@ class VgsInfo(LvmInfo, template.BackendPool):
             lvname = self._generate_lvname(vg)
 
         if size:
-            command.extend(['-L', size + 'K'])
+            command.extend(['-L', str(size) + 'K'])
         else:
             if len(devices) > 0:
                 tmp = "100%PVS"

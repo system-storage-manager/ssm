@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "SSM" "8" "March 15, 2016" "0.4" "System Storage Manager"
+.TH "SSM" "8" "March 17, 2016" "0.4" "System Storage Manager"
 .SH NAME
 ssm \- System Storage Manager: a single tool to manage your storage
 .
@@ -142,6 +142,11 @@ provided. On the other hand, if the \fISIZE\fP is provided and some devices can
 not be added to the \fBpool\fP, the volume creation might still succeed if there
 is enough space in the \fBpool\fP\&.
 .sp
+In addition to specifying size of the volume directly, percentage can be
+specified as well. Specify \fB\-\-size 70%\fP to indicate the volume size to be
+70% of total pool size. Additionally, percentage of the used, or free pool
+space can be specified as well using keywords FREE, or USED respectively.
+.sp
 The \fIPOOL\fP name can be specified as well. If the pool exists, a new volume
 will be created from that pool (optionally adding \fBdevice\fP into the pool).
 However if the \fIPOOL\fP does not exist, then \fBssm\fP will attempt to create a
@@ -162,11 +167,15 @@ present on the volume.
 show this help message and exit
 .TP
 .BI \-s \ SIZE\fP,\fB \ \-\-size \ SIZE
-Gives the size to allocate for the new logical volume
+Gives the size to allocate for the new logical volume.
 A size suffix K|k, M|m, G|g, T|t, P|p, E|e can be used
 to define \(aqpower of two\(aq units. If no unit is
 provided, it defaults to kilobytes. This is optional
-if if not given maximum possible size will be used.
+and if not given, maximum possible size will be used.
+Additionally the new size can be specified as a
+percentage of the total pool size (50%), as a
+percentage of free pool space (50%FREE), or as a
+percentage of used pool space (50%USED).
 .TP
 .BI \-n \ NAME\fP,\fB \ \-\-name \ NAME
 The name for the new logical volume. This is optional
@@ -325,9 +334,9 @@ new volume size. A size suffix of [k|K] for kilobytes,
 terabytes or [p|P] for petabytes is optional. If no
 unit is provided the default is kilobytes.
 Additionally the new size can be specified as a
-percentage of the original volume size [+][\-]50% as a
-percentage of free pool space [+][\-]50%FREE, or as a
-percentage of used pool space [+][\-]50%USED.
+percentage of the original volume size ([+][\-]50%), as
+a percentage of free pool space ([+][\-]50%FREE), or as
+a percentage of used pool space ([+][\-]50%USED).
 .UNINDENT
 .SS Check command
 .sp
@@ -354,6 +363,12 @@ back\-end to which the \fBvolume\fP belongs to does not support snapshotting.
 Note that you cannot specify both \fINAME\fP and \fIDEST\fP since those options are
 mutually exclusive.
 .sp
+In addition to specifying new size of the volume directly, percentage can be
+specified as well. Specify \fB\-\-size 70%\fP to indicate the new snapshot size
+to be 70% of the origin volume size. Additionally, percentage of the used,
+or free pool space can be specified as well using keywords FREE, or USED
+respectively.
+.sp
 In some cases the file system has to be mounted in order to take a snapshot of
 the \fBvolume\fP\&. This will be handled by \fBssm\fP automatically by mounting the
 \fBvolume\fP temporarily.
@@ -363,12 +378,15 @@ the \fBvolume\fP\&. This will be handled by \fBssm\fP automatically by mounting 
 show this help message and exit
 .TP
 .BI \-s \ SIZE\fP,\fB \ \-\-size \ SIZE
-Gives the size to allocate for the new snapshot volume
-A size suffix K|k, M|m, G|g, T|t, P|p, E|e can be used
-to define \(aqpower of two\(aq units. If no unit is
-provided, it defaults to kilobytes. This is option and
-if not give, the size will be determined
-automatically.
+Gives the size to allocate for the new snapshot
+volume. A size suffix K|k, M|m, G|g, T|t, P|p, E|e can
+be used to define \(aqpower of two\(aq units. If no unit is
+provided, it defaults to kilobytes. This is optional
+and if not given, the size will be determined
+automatically. Additionally the new size can be
+specified as a percentage of the original volume size
+(50%), as a percentage of free pool space (50%FREE),
+or as a percentage of used pool space (50%USED).
 .TP
 .BI \-d \ DEST\fP,\fB \ \-\-dest \ DEST
 Destination of the snapshot specified with absolute

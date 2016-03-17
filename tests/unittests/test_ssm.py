@@ -451,18 +451,18 @@ class SsmFunctionCheck(MockSystemDataSource):
         self._cmdEq("force verbose pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -3)
 
         self._checkCmd("ssm create", ['-s 2.6T', '/dev/sda'],
-            "pool create {0} 2791728742.40 /dev/sda".format(main.DEFAULT_DEVICE_POOL))
+            "pool create {0} 2791728742.4 /dev/sda".format(main.DEFAULT_DEVICE_POOL))
         self._cmdEq("pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
         self._checkCmd("ssm create", ['-r 0', '-s 2.6T', '-I 16', '/dev/sda'],
-            "pool create {0} 2791728742.40 0 16 /dev/sda".format(main.DEFAULT_DEVICE_POOL))
+            "pool create {0} 2791728742.4 0 16 /dev/sda".format(main.DEFAULT_DEVICE_POOL))
         self._cmdEq("pool new {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
         # Number of stripes must not exceed number of devices
         self.assertRaises(problem.GeneralError, main.main, "ssm create -r 1 -s 2.6T -I 16 -i 4 /dev/sda")
 
         self._checkCmd("ssm create", ['-r 1', '-s 2.6T', '-I 16', '/dev/sda /dev/sdb'],
-            "pool create {0} 2791728742.40 1 16 /dev/sda /dev/sdb".format(main.DEFAULT_DEVICE_POOL))
+            "pool create {0} 2791728742.4 1 16 /dev/sda /dev/sdb".format(main.DEFAULT_DEVICE_POOL))
         self._cmdEq("pool new {0} /dev/sda /dev/sdb".format(main.DEFAULT_DEVICE_POOL), -2)
 
         # Create volume using single device from non existent my_pool
@@ -471,15 +471,15 @@ class SsmFunctionCheck(MockSystemDataSource):
         self._cmdEq("pool new my_pool /dev/sda", -2)
 
         self._checkCmd("ssm create", ['--pool my_pool', '-s 2.6T', '/dev/sda'],
-            "pool create my_pool 2791728742.40 /dev/sda")
+            "pool create my_pool 2791728742.4 /dev/sda")
         self._cmdEq("pool new my_pool /dev/sda", -2)
 
         self._checkCmd("ssm create", ['-r 10', '-p my_pool', '-s 2.6T', '-I 16',
-            '/dev/sda'], "pool create my_pool 2791728742.40 10 16 /dev/sda")
+            '/dev/sda'], "pool create my_pool 2791728742.4 10 16 /dev/sda")
         self._cmdEq("pool new my_pool /dev/sda", -2)
 
         self._checkCmd("ssm create", ['-r 0', '-p my_pool', '-s 2.6T', '-I 16',
-            '/dev/sda'], "pool create my_pool 2791728742.40 0 16 /dev/sda")
+            '/dev/sda'], "pool create my_pool 2791728742.4 0 16 /dev/sda")
         self._cmdEq("pool new my_pool /dev/sda", -2)
 
         # Create volume using multiple devices
@@ -495,27 +495,44 @@ class SsmFunctionCheck(MockSystemDataSource):
         self._addPool(main.DEFAULT_DEVICE_POOL, ['/dev/sdb', '/dev/sdd'])
         self._checkCmd("ssm create", ['-r 10', '-s 2.6T', '-I 16',
             '-n myvolume', '/dev/sda'],
-            "pool create {0} 2791728742.40 myvolume 10 16 /dev/sda". format(main.DEFAULT_DEVICE_POOL))
+            "pool create {0} 2791728742.4 myvolume 10 16 /dev/sda". format(main.DEFAULT_DEVICE_POOL))
         self._cmdEq("pool extend {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
+
+        self._checkCmd("ssm create", ['-s 20%', '-n myvolume'],
+            "pool create {0} 46915624.8 myvolume". format(main.DEFAULT_DEVICE_POOL))
 
         self._addPool("my_pool", ['/dev/sdc2', '/dev/sdc3'])
         self._checkCmd("ssm create", ['-r 1', '-p my_pool', '-s 2.6T', '-I 16',
             '-n myvolume', '/dev/sda'],
-            "pool create my_pool 2791728742.40 myvolume 1 16 /dev/sda")
+            "pool create my_pool 2791728742.4 myvolume 1 16 /dev/sda")
         self._cmdEq("pool extend my_pool /dev/sda", -2)
 
         # Create volume using multiple devices which one of the is in already
         # in the pool
         self._checkCmd("ssm create", ['-r 0', '-s 2.6T', '-I 16',
             '-i 2', '-n myvolume', '/dev/sda /dev/sdb'],
-            "pool create {0} 2791728742.40 myvolume 0 2 16 /dev/sda /dev/sdb". format(main.DEFAULT_DEVICE_POOL))
+            "pool create {0} 2791728742.4 myvolume 0 2 16 /dev/sda /dev/sdb". format(main.DEFAULT_DEVICE_POOL))
         self._cmdEq("pool extend {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL), -2)
 
         self._addPool("my_pool", ['/dev/sdc2', '/dev/sdc3'])
         self._checkCmd("ssm create", ['-r 10', '-p my_pool', '-s 2.6T', '-I 16',
             '-i 2', '-n myvolume', '/dev/sdc2 /dev/sda'],
-            "pool create my_pool 2791728742.40 myvolume 10 2 16 /dev/sdc2 /dev/sda")
+            "pool create my_pool 2791728742.4 myvolume 10 2 16 /dev/sdc2 /dev/sda")
         self._cmdEq("pool extend my_pool /dev/sda", -2)
+
+        # Test volume creation by specifying percentage instead of a concrete
+        # size
+        self._checkCmd("ssm create -s 20% -n myvolume", [],
+            "pool create {0} 46915624.8 myvolume".format(main.DEFAULT_DEVICE_POOL))
+        self._checkCmd("ssm create -s 20%free -n myvolume", [],
+            "pool create {0} 46915624.8 myvolume".format(main.DEFAULT_DEVICE_POOL))
+        self._addVol('vol002', 1073741824, 1, main.DEFAULT_DEVICE_POOL, ['/dev/sdc'])
+        self._checkCmd("ssm create -s 20% -n myvolume", [],
+            "pool create {0} 583786536.8 myvolume".format(main.DEFAULT_DEVICE_POOL))
+        self._checkCmd("ssm create -s 20%free -n myvolume", [],
+            "pool create {0} 369038172.0 myvolume".format(main.DEFAULT_DEVICE_POOL))
+        self._checkCmd("ssm create -s 20%used -n myvolume", [],
+            "pool create {0} 214748364.8 myvolume".format(main.DEFAULT_DEVICE_POOL))
 
         # Test that we do not use devices which are already used in different
         # pool
@@ -524,7 +541,7 @@ class SsmFunctionCheck(MockSystemDataSource):
         # If the device we are able to use can cover the size, then
         # it will be created
         self._checkCmd("ssm create", ['-s 100M', '-p new_pool', '/dev/sdc2 /dev/sdc3 /dev/sda'],
-            "pool create new_pool 102400.00 /dev/sda")
+            "pool create new_pool 102400.0 /dev/sda")
 
         #sys.stdout = out.stdout
 
@@ -671,6 +688,12 @@ class SsmFunctionCheck(MockSystemDataSource):
         # Create snapshot with size specified
         self._checkCmd("ssm snapshot --size 1G", ['/dev/default_pool/vol004'],
             "vol snapshot /dev/default_pool/vol004 1048576.0 True")
+        self._checkCmd("ssm snapshot --size 10%", ['/dev/default_pool/vol004'],
+            "vol snapshot /dev/default_pool/vol004 20971520.0 True")
+        self._checkCmd("ssm snapshot --size 10%used", ['/dev/default_pool/vol004'],
+            "vol snapshot /dev/default_pool/vol004 56428367.4 True")
+        self._checkCmd("ssm snapshot --size 10%free", ['/dev/default_pool/vol004'],
+            "vol snapshot /dev/default_pool/vol004 1115933196.6 True")
         # Create snapshot with destination specified
         self._checkCmd("ssm snapshot --dest /mnt/test", ['/dev/default_pool/vol004'],
             "vol snapshot /dev/default_pool/vol004 /mnt/test 41943040.0 False")
@@ -681,10 +704,22 @@ class SsmFunctionCheck(MockSystemDataSource):
         self._checkCmd("ssm snapshot",
             ['--size 1G', '--dest /mnt/test' ,'/dev/default_pool/vol004'],
             "vol snapshot /dev/default_pool/vol004 /mnt/test 1048576.0 True")
+        self._checkCmd("ssm snapshot",
+            ['--size 10%', '--dest /mnt/test','/dev/default_pool/vol004'],
+            "vol snapshot /dev/default_pool/vol004 /mnt/test 20971520.0 True")
+        self._checkCmd("ssm snapshot --dest /mnt/test --size 10%used",
+            ['/dev/default_pool/vol004'],
+            "vol snapshot /dev/default_pool/vol004 /mnt/test 56428367.4 True")
+        self._checkCmd("ssm snapshot --dest /mnt/test --size 10%free",
+            ['/dev/default_pool/vol004'],
+            "vol snapshot /dev/default_pool/vol004 /mnt/test 1115933196.6 True")
         # Create snapshot with both name and size specified
         self._checkCmd("ssm snapshot",
             ['--size 1G', '--name test' ,'/dev/default_pool/vol004'],
             "vol snapshot /dev/default_pool/vol004 test 1048576.0 True")
+        self._checkCmd("ssm snapshot",
+            ['--size 10%', '--name test','/dev/default_pool/vol004'],
+            "vol snapshot /dev/default_pool/vol004 test 20971520.0 True")
 
         # Repeat the test with specifying mount point instead of volume
 
@@ -694,6 +729,8 @@ class SsmFunctionCheck(MockSystemDataSource):
         # Create snapshot with size specified
         self._checkCmd("ssm snapshot --size 1G", ['/mnt/test'],
             "vol snapshot /dev/default_pool/vol004 1048576.0 True")
+        self._checkCmd("ssm snapshot --size 10%", ['/mnt/test'],
+            "vol snapshot /dev/default_pool/vol004 20971520.0 True")
         # Create snapshot with destination specified
         self._checkCmd("ssm snapshot --dest /mnt/test", ['/mnt/test'],
             "vol snapshot /dev/default_pool/vol004 /mnt/test 41943040.0 False")

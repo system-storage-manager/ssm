@@ -103,6 +103,35 @@ class Struct(object):
     def __init__(self):
         pass
 
+def calculate_size(arg_size, pool):
+
+    if not arg_size:
+        return arg_size
+    # Size argument specified in kilobytes, just return it
+    if arg_size[1] == 'K':
+         return float(arg_size[0])
+
+    if not pool or not pool.exists():
+        # There is no pooling support, we do not support specifying
+        # percentage in this case
+        raise PR.error("There is no pooling support for this volume. " +
+                       "Size needs to be specified as a real size")
+    else:
+        pool_free = float(pool['pool_free'])
+        pool_used = float(pool['pool_used'])
+        pool_size = float(pool['pool_size'])
+
+    if arg_size[1] == 'FREE':
+        base_size = pool_free
+    elif arg_size[1] == 'USED':
+        base_size = pool_used
+    elif arg_size[1] == '':
+        base_size = pool_size
+
+    mult = float(arg_size[0]) / 100.00
+
+    return base_size *  mult
+
 def calculate_resize_size(arg_size, volume, pool):
     vol_size = float(volume['vol_size'])
 
@@ -1170,9 +1199,6 @@ class StorageHandle(object):
             self._do_mount(self.vol[lvname], args.mnt_options)
 
     def create_volume(self, args):
-        # Get the size in kilobytes
-#        if args.size:
-#            args.size = misc.get_real_size(args.size)
 
         if self._mpoint and not (args.fstype or args.pool.type == 'btrfs'):
             if PR.check(PR.CREATE_MOUNT_NOFS, self._mpoint):
@@ -1188,8 +1214,16 @@ class StorageHandle(object):
         if len(devices) > 0:
             pool_free = None
 
+        if args.size and args.size[1] == 'K':
+            # If the exact size was provided than just use that
+             vol_size = float(args.size[0])
+        else:
+            # Otherwise we have to wait after the pool is created, or
+            # devices are added into a existing one
+            vol_size = None
+
         have_size, devices = self._filter_device_list(args, pool_free,
-                                                      args.size)
+                                                      vol_size)
 
         # When the pool does not exist and there is no device usable
         # for creating the new pool, then there is no point of trying to
@@ -1200,10 +1234,11 @@ class StorageHandle(object):
         # Currently we do not allow setting subvolume size with btrfs. This
         # should change in the future (quotas maybe) so the check should
         # be removed or pushed to the backend itself.
-        if args.size and have_size < float(args.size) and \
+        if vol_size and have_size < float(vol_size) and \
            not (args.pool.exists() and args.pool.type == 'btrfs'):
             if PR.check(PR.CREATE_NOT_ENOUGH_SPACE,
                         [have_size, args.pool.name]):
+                vol_size = None
                 args.size = None
 
         if have_size == 0:
@@ -1247,10 +1282,12 @@ class StorageHandle(object):
         # want to call add since it would create it. Note that when
         # btrfs pool is created the new btrfs volume is created as well
         # because it is actually the same thing
+        pool_changed = False
         if len(args.device) > 0 and \
            not (not args.pool.exists() and args.pool.type == 'btrfs'):
             try:
                 self.add(args, True)
+                pool_changed = True
             except problem.NotSupported:
                 # Some backends might not support pooling at all.
                 pass
@@ -1263,8 +1300,19 @@ class StorageHandle(object):
             options['stripesize'] = args.stripesize
             options['stripes'] = args.stripes
 
+        # Everything is sorted out, now we can safely calculate
+        # the size of the volume, but only is size was specified
+        # but we yet do not have vol_size calculated
+        if args.size and not vol_size:
+            # Pool has been changed so reinitialize it so we can
+            # calculate the size properly
+            if pool_changed:
+                self.reinit_pool()
+                args.pool = self.pool[args.pool.name]
+            vol_size = calculate_size(args.size, args.pool)
+
         lvname = args.pool.create(devs=devices,
-                                  size=args.size,
+                                  size=vol_size,
                                   options=options,
                                   name=args.name)
         return lvname
@@ -1392,7 +1440,8 @@ class StorageHandle(object):
             snap_size = vol_size * 0.20
             user_set_size = False
         else:
-            snap_size = float(args.size)
+            #snap_size = calculate_size(args.size, pool)
+            snap_size = calculate_resize_size(args.size, args.volume, pool)
             #snap_size = float(misc.get_real_size(args.size))
             user_set_size = True
 
@@ -1561,6 +1610,38 @@ class StorageHandle(object):
 def valid_size(size):
     """ Validate that the 'size' is usable size argument. This is almost the
     same as valid_resize_size() except we do not allow '+' and '-' signs
+
+    >>> valid_size("3.14")
+    ('3.14', 'K')
+    >>> valid_size("+3.14k")
+    Traceback (most recent call last):
+    ...
+    ArgumentTypeError: '+3.14k' is not valid size.
+    >>> valid_size("-3.14k")
+    Traceback (most recent call last):
+    ...
+    ArgumentTypeError: '-3.14k' is not valid size.
+    >>> valid_size("3.14k")
+    ('3.14', 'K')
+    >>> valid_size("3.14G")
+    ('3292528.64', 'K')
+    >>> valid_size("55%FREE")
+    ('55', 'FREE')
+    >>> valid_size("+55%FREE")
+    Traceback (most recent call last):
+    ...
+    ArgumentTypeError: '+55%FREE' is not valid size.
+    >>> valid_size("55%")
+    ('55', '')
+    >>> valid_size("-55%")
+    Traceback (most recent call last):
+    ...
+    ArgumentTypeError: '-55%FREE' is not valid size.
+    >>> valid_size("G")
+    Traceback (most recent call last):
+    ...
+    ArgumentTypeError: 'G' is not valid number for the resize.
+
     """
 
     err = "'{0}' is not valid size.".format(size)
@@ -1570,6 +1651,7 @@ def valid_size(size):
         ret = misc.get_real_size(size)
         if float(ret) < 0:
             raise argparse.ArgumentTypeError(err)
+        return (ret, 'K')
     except:
         try:
             ret =  misc.get_perc_size_argument(size)
@@ -1577,7 +1659,7 @@ def valid_size(size):
                 raise argparse.ArgumentTypeError(err)
         except:
             raise argparse.ArgumentTypeError(err)
-    return ret
+        return ret
 
 def valid_resize_size(size):
     """
@@ -1756,9 +1838,9 @@ class SsmParser(object):
                      terabytes or [p|P] for petabytes is optional. If no unit
                      is provided the default is kilobytes. Additionally the
                      new size can be specified as a percentage of the original
-                     volume size [+][-]50%% as a percentage of free pool space
-                     [+][-]50%%FREE, or as a percentage of used pool space
-                     [+][-]50%%USED.''',
+                     volume size ([+][-]50%%), as a percentage of free pool
+                     space ([+][-]50%%FREE), or as a percentage of used pool
+                     space ([+][-]50%%USED).''',
                 type=valid_resize_size)
         parser_resize.add_argument("device", nargs='*',
                 help='''Devices to use for extending the volume. If the
@@ -1776,11 +1858,15 @@ class SsmParser(object):
         parser_create = self.subcommands.add_parser("create",
                 help="Create a new volume with defined parameters.")
         parser_create.add_argument('-s', '--size',
-                help='''Gives the size to allocate for the new logical volume
+                help='''Gives the size to allocate for the new logical volume.
                      A size suffix K|k, M|m, G|g, T|t, P|p, E|e can be used
                      to define 'power of two' units. If no unit is provided, it
-                     defaults to kilobytes. This is optional if if
-                     not given maximum possible size will be used.''',
+                     defaults to kilobytes. This is optional and if
+                     not given, maximum possible size will be used. Additionally
+                     the new size can be specified as a percentage of the
+                     total pool size (50%%), as a percentage of free pool
+                     space (50%%FREE), or as a percentage of used pool space
+                     (50%%USED).''',
                 type=valid_size)
         parser_create.add_argument('-n', '--name',
                 help='''The name for the new logical volume. This is optional
@@ -1887,11 +1973,15 @@ class SsmParser(object):
         parser_snapshot = self.subcommands.add_parser("snapshot",
                 help='''Take a snapshot of the existing volume.''')
         parser_snapshot.add_argument('-s', '--size',
-                help='''Gives the size to allocate for the new snapshot volume
+                help='''Gives the size to allocate for the new snapshot volume.
                      A size suffix K|k, M|m, G|g, T|t, P|p, E|e can be used
                      to define 'power of two' units. If no unit is provided, it
-                     defaults to kilobytes. This is option and if not give,
-                     the size will be determined automatically.''',
+                     defaults to kilobytes. This is optional and if not given,
+                     the size will be determined automatically. Additionally the
+                     new size can be specified as a percentage of the original
+                     volume size (50%%), as a percentage of free pool space
+                     (50%%FREE), or as a percentage of used pool space
+                     (50%%USED).''',
                 type=valid_size)
         group = parser_snapshot.add_mutually_exclusive_group()
         group.add_argument('-d', '--dest',

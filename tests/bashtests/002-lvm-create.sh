@@ -22,7 +22,7 @@ test_description='Exercise ssm create'
 
 DEV_COUNT=10
 DEV_SIZE=100
-TEST_MAX_SIZE=$(($DEV_COUNT*$DEV_SIZE))
+TEST_MAX_SIZE=$(($DEV_COUNT*($DEV_SIZE-4)))
 aux prepare_devs $DEV_COUNT $DEV_SIZE
 aux prepare_mnts 4
 TEST_DEVS=$(cat DEVICES)
@@ -94,6 +94,43 @@ size=$(align_size_up $size)
 check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
 check list_table "$(ssm list pool)" $SSM_LVM_DEFAULT_POOL lvm 10 360.00MB 600.00MB 960.00MB
 check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$lvol1 $SSM_LVM_DEFAULT_POOL 600.00MB linear
+ssm -f remove $SSM_LVM_DEFAULT_POOL
+
+# Create a logical volume specifying size as percentage
+ssm add $TEST_DEVS
+ssm create -s 50%
+not ssm create -s 80%
+size=$((TEST_MAX_SIZE/2))
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+size=$((TEST_MAX_SIZE/4))
+ssm create -s 50%free
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol2 lv_size ${size}.00m
+ssm create -s 20%used
+size=$((($TEST_MAX_SIZE-$size)/5))
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol3 lv_size ${size}.00m
+ssm -f remove $SSM_LVM_DEFAULT_POOL
+
+# Create a logical volume specifying size and adding devices
+ssm create -s 100% $dev1 $dev2 $dev3 $dev4 $dev5
+size=$((5*($DEV_SIZE-4)))
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 lv_size ${size}.00m
+ssm create -s 50%FREE $dev6 $dev7
+size=$(($DEV_SIZE-4))
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol2 lv_size ${size}.00m
+ssm create -s 20%USED $TEST_DEVS
+size=$(((6*($DEV_SIZE-4))/5))
+size=$(align_size_up $size)
+check lv_field $SSM_LVM_DEFAULT_POOL/$lvol3 lv_size ${size}.00m
+ssm -f remove $SSM_LVM_DEFAULT_POOL
+
+not ssm create -s 200% $dev1 $dev2 $dev3 $dev4 $dev5
+ssm create -s 50% $TEST_DEVS
+not ssm create -s 200%free
+not ssm create -s 200%used
+ssm -f remove $SSM_LVM_DEFAULT_POOL
+ssm create -s 50% $dev1 $dev2 $dev3 $dev4 $dev5
+not ssm create -s 500%free $dev6 $dev7
+not ssm create -s 500%used $dev8 $dev9
 ssm -f remove $SSM_LVM_DEFAULT_POOL
 
 # Create a striped logical volume

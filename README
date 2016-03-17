@@ -74,6 +74,12 @@ the *SIZE* is provided and some devices can not be added to the
 **pool**, the volume creation might still succeed if there is enough
 space in the **pool**.
 
+In addition to specifying size of the volume directly, percentage can
+be specified as well. Specify **--size 70%** to indicate the volume
+size to be 70% of total pool size. Additionally, percentage of the
+used, or free pool space can be specified as well using keywords FREE,
+or USED respectively.
+
 The *POOL* name can be specified as well. If the pool exists, a new
 volume will be created from that pool (optionally adding **device**
 into the pool). However if the *POOL* does not exist, then **ssm**
@@ -196,6 +202,12 @@ Take a snapshot of an existing **volume**. This operation will fail if
 the back-end to which the **volume** belongs to does not support
 snapshotting. Note that you cannot specify both *NAME* and *DEST*
 since those options are mutually exclusive.
+
+In addition to specifying new size of the volume directly, percentage
+can be specified as well. Specify **--size 70%** to indicate the new
+snapshot size to be 70% of the origin volume size. Additionally,
+percentage of the used, or free pool space can be specified as well
+using keywords FREE, or USED respectively.
 
 In some cases the file system has to be mounted in order to take a
 snapshot of the **volume**. This will be handled by **ssm**

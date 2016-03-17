@@ -86,7 +86,22 @@ check lv_field $SSM_LVM_DEFAULT_POOL/$snap2 lv_size ${snap_size}.00m
 ssm snapshot --size ${snap_size}M --name $snap3 $SSM_LVM_DEFAULT_POOL/$lvol1
 check lv_field $SSM_LVM_DEFAULT_POOL/$snap3 lv_size ${snap_size}.00m
 check vg_field $SSM_LVM_DEFAULT_POOL lv_count 4
+ssm -f remove $SSM_LVM_DEFAULT_POOL/$snap1 $SSM_LVM_DEFAULT_POOL/$snap2 $SSM_LVM_DEFAULT_POOL/$snap3
 
+# Take a snapshot with defined size as percentage
+snap_size=$(($size/10))
+snap_size=$(align_size_up $snap_size)
+ssm snapshot --size 10% --name $snap1 $SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$snap1 lv_size ${snap_size}.00m
+snap_size=$(($size/4))
+snap_size=$(align_size_up $snap_size)
+ssm snapshot --size 25% --name $snap2 $SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$snap2 lv_size ${snap_size}.00m
+snap_size=$(($size/5))
+snap_size=$(align_size_up $snap_size)
+ssm snapshot --size 20% --name $snap3 $SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$snap3 lv_size ${snap_size}.00m
+check vg_field $SSM_LVM_DEFAULT_POOL lv_count 4
 ssm -f remove --all
 
 # Create a logical volume with file system and mount it
