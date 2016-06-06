@@ -23,7 +23,7 @@ from ssmlib import misc
 from ssmlib import problem
 from ssmlib.backends import template
 
-__all__ = ["PvsInfo", "VgsInfo", "LvsInfo"]
+__all__ = ["PvsInfo", "VgsInfo", "LvsInfo", "ThinPool"]
 
 try:
     SSM_LVM_DEFAULT_POOL = os.environ['SSM_LVM_DEFAULT_POOL']
@@ -36,6 +36,8 @@ except KeyError:
     DM_DEV_DIR = "/dev"
 MAX_LVS = 999
 
+# TODO: This is ugly and needs to be removed and done properly
+THIN_POOL_DATA = {}
 
 def get_lvm_version():
     try:
@@ -54,6 +56,16 @@ def get_lvm_version():
     return version
 
 LVM_VERSION = get_lvm_version()
+
+def create_thin_volume(parent_pool, thin_pool, virtsize, lvname):
+    pool_volume = parent_pool + '/' + thin_pool
+
+    # Ignore options for non existing thin volumes somehow
+    command = ['lvcreate', '-n', lvname, '-T', pool_volume,
+               '-V', str(virtsize) + 'K']
+    command.insert(0, "lvm")
+    misc.run(command, stdout=True)
+    return "{0}/{1}/{2}".format(DM_DEV_DIR, parent_pool, lvname)
 
 
 class LvmInfo(template.Backend):
@@ -141,10 +153,12 @@ class VgsInfo(LvmInfo, template.BackendPool):
     def _data_index(self, row):
         return row['pool_name']
 
-    def _generate_lvname(self, vg):
+    def _generate_lvname(self, lvname, vg):
         for i in range(1, MAX_LVS):
-            name = "lvol{0:0>{align}}".format(i, align=len(str(MAX_LVS)))
+            name = "{0}{1:0>{align}}".format(lvname, i, align=len(str(MAX_LVS)))
             path = "{0}/{1}/{2}".format(DM_DEV_DIR, vg, name)
+            if name in THIN_POOL_DATA:
+                continue
             try:
                 if stat.S_ISBLK(os.stat(path).st_mode):
                     continue
@@ -180,11 +194,19 @@ class VgsInfo(LvmInfo, template.BackendPool):
         options = options or {}
         devices = devs or []
         command = ['lvcreate', vg]
+        virtsize = None
 
-        if name:
+        if 'virtsize' in options:
+            # We're going to create new lv which is going to be thin pool
+            # so name it appropriately
+            lvname = self._generate_lvname(vg + "_thin", vg)
+        elif name:
             lvname = name
         else:
-            lvname = self._generate_lvname(vg)
+            lvname = self._generate_lvname("lvol", vg)
+
+        if 'virtsize' in options:
+            command.extend(['-T'])
 
         if size:
             command.extend(['-L', str(size) + 'K'])
@@ -257,9 +279,20 @@ class VgsInfo(LvmInfo, template.BackendPool):
                 self.problem.not_supported("RAID level {0}".format(options['raid']) +
                                            " with \"lvm\" backend")
 
+        # This should be done only if necessary - for example when the size
+        # was not provided and is used as %PVS, otherwise let lvm decide
+        # which devices to use from the pool.
         command.extend(devices)
         self.run_lvm(command, noforce=True)
-        return "{0}/{1}/{2}".format(DM_DEV_DIR, vg, lvname)
+        path = "{0}/{1}/{2}".format(DM_DEV_DIR, vg, lvname)
+        if 'virtsize' in options:
+            thin_pool = lvname
+            if name:
+                lvname = name
+            else:
+                lvname = self._generate_lvname("tvol", vg)
+            path = create_thin_volume(vg, thin_pool, options['virtsize'], lvname)
+        return path
 
 
 class PvsInfo(LvmInfo, template.BackendDevice):
@@ -299,9 +332,9 @@ class LvsInfo(LvmInfo, template.BackendVolume):
         super(LvsInfo, self).__init__(*args, **kwargs)
         command = ["lvm", "lvs", "--separator", "|", "--noheadings",
                    "--nosuffix", "--units", "k", "-o",
-                   "vg_name,lv_size,stripes,stripesize,segtype,lv_name,origin,lv_attr"]
+                   "vg_name,lv_size,stripes,stripesize,segtype,lv_name,origin,lv_attr,pool_lv"]
         self.attrs = ['pool_name', 'vol_size', 'stripes',
-                      'stripesize', 'type', 'lv_name', 'origin', 'attr']
+                      'stripesize', 'type', 'lv_name', 'origin', 'attr', 'pool_lv']
         self.handle_fs = True
         self.mounts = misc.get_mounts('{0}/mapper'.format(DM_DEV_DIR))
         self._parse_data(command)
@@ -309,8 +342,14 @@ class LvsInfo(LvmInfo, template.BackendVolume):
     def _fill_aditional_info(self, lv):
         lv['dev_name'] = "{0}/{1}/{2}".format(DM_DEV_DIR, lv['pool_name'],
                                               lv['lv_name'])
-        if lv['origin']:
+        if lv['origin'] or \
+           lv['attr'][0] == 't':
             lv['hide'] = True
+
+        # Show thin-pool as a pool name in case of thin volumes
+        if lv['type'] == 'thin':
+            lv['parent_pool'] = lv['pool_name']
+            lv['pool_name'] = lv['pool_lv']
 
         lv['real_dev'] = misc.get_real_device(lv['dev_name'])
 
@@ -377,14 +416,29 @@ class LvsInfo(LvmInfo, template.BackendVolume):
             command.insert(1, '-r')
         self.run_lvm(command)
 
-    def snapshot(self, lv, destination, name, size, user_set_size):
+    def snapshot(self, lv, destination, name, snap_size=None):
+        vol = self[lv]
+        vol_size = float(vol['vol_size'])
         lv = self._get_dev_name(lv)
+
         if not name:
             now = datetime.datetime.now()
             name = now.strftime("snap%Y%m%dT%H%M%S")
 
-        command = ['lvcreate', '--size', str(size) + 'K', '--snapshot',
-                   '--name', name, lv]
+        if vol['type'] == "thin":
+            if snap_size:
+                self.problem.warn("Setting snapshot size for thin volume is" +
+                                  " not supported")
+                snap_size = None
+        elif not snap_size:
+            # We'll ceate snapshot of the size of 20% of the original volume
+            snap_size = vol_size * 0.20
+
+        if snap_size:
+            command = ['lvcreate', '--size', str(snap_size) + 'K', '--snapshot',
+                       '--name', name, lv]
+        else:
+            command = ['lvcreate', '--snapshot', '--name', name, lv]
 
         self.run_lvm(command)
 
@@ -396,10 +450,10 @@ class SnapInfo(LvmInfo):
         command = ["lvm", "lvs", "--separator", "|", "--noheadings",
                    "--nosuffix", "--units", "k", "-o",
                    "vg_name,lv_size,stripes,stripesize,segtype," +
-                   "lv_name,origin,snap_percent,lv_attr"]
+                   "lv_name,origin,snap_percent,lv_attr,pool_lv"]
         self.attrs = ['pool_name', 'vol_size', 'stripes',
                       'stripesize', 'type', 'lv_name', 'origin',
-                      'snap_size', 'attr']
+                      'snap_size', 'attr', 'pool_lv']
         self.handle_fs = True
         self.mounts = misc.get_mounts('{0}/mapper'.format(DM_DEV_DIR))
         self._parse_data(command)
@@ -422,6 +476,10 @@ class SnapInfo(LvmInfo):
         if snap['type'] != "thin":
             size = float(snap['vol_size']) * float(snap['snap_size'])
             snap['snap_size'] = str(size / 100.00)
+        else:
+            # Show thin-pool as a pool name in case of thin volumes
+            snap['parent_pool'] = snap['pool_name']
+            snap['pool_name'] = snap['pool_lv']
 
         snap['real_dev'] = misc.get_real_device(snap['dev_name'])
 
@@ -442,3 +500,125 @@ class SnapInfo(LvmInfo):
             snap['mount'] = self.mounts[snap['real_dev']]['mp']
 
         self.parse_attr(snap, snap['attr'])
+
+
+class ThinPool(LvmInfo, template.BackendPool):
+
+    def __init__(self, *args, **kwargs):
+        super(ThinPool, self).__init__(*args, **kwargs)
+        self.type = 'thin'
+        command = ["lvm", "lvs", "--separator", "|", "--noheadings",
+                   "--nosuffix", "--units", "k", "-o",
+                   "vg_name,lv_size,stripes,stripesize,segtype,lv_name," +
+                   "origin,lv_attr,pv_count,thin_count,data_percent," +
+                   "metadata_percent,snap_percent"]
+        self.attrs = ['parent_pool', 'vol_size', 'stripes',
+                      'stripesize', 'type', 'lv_name', 'origin', 'attr',
+                      'dev_count', 'vol_count', 'data_percent',
+                      'metadata_percent', 'snap_percent']
+        self._parse_data(command)
+        # Uff, so ugly...needs to be changed
+        global THIN_POOL_DATA
+        THIN_POOL_DATA = self.data
+
+    def _fill_aditional_info(self, vg):
+        vg['type'] = 'thin'
+        vg['pool_name'] = os.path.basename(vg['lv_name'])
+        vg['pool_size'] = vg['vol_size']
+        vg['pool_used'] = float(vg['vol_size']) * (float(vg['data_percent'])/100)
+        vg['pool_free'] = float(vg['vol_size']) - vg['pool_used']
+        if vg['attr'][4] == 'a':
+            vg['active'] = True
+        else:
+            vg['active'] = False
+
+
+    def _data_index(self, row):
+        return row['pool_name']
+
+    def _skip_data(self, row):
+        if row['attr'][0] not in ['t', 'T']:
+            return True
+        else:
+            return False
+
+    def _generate_lvname(self, lvname, vg):
+        for i in range(1, MAX_LVS):
+            name = "{0}{1:0>{align}}".format(lvname, i, align=len(str(MAX_LVS)))
+            path = "{0}/{1}/{2}".format(DM_DEV_DIR, vg, name)
+            if name in self.data:
+                continue
+            try:
+                if stat.S_ISBLK(os.stat(path).st_mode):
+                    continue
+            except OSError:
+                pass
+            return name
+        self.problem.error("Can not find proper lvname!")
+
+    def reduce(self, vg, device):
+        msg = "Removing devices from thin pool"
+        self.problem.check(self.problem.NOT_SUPPORTED, msg)
+
+    def new(self, vg, devices):
+        msg = "Creating a new"
+        self.problem.check(self.problem.NOT_SUPPORTED, msg)
+
+    def extend(self, vg, devices):
+        # Add devices to the parent pool first
+        vg = self[vg]
+        pool = vg['parent_pool']
+        if type(devices) is not list:
+            devices = [devices]
+        command = ['vgextend', pool]
+        command.extend(devices)
+        self.run_lvm(command)
+        # Now resize the thin-pool volume
+        lv = vg['parent_pool'] + '/' + vg['lv_name']
+        command = ['lvresize', lv]
+        command.extend(devices)
+        if vg['active'] == False:
+            self.problem.check(self.DEVICE_INACTIVE, lv)
+        self.run_lvm(command)
+
+    def remove(self, vg):
+        vg = self[vg]
+        lvname = vg['parent_pool'] + '/' + vg['lv_name']
+        command = ['lvremove', lvname]
+        self.run_lvm(command)
+
+    def create(self, vg, size=None, name=None, devs=None,
+               options=None):
+        vg = self[vg]
+        if vg['active'] == False:
+            self.problem.check(self.DEVICE_INACTIVE, lv)
+
+        if name:
+            lvname = name
+        else:
+            lvname = self._generate_lvname("tvol", vg['parent_pool'])
+
+        pool_volume = vg['parent_pool'] + '/' + vg['lv_name']
+
+        # Once can specify either --size or --virtual-size argument when
+        # creating thin volume out of thin pool, but not both.
+        if size and 'virtsize' in options:
+            self.problem.error("Either '--size' or '--virtual-size' can be" +
+                               " can be specified for new thin volume size" +
+                               " but not both")
+
+        virtsize = None
+        # Size needs to be specified for the thin volume
+        if 'virtsize' in options:
+            virtsize = options['virtsize']
+        elif size:
+            virtsize = size
+        else:
+            self.problem.error("Size must be specified to create a volume " +
+                               "from a thin pool")
+
+        # Ignore options for non existing thin volumes somehow
+        command = ['lvcreate', '-n', lvname, '-T', pool_volume,
+                   '-V', str(virtsize) + 'K']
+        self.run_lvm(command)
+        return "{0}/{1}/{2}".format(DM_DEV_DIR, vg['parent_pool'], lvname)

@@ -374,8 +374,8 @@ class BtrfsVolume(Btrfs, template.BackendVolume):
         command = ['filesystem', 'resize', str(int(size)) + "K", vol['mount']]
         self.run_btrfs(command)
 
-    def snapshot(self, vol, destination, name, size, user_set_size):
-        vol = self.data[vol]
+    def snapshot(self, vol, destination, name, snap_size=None):
+        vol = self[vol]
         if 'mount' not in vol:
             tmp = misc.temp_mount("UUID={0}".format(vol['uuid']))
             vol['mount'] = tmp
@@ -386,7 +386,7 @@ class BtrfsVolume(Btrfs, template.BackendVolume):
         if name:
             destination = vol['mount'] + "/" + name
 
-        if user_set_size:
+        if snap_size:
             self.problem.warn("Btrfs doesn't allow setting a size of " +
                               "subvolumes")
 

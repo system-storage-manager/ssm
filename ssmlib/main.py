@@ -738,6 +738,11 @@ class Pool(Storage):
             PR.warn(err)
             PR.warn("Can not get information about LVM pools")
         try:
+            self._data['thin'] = lvm.ThinPool(options=self.options)
+        except RuntimeError as err:
+            PR.warn(err)
+            PR.warn("Can not get information about thin pools")
+        try:
             self._data['btrfs'] = btrfs.BtrfsPool(options=self.options)
         except RuntimeError as err:
             PR.warn(err)
@@ -750,10 +755,11 @@ class Pool(Storage):
 
         backend = self.get_backend(SSM_DEFAULT_BACKEND)
         self.default = Item(backend, backend.default_pool_name)
-        self.header = ['Pool', 'Type', 'Devices', 'Free', 'Used', 'Total']
+        self.header = ['Pool', 'Type', 'Devices', 'Free', 'Used',
+                       'Total', 'Parent']
         self.attrs = ['pool_name', 'type', 'dev_count', 'pool_free',
-                      'pool_used', 'pool_size']
-        self.types = [str, str, str, float, float, float]
+                      'pool_used', 'pool_size', 'parent_pool']
+        self.types = [str, str, str, float, float, float, str]
         self._apply_prefix_filter()
 
 
@@ -1157,7 +1163,10 @@ class StorageHandle(object):
         else:
             have_size = pool_free
 
-        if have_size < size_change:
+        if args.volume['type'] == 'thin':
+            # No reason to check anything here size is not an concern
+            pass
+        elif have_size < size_change:
             PR.check(PR.RESIZE_NOT_ENOUGH_SPACE,
                      [pool_name, args.volume.name, new_size])
         elif len(args.device) > 0 and size_change > pool_free:
@@ -1237,7 +1246,8 @@ class StorageHandle(object):
         # should change in the future (quotas maybe) so the check should
         # be removed or pushed to the backend itself.
         if vol_size and have_size < float(vol_size) and \
-           not (args.pool.exists() and args.pool.type == 'btrfs'):
+           not (args.pool.exists() and args.pool.type == 'btrfs') and \
+           args.pool.type != 'thin':
             if PR.check(PR.CREATE_NOT_ENOUGH_SPACE,
                         [have_size, args.pool.name]):
                 vol_size = None
@@ -1260,7 +1270,7 @@ class StorageHandle(object):
                          "({0})".format(tmp))
 
         if args.raid:
-            # In raid we might has a requirement on a number of devices
+            # In raid we might have a requirement on a number of devices
             # available as well as different requirements on the size
             # available. We do not do any complicated math to figure out
             # whether we really do have enough space on the devices which
@@ -1301,6 +1311,8 @@ class StorageHandle(object):
             options['raid'] = args.raid
             options['stripesize'] = args.stripesize
             options['stripes'] = args.stripes
+        if args.virtual_size:
+            options['virtsize'] = calculate_size(args.virtual_size, None)
 
         # Everything is sorted out, now we can safely calculate
         # the size of the volume, but only is size was specified
@@ -1434,27 +1446,20 @@ class StorageHandle(object):
         Create a new snapshot of the volume.
         """
         pool = self.pool[args.volume['pool_name']]
-        vol_size = float(args.volume['vol_size'])
         pool_free = float(pool['pool_free'])
 
-        if not args.size:
-        # We'll ceate snapshot of the size of 20% of the original volume
-            snap_size = vol_size * 0.20
-            user_set_size = False
-        else:
-            #snap_size = calculate_size(args.size, pool)
+        snap_size = None
+        if args.size:
             snap_size = calculate_resize_size(args.size, args.volume, pool)
-            #snap_size = float(misc.get_real_size(args.size))
+            if pool_free < snap_size:
+                snap_size = pool_free
             user_set_size = True
 
-        if pool_free < snap_size:
-            snap_size = pool_free
-
-        if snap_size <= 0 and pool.type != 'btrfs':
+        if snap_size and snap_size <= 0:
             PR.error("Not enough space ({0} KB) to".format(pool_free) +
                      "to create snapshot")
 
-        args.volume.snapshot(args.dest, args.name, snap_size, user_set_size)
+        args.volume.snapshot(args.dest, args.name, snap_size)
 
     def mount(self, args):
         """
@@ -1624,19 +1629,55 @@ def valid_size(size):
     ('3.14', 'K')
     >>> valid_size("3.14G")
     ('3292528.64', 'K')
-    >>> valid_size("55%FREE")
+    >>> valid_size("G")
+    Traceback (most recent call last):
+    ...
+    ArgumentTypeError: 'G' is not valid number for the resize.
+
+    """
+
+    err = "'{0}' is not valid size.".format(size)
+    if len(size) and size[0] in ['+', '-']:
+        raise argparse.ArgumentTypeError(err)
+    try:
+        ret = misc.get_real_size(size)
+        if float(ret) < 0:
+            raise argparse.ArgumentTypeError(err)
+        return (ret, 'K')
+    except:
+        raise argparse.ArgumentTypeError(err)
+
+def valid_create_size(size):
+    """ Validate that the 'size' is usable size argument. This is almost the
+    same as valid_resize_size() except we do not allow '+' and '-' signs
+
+    >>> valid_create_size("3.14")
+    ('3.14', 'K')
+    >>> valid_create_size("+3.14k")
+    Traceback (most recent call last):
+    ...
+    ArgumentTypeError: '+3.14k' is not valid size.
+    >>> valid_create_size("-3.14k")
+    Traceback (most recent call last):
+    ...
+    ArgumentTypeError: '-3.14k' is not valid size.
+    >>> valid_create_size("3.14k")
+    ('3.14', 'K')
+    >>> valid_create_size("3.14G")
+    ('3292528.64', 'K')
+    >>> valid_create_size("55%FREE")
     ('55', 'FREE')
-    >>> valid_size("+55%FREE")
+    >>> valid_create_size("+55%FREE")
     Traceback (most recent call last):
     ...
     ArgumentTypeError: '+55%FREE' is not valid size.
-    >>> valid_size("55%")
+    >>> valid_create_size("55%")
     ('55', '')
-    >>> valid_size("-55%")
+    >>> valid_create_size("-55%")
     Traceback (most recent call last):
     ...
     ArgumentTypeError: '-55%FREE' is not valid size.
-    >>> valid_size("G")
+    >>> valid_create_size("G")
     Traceback (most recent call last):
     ...
     ArgumentTypeError: 'G' is not valid number for the resize.
@@ -1866,7 +1907,7 @@ class SsmParser(object):
                      total pool size (50%%), as a percentage of free pool
                      space (50%%FREE), or as a percentage of used pool space
                      (50%%USED).''',
-                type=valid_size)
+                type=valid_create_size)
         parser_create.add_argument('-n', '--name',
                 help='''The name for the new logical volume. This is optional
                      and if omitted, name will be generated by the
@@ -1910,6 +1951,12 @@ class SsmParser(object):
                 help='''Mount options are specified with a -o flag followed
                      by a comma separated string of options. This option is
                      equivalent to the -o mount(8) option.''')
+        parser_create.add_argument('-v', '--virtual-size',
+                help='''Gives the virtual size for the new thinly provisioned
+                     volume. A size suffix K|k, M|m, G|g, T|t, P|p, E|e can be
+                     used to define 'power of two' units. If no unit is
+                     provided, it defaults to kilobytes.''',
+                type=valid_size)
         parser_create.add_argument('device', nargs='*',
                 help='''Devices to use for creating the volume. If the device
                      is not in any pool, it is added into the pool prior the
@@ -1981,7 +2028,7 @@ class SsmParser(object):
                      volume size (50%%), as a percentage of free pool space
                      (50%%FREE), or as a percentage of used pool space
                      (50%%USED).''',
-                type=valid_size)
+                type=valid_create_size)
         group = parser_snapshot.add_mutually_exclusive_group()
         group.add_argument('-d', '--dest',
                 help='''Destination of the snapshot specified with absolute
@@ -2038,6 +2085,13 @@ def main(args=None):
             if (args.stripes):
                 err = "You can not specify --stripes without specifying" + \
                       " RAID level!"
+                ssm_parser.parser_create.error(err)
+        # This should be changed to be future proofed and every time we add
+        # new options to any of the commands it would need to be enabled
+        # in each backend if appropriate
+        if args.virtual_size and args.pool.type not in ["lvm", "thin"]:
+                err = "Backed '{0}' does not".format(args.pool.type) + \
+                      " support --virtual-size option!"
                 ssm_parser.parser_create.error(err)
 
     options.verbose = args.verbose
