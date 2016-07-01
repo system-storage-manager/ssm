@@ -12,6 +12,9 @@ pool
     An lvm pool is created when the **create** or **add** commands are used
     with specified devices and a non existing pool name.
 
+    Alternatively a **thin pool** can be created as a result of using
+    **--virtual-size** option to create **thin volume**.
+
 volume
     An lvm volume is just a *logical volume* in lvm language. An lvm volume
     can be created with the **create** command.

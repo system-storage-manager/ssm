@@ -30,3 +30,9 @@ If a **mount** point is provided, **ssm** will attempt to mount the volume
 after it is created. However it will fail if mountable file system is not
 present on the volume.
 
+If the backend allows it (currently only supported with **lvm** backend), 
+**ssm** can be used to create **thinly provisioned volumes** by specifying
+**--virtual-size** option. This will automatically create a **thin pool** of
+a given size provided with **--size** option and **thin volume** of a given
+size provided with **--virtual-size** option and name provided with **--name**
+option. Virtual size can be much bigger than available space in the **pool**.

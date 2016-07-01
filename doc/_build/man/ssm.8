@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "SSM" "8" "March 17, 2016" "0.4" "System Storage Manager"
+.TH "SSM" "8" "July 01, 2016" "0.4" "System Storage Manager"
 .SH NAME
 ssm \- System Storage Manager: a single tool to manage your storage
 .
@@ -61,7 +61,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .sp
 \fBssm\fP [\fB\-h\fP] [\fB\-\-version\fP] [\fB\-v\fP] [\fB\-f\fP] [\fB\-b\fP BACKEND] [\fB\-n\fP] {check,resize,create,list,add,remove,snapshot,mount} ...
 .sp
-\fBssm\fP \fBcreate\fP [\fB\-h\fP] [\fB\-s\fP SIZE] [\fB\-n\fP NAME] [\fB\-\-fstype\fP FSTYPE] [\fB\-r\fP LEVEL] [\fB\-I\fP STRIPESIZE] [\fB\-i\fP STRIPES] [\fB\-p\fP POOL] [\fB\-e\fP [{luks,plain}]] [\fB\-o\fP MNT_OPTIONS] [\fBdevice\fP [\fBdevice\fP ...]] [mount]
+\fBssm\fP \fBcreate\fP [\fB\-h\fP] [\fB\-s\fP SIZE] [\fB\-n\fP NAME] [\fB\-\-fstype\fP FSTYPE] [\fB\-r\fP LEVEL] [\fB\-I\fP STRIPESIZE] [\fB\-i\fP STRIPES] [\fB\-p\fP POOL] [\fB\-e\fP [{luks,plain}]] [\fB\-o\fP MNT_OPTIONS] [\fB\-v\fP VIRTUAL_SIZE] [\fBdevice\fP [\fBdevice\fP ...]] [mount]
 .sp
 \fBssm\fP \fBlist\fP [\fB\-h\fP] [{volumes,vol,dev,devices,pool,pools,fs,filesystems,snap,snapshots}]
 .sp
@@ -129,7 +129,7 @@ command line as a first argument to ssm. They all have a specific use and
 their own arguments, but global ssm arguments are propagated to all commands.
 .SS Create command
 .sp
-\fBssm\fP \fBcreate\fP [\fB\-h\fP] [\fB\-s\fP SIZE] [\fB\-n\fP NAME] [\fB\-\-fstype\fP FSTYPE] [\fB\-r\fP LEVEL] [\fB\-I\fP STRIPESIZE] [\fB\-i\fP STRIPES] [\fB\-p\fP POOL] [\fB\-e\fP [{luks,plain}]] [\fB\-o\fP MNT_OPTIONS] [\fBdevice\fP [\fBdevice\fP ...]] [mount]
+\fBssm\fP \fBcreate\fP [\fB\-h\fP] [\fB\-s\fP SIZE] [\fB\-n\fP NAME] [\fB\-\-fstype\fP FSTYPE] [\fB\-r\fP LEVEL] [\fB\-I\fP STRIPESIZE] [\fB\-i\fP STRIPES] [\fB\-p\fP POOL] [\fB\-e\fP [{luks,plain}]] [\fB\-o\fP MNT_OPTIONS] [\fB\-v\fP VIRTUAL_SIZE] [\fBdevice\fP [\fBdevice\fP ...]] [mount]
 .sp
 This command creates a new volume with defined parameters. If a \fBdevice\fP is
 provided it will be used to create the volume, hence it will be added into the
@@ -161,6 +161,13 @@ this case, volume creation will fail.
 If a \fBmount\fP point is provided, \fBssm\fP will attempt to mount the volume
 after it is created. However it will fail if mountable file system is not
 present on the volume.
+.sp
+If the backend allows it (currently only supported with \fBlvm\fP backend),
+\fBssm\fP can be used to create \fBthinly provisioned volumes\fP by specifying
+\fB\-\-virtual\-size\fP option. This will automatically create a \fBthin pool\fP of
+a given size provided with \fB\-\-size\fP option and \fBthin volume\fP of a given
+size provided with \fB\-\-virtual\-size\fP option and name provided with \fB\-\-name\fP
+option. Virtual size can be much bigger than available space in the \fBpool\fP\&.
 .INDENT 0.0
 .TP
 .B \-h\fP,\fB  \-\-help
@@ -225,6 +232,12 @@ specified.
 Mount options are specified with a \-o flag followed by
 a comma separated string of options. This option is
 equivalent to the \-o mount(8) option.
+.TP
+.BI \-v \ VIRTUAL_SIZE\fP,\fB \ \-\-virtual\-size \ VIRTUAL_SIZE
+Gives the virtual size for the new thinly provisioned
+volume. A size suffix K|k, M|m, G|g, T|t, P|p, E|e can
+be used to define \(aqpower of two\(aq units. If no unit is
+provided, it defaults to kilobytes.
 .UNINDENT
 .SS List command
 .sp
@@ -536,6 +549,9 @@ The default lvm pool name is \fBlvm_pool\fP\&.
 .sp
 An lvm pool is created when the \fBcreate\fP or \fBadd\fP commands are used
 with specified devices and a non existing pool name.
+.sp
+Alternatively a \fBthin pool\fP can be created as a result of using
+\fB\-\-virtual\-size\fP option to create \fBthin volume\fP\&.
 .TP
 .B volume
 An lvm volume is just a \fIlogical volume\fP in lvm language. An lvm volume
@@ -655,6 +671,32 @@ Using the lvm backend \fBcreate\fP a RAID 0 \fBvolume\fP with devices \fI/dev/sd
 .nf
 .ft C
 # ssm create \-\-raid 0 \-\-stripesize 128k /dev/sda /dev/sdb /home
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+\fBCreate\fP a new \fBthinly provisioned volume\fP with a lvm backend using devices
+\fI/dev/sda\fP and \fI/dev/sdb\fP using \fI\-\-virtual\-size\fP option:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+# ssm create \-\-virtual\-size 1T /dev/sda /dev/sdb
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+\fBCreate\fP a new \fBthinly provisioned volume\fP with a defined \fBthin pool\fP
+size and devices \fI/dev/sda\fP and \fI/dev/sdb\fP:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+# ssm create \-\-size 50G \-\-virtual\-size 1T /dev/sda /dev/sdb
 .ft P
 .fi
 .UNINDENT

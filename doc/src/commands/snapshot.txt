@@ -12,4 +12,3 @@ respectively.
 In some cases the file system has to be mounted in order to take a snapshot of
 the **volume**. This will be handled by **ssm** automatically by mounting the
 **volume** temporarily.
-

@@ -25,6 +25,16 @@ Using the lvm backend **create** a RAID 0 **volume** with devices */dev/sda* and
 
     # ssm create --raid 0 --stripesize 128k /dev/sda /dev/sdb /home
 
+**Create** a new **thinly provisioned volume** with a lvm backend using devices
+*/dev/sda* and */dev/sdb* using *--virtual-size* option::
+
+    # ssm create --virtual-size 1T /dev/sda /dev/sdb
+
+**Create** a new **thinly provisioned volume** with a defined **thin pool**
+size and devices */dev/sda* and */dev/sdb*::
+
+    # ssm create --size 50G --virtual-size 1T /dev/sda /dev/sdb
+
 **Extend** btrfs **volume** *btrfs_pool* by 500GB and use */dev/sdc* and
 */dev/sde* to cover the resize::
 
