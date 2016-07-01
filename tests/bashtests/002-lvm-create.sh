@@ -29,6 +29,7 @@ TEST_DEVS=$(cat DEVICES)
 export SSM_DEFAULT_BACKEND='lvm'
 export SSM_LVM_DEFAULT_POOL=$vg1
 export LVOL_PREFIX="lvol"
+export TVOL_PREFIX="tvol"
 export SSM_NONINTERACTIVE='1'
 lvol1=${LVOL_PREFIX}001
 lvol2=${LVOL_PREFIX}002
@@ -42,6 +43,17 @@ which mkfs.ext2 && TEST_FS+="ext2 "
 which mkfs.ext3 && TEST_FS+="ext3 "
 which mkfs.ext4 && TEST_FS+="ext4 "
 which mkfs.xfs  && TEST_FS+="xfs"
+
+# Some basic thin tests
+tvol1=${TVOL_PREFIX}001
+tvol2=${TVOL_PREFIX}002
+tvol3=${TVOL_PREFIX}003
+tvol4=${TVOL_PREFIX}004
+
+tpool1=${SSM_LVM_DEFAULT_POOL}_thin001
+tpool2=${SSM_LVM_DEFAULT_POOL}_thin002
+tpool3=${SSM_LVM_DEFAULT_POOL}_thin003
+
 
 # Create with single device
 ssm create $dev1
@@ -369,6 +381,147 @@ check vg_field $SSM_LVM_DEFAULT_POOL pv_count 2
 ssm -f create -p $pool1 $dev1
 check lv_field $pool1/$lvol1 pv_count 1
 check vg_field $SSM_LVM_DEFAULT_POOL pv_count 1
+ssm  -f remove --all
+
+# Some basic thin tests
+tvol1=${TVOL_PREFIX}001
+tvol2=${TVOL_PREFIX}002
+tvol3=${TVOL_PREFIX}003
+tvol4=${TVOL_PREFIX}004
+
+tpool1=${SSM_LVM_DEFAULT_POOL}_thin001
+tpool2=${SSM_LVM_DEFAULT_POOL}_thin002
+tpool3=${SSM_LVM_DEFAULT_POOL}_thin003
+
+
+# Create thin volume smaller than pool
+virtualsize=$(($DEV_SIZE/2))
+ssm create --virtual-size ${virtualsize}M $dev1 $dev2 $dev3
+virtualsize=$(align_size_up $virtualsize)
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 3
+check lv_field $SSM_LVM_DEFAULT_POOL/$tpool1 pv_count 3
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 lv_size ${virtualsize}.00m
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 segtype thin
+check list_table "$(ssm list pool)" $SSM_LVM_DEFAULT_POOL lvm 3 none none none
+check list_table "$(ssm list pool)" $tpool1 thin 3 none none none $SSM_LVM_DEFAULT_POOL
+check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$tvol1 $tpool1 ${virtualsize}.00MB thin
+ssm  -f remove --all
+
+# Create thin volume bigger than pool + mount
+virtualsize=$(($DEV_SIZE*10))
+ssm create --fs ext4 --virtual-size ${virtualsize}M $dev1 $dev2 $dev3 $mnt1
+virtualsize=$(align_size_up $virtualsize)
+check mountpoint $SSM_LVM_DEFAULT_POOL-$tvol1 $mnt1
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 3
+check lv_field $SSM_LVM_DEFAULT_POOL/$tpool1 pv_count 3
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 lv_size ${virtualsize}.00m
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 segtype thin
+check list_table "$(ssm list pool)" $SSM_LVM_DEFAULT_POOL lvm 3 none none none
+check list_table "$(ssm list pool)" $tpool1 thin 3 none none none $SSM_LVM_DEFAULT_POOL
+check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$tvol1 $tpool1 ${virtualsize}.00MB ext4 none none thin
+umount $mnt1
+ssm  -f remove --all
+
+# Create this volume smaller than pool with thin pool size specified and mount
+virtualsize=$(($DEV_SIZE/2))
+size=$(($DEV_SIZE))
+ssm create --fs ext4 --size ${size}M --virtual-size ${virtualsize}M $dev1 $dev2 $dev3 $mnt1
+virtualsize=$(align_size_up $virtualsize)
+size=$(align_size_up $size)
+check mountpoint $SSM_LVM_DEFAULT_POOL-$tvol1 $mnt1
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 3
+check lv_field $SSM_LVM_DEFAULT_POOL/$tpool1 pv_count 3
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 lv_size ${virtualsize}.00m
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 segtype thin
+check list_table "$(ssm list pool)" $SSM_LVM_DEFAULT_POOL lvm 3 none none none
+check list_table "$(ssm list pool)" $tpool1 thin 3 none none ${size}.00MB $SSM_LVM_DEFAULT_POOL
+check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$tvol1 $tpool1 ${virtualsize}.00MB ext4 none none thin
+umount $mnt1
+ssm  -f remove --all
+
+# Create this volume bigger than pool with thin pool size specified
+virtualsize=$(($DEV_SIZE*10))
+size=$(($DEV_SIZE))
+ssm create --size ${size}M --virtual-size ${virtualsize}M $dev1 $dev2 $dev3
+virtualsize=$(align_size_up $virtualsize)
+size=$(align_size_up $size)
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 3
+check lv_field $SSM_LVM_DEFAULT_POOL/$tpool1 pv_count 3
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 lv_size ${virtualsize}.00m
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 segtype thin
+check list_table "$(ssm list pool)" $SSM_LVM_DEFAULT_POOL lvm 3 none none none
+check list_table "$(ssm list pool)" $tpool1 thin 3 none none ${size}.00MB $SSM_LVM_DEFAULT_POOL
+check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$tvol1 $tpool1 ${virtualsize}.00MB thin
+ssm  -f remove --all
+
+# Create new thin volume out of existing thin pool
+virtualsize=$(($DEV_SIZE*10))
+ssm create --virtual-size ${virtualsize}M $dev1 $dev2 $dev3
+# --size, or --virtual-size can be specified when creathing thin volume from thin pool
+ssm create -p $tpool1 --virtual-size ${virtualsize}M
+ssm create --fs ext4 -p $tpool1 --size ${virtualsize}M $mnt1
+# Size needs to be specified in order to create thin volume from thin pool
+not ssm create -p $tpool1
+virtualsize=$(align_size_up $virtualsize)
+check mountpoint $SSM_LVM_DEFAULT_POOL-$tvol3 $mnt1
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 3
+check lv_field $SSM_LVM_DEFAULT_POOL/$tpool1 pv_count 3
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 lv_size ${virtualsize}.00m
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol2 lv_size ${virtualsize}.00m
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol3 lv_size ${virtualsize}.00m
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 segtype thin
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol2 segtype thin
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol3 segtype thin
+check list_table "$(ssm list pool)" $SSM_LVM_DEFAULT_POOL lvm 3 none none none
+check list_table "$(ssm list pool)" $tpool1 thin 3 none none none $SSM_LVM_DEFAULT_POOL
+check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$tvol1 $tpool1 ${virtualsize}.00MB thin
+check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$tvol2 $tpool1 ${virtualsize}.00MB thin
+check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$tvol3 $tpool1 ${virtualsize}.00MB ext4 none none thin
+# Add device into the pool as well
+ssm create -p $tpool1 --virtual-size ${virtualsize}M $dev4
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 4
+check lv_field $SSM_LVM_DEFAULT_POOL/$tpool1 pv_count 4
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol4 lv_size ${virtualsize}.00m
+check list_table "$(ssm list pool)" $SSM_LVM_DEFAULT_POOL lvm 4 none none none
+check list_table "$(ssm list pool)" $tpool1 thin 4 none none none $SSM_LVM_DEFAULT_POOL
+check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$tvol4 $tpool1 ${virtualsize}.00MB thin
+umount $mnt1
+ssm  -f remove --all
+
+# Create new thin volume out of existing lvm pool
+virtualsize=$(($DEV_SIZE*10))
+ssm add $dev1 $dev2 $dev3
+ssm create --fs ext4 -p $SSM_LVM_DEFAULT_POOL --virtual-size ${virtualsize}M $mnt1
+virtualsize=$(align_size_up $virtualsize)
+check mountpoint $SSM_LVM_DEFAULT_POOL-$tvol1 $mnt1
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 3
+check lv_field $SSM_LVM_DEFAULT_POOL/$tpool1 pv_count 3
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 lv_size ${virtualsize}.00m
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 segtype thin
+check list_table "$(ssm list pool)" $SSM_LVM_DEFAULT_POOL lvm 3 none none none
+check list_table "$(ssm list pool)" $tpool1 thin 3 none none none $SSM_LVM_DEFAULT_POOL
+check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$tvol1 $tpool1 ${virtualsize}.00MB ext4 none none thin
+# Add device into the pool as well
+ssm create -p $SSM_LVM_DEFAULT_POOL --virtual-size ${virtualsize}M $dev4 $dev5
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 5
+check lv_field $SSM_LVM_DEFAULT_POOL/$tpool2 pv_count 5
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol2 lv_size ${virtualsize}.00m
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol2 segtype thin
+check list_table "$(ssm list pool)" $SSM_LVM_DEFAULT_POOL lvm 5 none none none
+check list_table "$(ssm list pool)" $tpool2 thin 5 none none none $SSM_LVM_DEFAULT_POOL
+check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$tvol2 $tpool2 ${virtualsize}.00MB thin
+# Add device into the pool as well specifying size
+size=$(($DEV_SIZE))
+ssm create -p $SSM_LVM_DEFAULT_POOL --size ${size}M --virtual-size ${virtualsize}M $dev6 $dev7
+size=$(align_size_up $size)
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 7
+check lv_field $SSM_LVM_DEFAULT_POOL/$tpool3 pv_count 7
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol3 lv_size ${virtualsize}.00m
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol3 segtype thin
+check list_table "$(ssm list pool)" $SSM_LVM_DEFAULT_POOL lvm 7 none none none
+check list_table "$(ssm list pool)" $tpool3 thin 7 none none ${size}.00MB $SSM_LVM_DEFAULT_POOL
+check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$tvol3 $tpool3 ${virtualsize}.00MB thin
+umount $mnt1
 ssm  -f remove --all
 
 ssm create --help

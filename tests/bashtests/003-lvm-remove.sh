@@ -45,7 +45,6 @@ which mkfs.ext3 && _FS="ext3"
 which mkfs.ext4 && _FS="ext4"
 which mkfs.xfs  && _FS="xfs"
 
-
 TEST_MNT=$TESTDIR/mnt
 
 # Remove logical volume
@@ -67,6 +66,30 @@ check vg_field $SSM_LVM_DEFAULT_POOL vg_name $SSM_LVM_DEFAULT_POOL
 ssm -f remove $SSM_LVM_DEFAULT_POOL
 not check vg_field $SSM_LVM_DEFAULT_POOL vg_name $SSM_LVM_DEFAULT_POOL
 
+# Some basic thin tests
+export TVOL_PREFIX="tvol"
+tvol1=${TVOL_PREFIX}001
+tpool1=${SSM_LVM_DEFAULT_POOL}_thin001
+
+# Remove thin volume
+virtualsize=$(($DEV_SIZE*10))
+ssm create --virtual-size ${virtualsize}M $dev1 $dev2 $dev3
+check lv_field ${SSM_LVM_DEFAULT_POOL}/$tpool1 lv_name $tpool1
+check lv_field ${SSM_LVM_DEFAULT_POOL}/$tvol1 lv_name $tvol1
+ssm -f remove ${SSM_LVM_DEFAULT_POOL}/$tvol1
+not check lv_field ${SSM_LVM_DEFAULT_POOL}/$tvol1 lv_name $tvol1
+check lv_field ${SSM_LVM_DEFAULT_POOL}/$tpool1 lv_name $tpool1
+# Remove thin pool
+ssm -f remove $tpool1
+not check lv_field ${SSM_LVM_DEFAULT_POOL}/$tpool1 lv_name $tpool1
+
+# Remove thin pool with volume
+ssm create --virtual-size ${virtualsize}M $dev1 $dev2 $dev3
+check lv_field ${SSM_LVM_DEFAULT_POOL}/$tpool1 lv_name $tpool1
+check lv_field ${SSM_LVM_DEFAULT_POOL}/$tvol1 lv_name $tvol1
+ssm -f remove $tpool1
+not check lv_field ${SSM_LVM_DEFAULT_POOL}/$tpool1 lv_name $tpool1
+not check lv_field ${SSM_LVM_DEFAULT_POOL}/$tvol1 lv_name $tvol1
 
 # Remove unused devices from the pool
 ssm create $dev1 $dev2 $dev3

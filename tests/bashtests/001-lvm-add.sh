@@ -22,7 +22,8 @@ export test_description='Exercise ssm add'
 
 export COLUMNS=1024
 DEV_COUNT=10
-aux prepare_devs $DEV_COUNT 10
+DEV_SIZE=10
+aux prepare_devs $DEV_COUNT $DEV_SIZE
 TEST_DEVS=$(cat DEVICES)
 export SSM_DEFAULT_BACKEND='lvm'
 export SSM_LVM_DEFAULT_POOL=$vg1
@@ -173,6 +174,33 @@ check vg_field $SSM_LVM_DEFAULT_POOL pv_count 2
 ssm -f add -p $pool1 $dev1
 check vg_field $pool1 pv_count 1
 check vg_field $SSM_LVM_DEFAULT_POOL pv_count 1
+ssm  -f remove --all
+
+# Some basic thin tests
+export TVOL_PREFIX="tvol"
+tvol1=${TVOL_PREFIX}001
+tpool1=${SSM_LVM_DEFAULT_POOL}_thin001
+
+# Create thin volume
+virtualsize=$(($DEV_SIZE*10))
+ssm create --virtual-size ${virtualsize}M $dev1 $dev2 $dev3
+virtualsize=$(align_size_up $virtualsize)
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 3
+check lv_field $SSM_LVM_DEFAULT_POOL/$tpool1 pv_count 3
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 lv_size ${virtualsize}.00m
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 segtype thin
+check list_table "$(ssm list pool)" $SSM_LVM_DEFAULT_POOL lvm 3 none none 24.00MB
+check list_table "$(ssm list pool)" $tpool1 thin 3 none none 16.00MB $SSM_LVM_DEFAULT_POOL
+check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$tvol1 $tpool1 ${virtualsize}.00MB thin
+# Add device to the thin pool
+ssm add -p $tpool1 $dev4
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 4
+check lv_field $SSM_LVM_DEFAULT_POOL/$tpool1 pv_count 4
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 lv_size ${virtualsize}.00m
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 segtype thin
+check list_table "$(ssm list pool)" $SSM_LVM_DEFAULT_POOL lvm 4 none none 32.00MB
+check list_table "$(ssm list pool)" $tpool1 thin 4 none none 24.00MB $SSM_LVM_DEFAULT_POOL
+check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$tvol1 $tpool1 ${virtualsize}.00MB thin
 ssm  -f remove --all
 
 ssm add --help

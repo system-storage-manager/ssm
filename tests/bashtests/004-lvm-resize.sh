@@ -282,6 +282,67 @@ ssm -f resize -s +$((DEV_SIZE/2))M  $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2
 check vg_field $SSM_LVM_DEFAULT_POOL pv_count 2
 ssm -f remove --all
 
+# Some basic thin tests
+export TVOL_PREFIX="tvol"
+tvol1=${TVOL_PREFIX}001
+tpool1=${SSM_LVM_DEFAULT_POOL}_thin001
+
+# Resize thin volume
+virtualsize=$(($DEV_SIZE*10))
+ssm create --virtual-size ${virtualsize}M $dev1 $dev2 $dev3
+virtualsize=$(align_size_up $virtualsize)
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count 3
+check lv_field $SSM_LVM_DEFAULT_POOL/$tpool1 pv_count 3
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 lv_size ${virtualsize}.00m
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 segtype thin
+check list_table "$(ssm list pool)" $SSM_LVM_DEFAULT_POOL lvm 3 none none none
+check list_table "$(ssm list pool)" $tpool1 thin 3 none none none $SSM_LVM_DEFAULT_POOL
+check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$tvol1 $tpool1 ${virtualsize}.00MB thin
+# Increase size of the thin volume
+ssm -f resize --size 100G ${DM_DEV_DIR}/$SSM_LVM_DEFAULT_POOL/$tvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 lv_size 100.00g
+ssm -f resize --size +100G ${DM_DEV_DIR}/$SSM_LVM_DEFAULT_POOL/$tvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 lv_size 200.00g
+ssm -f resize --size +10% ${DM_DEV_DIR}/$SSM_LVM_DEFAULT_POOL/$tvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 lv_size 220.00g
+ssm -f resize --size 50% ${DM_DEV_DIR}/$SSM_LVM_DEFAULT_POOL/$tvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 lv_size 110.00g
+# Decrease size of the thin volume
+ssm -f resize --size 100G ${DM_DEV_DIR}/$SSM_LVM_DEFAULT_POOL/$tvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 lv_size 100.00g
+ssm -f resize -s-50% ${DM_DEV_DIR}/$SSM_LVM_DEFAULT_POOL/$tvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 lv_size 50.00g
+ssm -f resize -s-10G ${DM_DEV_DIR}/$SSM_LVM_DEFAULT_POOL/$tvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 lv_size 40.00g
+ssm -f resize -s200% ${DM_DEV_DIR}/$SSM_LVM_DEFAULT_POOL/$tvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 lv_size 80.00g
+ssm  -f remove --all
+
+# Resize thin pool
+virtualsize=$(($DEV_SIZE*10))
+size=$(($DEV_SIZE*2))
+ssm create --size ${size}M --virtual-size ${virtualsize}M $TEST_DEVS
+virtualsize=$(align_size_up $virtualsize)
+size=$(align_size_up $size)
+check lv_field $SSM_LVM_DEFAULT_POOL/$tpool1 pv_count $DEV_COUNT
+check lv_field $SSM_LVM_DEFAULT_POOL/$tpool1 lv_size ${size}.00m
+check list_table "$(ssm list pool)" $tpool1 thin $DEV_COUNT none none ${size}.00MB $SSM_LVM_DEFAULT_POOL
+# Increase size of the thin pool
+size=$(($DEV_SIZE*3))
+ssm resize --size ${size}M $SSM_LVM_DEFAULT_POOL/$tpool1
+check lv_field $SSM_LVM_DEFAULT_POOL/$tpool1 lv_size ${size}.00m
+size=$(($DEV_SIZE*4))
+ssm resize --size +${DEV_SIZE}M $SSM_LVM_DEFAULT_POOL/$tpool1
+check lv_field $SSM_LVM_DEFAULT_POOL/$tpool1 lv_size ${size}.00m
+size=$(($DEV_SIZE*6))
+ssm resize --size +50% $SSM_LVM_DEFAULT_POOL/$tpool1
+check lv_field $SSM_LVM_DEFAULT_POOL/$tpool1 lv_size ${size}.00m
+size=$(($DEV_SIZE*9))
+ssm resize --size 150% $SSM_LVM_DEFAULT_POOL/$tpool1
+check lv_field $SSM_LVM_DEFAULT_POOL/$tpool1 lv_size ${size}.00m
+not ssm resize --size 500% $SSM_LVM_DEFAULT_POOL/$tpool1
+ssm  -f remove --all
+
 ssm resize --help
 
 # Some cases which should fail

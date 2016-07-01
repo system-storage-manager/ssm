@@ -174,3 +174,25 @@ ssm add $dev3
 not ssm snapthot -s $((DEV_SIZE*2)) -n $snap1 $SSM_LVM_DEFAULT_POOL/$lvol1
 check vg_field $SSM_LVM_DEFAULT_POOL lv_count 1
 ssm -f remove --all
+
+# Some basic thin tests
+export TVOL_PREFIX="tvol"
+tvol1=${TVOL_PREFIX}001
+tpool1=${SSM_LVM_DEFAULT_POOL}_thin001
+
+# Snapshot thin volume
+virtualsize=$(($DEV_SIZE*10))
+ssm create --virtual-size ${virtualsize}M $TEST_DEVS
+virtualsize=$(align_size_up $virtualsize)
+check vg_field $SSM_LVM_DEFAULT_POOL pv_count $DEV_COUNT
+check lv_field $SSM_LVM_DEFAULT_POOL/$tpool1 pv_count $DEV_COUNT
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 lv_size ${virtualsize}.00m
+check lv_field $SSM_LVM_DEFAULT_POOL/$tvol1 segtype thin
+check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$tvol1 $tpool1 ${virtualsize}.00MB thin
+ssm snapshot --name $snap1 $SSM_LVM_DEFAULT_POOL/$tvol1
+ssm snapshot --name $snap2 $DM_DEV_DIR/$SSM_LVM_DEFAULT_POOL/$tvol1
+check list_table "$(ssm list snap)" $snap1 $tvol1 $tpool1 none thin
+check list_table "$(ssm list snap)" $snap2 $tvol1 $tpool1 none thin
+not ssm snapshot --size ${DEV_SIZE}M --name $snap1 $SSM_LVM_DEFAULT_POOL/$tvol1
+not ssm snapshot --size ${DEV_SIZE}M --name $snap2 $SSM_LVM_DEFAULT_POOL/$tvol1
+ssm  -f remove --all
