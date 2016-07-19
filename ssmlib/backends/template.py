@@ -83,6 +83,10 @@ class BackendVolume(Backend):
         self.problem.check(self.problem.NOT_SUPPORTED,
                         "Removing volume with {0} backend".format(self.type))
 
+    def resize(self, volume, size, resize_fs=True):
+        self.problem.check(self.problem.NOT_SUPPORTED,
+                        "Resizing volume with {0} backend".format(self.type))
+
 
 class BackendDevice(Backend):
     def __init__(self, *args, **kwargs):

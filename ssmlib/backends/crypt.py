@@ -225,11 +225,6 @@ class DmCryptVolume(DmObject, template.BackendVolume):
         self.run_cryptsetup(command)
         misc.wipefs(vol['crypt_device'], CRYPT_SIGNATURES)
 
-    def resize(self, dm, size, resize_fs=True):
-        size = str(int(size) * 2)
-        command = ['resize', '--size', size, dm]
-        self.run_cryptsetup(command)
-
 
 class DmCryptDevice(DmObject, template.BackendDevice):
 
