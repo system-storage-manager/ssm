@@ -474,7 +474,7 @@ def run(cmd, show_cmd=False, stdout=False, stderr=True, can_fail=False,
             cmd[i] = str(item)
 
     proc = subprocess.Popen(cmd, stdout=stdout,
-                            stderr=stderr, stdin=stdin)
+                            stderr=stderr, stdin=stdin, close_fds=True)
 
     if stdin_data is not None:
 
