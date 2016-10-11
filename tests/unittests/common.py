@@ -74,6 +74,10 @@ class MockSystemDataSource(unittest.TestCase):
         misc.run = self.mock_run
         self.get_partitions_orig = misc.get_partitions
         misc.get_partitions = self.mock_get_partitions
+        self.get_real_device_orig = misc.get_real_device
+        misc.get_real_device = self.mock_get_real_device
+        self.get_device_size_orig = misc.get_device_size
+        misc.get_device_size = self.mock_get_device_size
         self.is_bdevice_orig = misc.is_bdevice
         misc.is_bdevice = self.mock_is_bdevice
         self.is_directory_orig = main.is_directory
@@ -96,6 +100,7 @@ class MockSystemDataSource(unittest.TestCase):
         self.vol_data = {}
         self.pool_data = {}
         self.mount_data = {}
+        self.links = {}
         self._mpoint = False
         main.SSM_NONINTERACTIVE = True
 
@@ -108,6 +113,8 @@ class MockSystemDataSource(unittest.TestCase):
         self.mount_data = {}
         misc.run = self.run_orig
         misc.get_partitions = self.get_partitions_orig
+        misc.get_real_device = self.get_real_device_orig
+        misc.get_device_size = self.get_device_size_orig
         misc.is_bdevice = self.is_bdevice_orig
         main.is_directory = self.is_directory_orig
         misc.get_mounts = self.get_mounts_orig
@@ -193,6 +200,18 @@ class MockSystemDataSource(unittest.TestCase):
                               data['dev_name']])
         return partitions
 
+    def mock_get_real_device(self, devname):
+        for dev, data in self.dev_data.items():
+            if dev == devname:
+                return dev
+        for name, target in self.links.items():
+            if name == devname:
+                return self.mock_get_real_device(target)
+        return devname
+
+    def mock_get_device_size(self, device):
+        return self.dev_data[device]['dev_size']
+
     def mock_is_directory(self, string):
         if string in self.directories:
             return string
@@ -242,6 +261,9 @@ class MockSystemDataSource(unittest.TestCase):
 
     def _addDir(self, dirname):
         self.directories.append(dirname)
+
+    def _addLink(self, target, name):
+        self.links[name] = target
 
     def _addDevice(self, dev_name, dev_size, minor=0):
         self.dev_data[dev_name] = {'dev_name': dev_name, 'dev_size': dev_size,
