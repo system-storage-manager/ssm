@@ -107,7 +107,6 @@ def quick_test():
     tests_btrfs = test_loader.loadTestsFromModule(test_btrfs)
     tests_ssm = test_loader.loadTestsFromModule(test_ssm)
     tests = unittest.TestSuite([tests_lvm, tests_btrfs, tests_ssm])
-    tests = unittest.TestSuite([tests_ssm])
     test_runner = unittest.TextTestRunner(verbosity=2)
     test_runner.run(tests)
 
