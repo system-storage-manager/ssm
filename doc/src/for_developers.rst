@@ -58,6 +58,10 @@ Tests in System Storage Manager are divided into four levels.
    special prefix, and the SSM_PREFIX_FILTER environment variable is set to make
    **ssm** to exclude all items which does not match this special prefix.
 
+   The standard place for temporary files is within SSM tests directory.
+   However, if for some reason you don't want/can't use this location, set
+   the SSM_TEST_DIR environment variable to any other path.
+
    Even though we tried hard to make sure that the bash tests do not change
    your system configuration, we recommend you **not** to run tests with root
    privileges on your work or production system, but rather to run them on your
