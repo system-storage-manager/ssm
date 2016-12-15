@@ -90,6 +90,8 @@ class MockSystemDataSource(unittest.TestCase):
         misc.send_udev_event = self.mock_send_udev_event
         self.get_fs_type_orig = misc.get_fs_type
         misc.get_fs_type = self.mock_get_fs_type
+        self.create_directory = main.create_directory
+        main.create_directory = self.mock_create_directory
         self.dev_data = {}
         self.vol_data = {}
         self.pool_data = {}
@@ -193,6 +195,9 @@ class MockSystemDataSource(unittest.TestCase):
                 return None
 
     def mock_send_udev_event(self, device, event):
+        pass
+
+    def mock_create_directory(self, string):
         pass
 
     def _removeMount(self, device):
