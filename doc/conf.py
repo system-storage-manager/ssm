@@ -54,7 +54,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u('System Storage Manager')
-copyright = u('2015, Red Hat, Inc., Lukáš Czerner <lczerner@redhat.com>')
+copyright = u('2015, Red Hat, Inc., Jan Ťulák <jtulak@redhat.com>, Lukáš Czerner <lczerner@redhat.com>')
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -192,7 +192,7 @@ htmlhelp_basename = 'SystemStorageManagerdoc'
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'SystemStorageManager.tex', u('System Storage Manager Documentation'),
-   u('Lukáš Czerner'), 'manual'),
+   u('Lukáš Czerner, Jan Ťulák'), 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -226,5 +226,5 @@ latex_documents = [
 man_pages = [
     ('manpage', 'ssm',
      u('System Storage Manager: a single tool to manage your storage'),
-     [u('Lukáš Czerner <lczerner@redhat.com>')], 8)
+     [u('Jan Ťulák <jtulak@redhat.com>, Lukáš Czerner <lczerner@redhat.com>')], 8)
 ]

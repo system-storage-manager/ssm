@@ -3,6 +3,10 @@ System Storage Manager
 
 A single tool to manage your storage.
 
+This document in HTML form also at:
+
+https://system-storage-manager.github.io/
+
 .. include:: src/description.rst
 .. include:: src/licence.rst
 

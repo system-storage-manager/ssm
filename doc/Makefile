@@ -141,4 +141,4 @@ dist:	clean man text singlehtml
 	@cp $(BUILDDIR)/text/install.txt ../INSTALL
 
 push:
-	scp -r $(BUILDDIR)/singlehtml/* lczerner@web.sourceforge.net:/home/project-web/storagemanager/htdocs/
+	./publish-html-to-github.sh

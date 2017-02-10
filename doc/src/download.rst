@@ -1,8 +1,7 @@
 Download
 ========
 
-You can get System Storage Manager from the git repository on SourceForge
-project page http://sourceforge.net/p/storagemanager/code/. There are two
+You can get System Storage Manager from the git repository on GitHub project page https://github.com/system-storage-manager/ssm/releases/. There are two
 branches: ``master`` which contains the stable release and ``devel`` where
 the development is happening. Once in a while the ``devel`` branch is
 merged into ``master``, releasing new version of System Storage Manager.
@@ -13,5 +12,4 @@ already work.
 
 You can check out the ``master`` branch of the git repository::
 
-    git clone git://git.code.sf.net/p/storagemanager/code ssm
-
+    git clone https://github.com/system-storage-manager/ssm.git

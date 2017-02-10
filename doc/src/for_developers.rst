@@ -9,7 +9,7 @@ SourceForge. Please, base all of your work on the ``devel`` branch since
 it is more up-to-date and it will save us some work when merging your
 patches::
 
-    git clone --branch devel git://git.code.sf.net/p/storagemanager/code storagemanager-code
+    git clone --branch devel git@github.com:system-storage-manager/ssm.git storagemanager-code
 
 Any form of contribution - patches, documentation, reviews or rants are
 appreciated. See :ref:`Mailing list section <mailing-list>` section.

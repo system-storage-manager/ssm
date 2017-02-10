@@ -1,6 +1,7 @@
 Licence
 =======
 
+(C)2017 Red Hat, Inc., Jan Tulak <jtulak@redhat.com>
 (C)2011 Red Hat, Inc., Lukas Czerner <lczerner@redhat.com>
 
 This program is free software: you can redistribute it and/or modify
