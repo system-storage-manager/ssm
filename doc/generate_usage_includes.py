@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 
 import re
+import sys, os
+
+# Add into PATH so we don't use installed ssmlib, but the one we are developing
+sys.path.insert(0, os.path.join( os.path.dirname(os.path.realpath(__file__)), ".." ))
+
 from ssmlib import main
 
 SYNOPSIS_INC = "src/synopsis.inc"
