@@ -138,9 +138,14 @@ some simple rules:
    *Long description* describing what was changed with and why and finally
    Signed-off-by tag.
 
+#. The preferred way of accepting patches is through pull requests on GitHub,
+   but it is possible to send them to the mailing list if you don't have GitHub
+   account.
+
 #. If you're going to send a patch to the mailing list, please send the patch
    inlined in the email body. It is much better for review process.
 
 .. hint::
     You can use **git** to do all the work for you. ``git format-patch`` and
-    ``git send-email`` will help you with creating and sending the patch.
+    ``git send-email`` will help you with creating and sending the patch to the
+    mailing list.

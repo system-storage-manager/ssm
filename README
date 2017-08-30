@@ -101,11 +101,11 @@ system is not present on the volume.
 
 If the backend allows it (currently only supported with **lvm**
 backend), **ssm** can be used to create **thinly provisioned volumes**
-by specifying **--virtual-size** option. This will automatically
-create a **thin pool** of a given size provided with **--size** option
-and **thin volume** of a given size provided with **--virtual-size**
-option and name provided with **--name** option. Virtual size can be
-much bigger than available space in the **pool**.
+by specifying **--virtual-size** option. This will automatically create
+a **thin pool** of a given size provided with **--size** option and
+**thin volume** of a given size provided with **--virtual-size** option
+and name provided with **--name** option. Virtual size can be much
+bigger than available space in the **pool**.
 
 
 List command
@@ -186,7 +186,7 @@ This will be handled by **ssm** automatically by mounting the
 
 In addition to specifying new size of the volume directly, percentage
 can be specified as well. Specify **--size 70%** to resize the volume
-to 70% of it's original size. Additionally, percentage of the used, or
+to 70% of it’s original size. Additionally, percentage of the used, or
 free pool space can be specified as well using keywords FREE, or USED
 respectively.
 
@@ -229,7 +229,7 @@ Add command
 ***********
 
 This command adds a **device** into the pool. By default, the
-**device** will not be added if it's already a part of a different
+**device** will not be added if it’s already a part of a different
 pool, but the user will be asked whether or not to remove the device
 from its pool. When multiple devices are provided, all of them are
 added into the pool. If one of the devices cannot be added into the
@@ -284,8 +284,8 @@ pool
    When creating a new btrfs pool, the name of the pool is used as the
    file system label. If there is an already existing btrfs file
    system in the system without a label, a btrfs pool name will be
-   generated for internal use in the following format "btrfs_{device
-   base name}".
+   generated for internal use in the following format “btrfs_{device
+   base name}”.
 
    A btrfs pool is created when the **create** or **add** command is
    used with specified devices and non existing pool name.
@@ -302,7 +302,7 @@ volume
    The volume name is used as subvolume path in the btrfs file system
    and every object in this path must exist in order to create a
    volume. The volume name for internal tracking and that is visible
-   to the user is generated in the format "{pool_name}:{volume name}",
+   to the user is generated in the format “{pool_name}:{volume name}”,
    but volumes can be also referenced by its mount point.
 
    The btrfs volumes are only shown in the *list* output, when the
@@ -466,7 +466,7 @@ group) is lvm_pool:
 
    # ssm create --fs ext4 -s 15G /dev/loop0 /dev/loop1
 
-The name of the new volume is '/dev/lvm_pool/lvol001'. Resize the
+The name of the new volume is ‘/dev/lvm_pool/lvol001’. Resize the
 volume to 10GB:
 
    # ssm resize -s-5G /dev/lvm_pool/lvol001
@@ -476,7 +476,7 @@ the pool:
 
    # ssm resize -s 100G /dev/lvm_pool/lvol001 /dev/loop2
 
-Now we can try to create a new lvm volume named 'myvolume' from the
+Now we can try to create a new lvm volume named ‘myvolume’ from the
 remaining pool space with the xfs file system and mount it to
 /mnt/test1:
 
@@ -499,7 +499,7 @@ You can then easily remove the old volume with:
 
    # ssm remove /dev/lvm_pool/lvol001
 
-Now let's try to create a btrfs volume. Btrfs is a separate backend,
+Now let’s try to create a btrfs volume. Btrfs is a separate backend,
 not just a file system. That is because btrfs itself has an integrated
 volume manager. The default btrfs pool name is btrfs_pool.:
 
@@ -546,8 +546,8 @@ for you.:
    /dev/sda5                              49.44 GB  ext4   49.44 GB  29.77 GB  part    /mnt/test
    -----------------------------------------------------------------------------------------------
 
-Now let's free up some of the loop devices so that we can try to add
-them into the btrfs_pool. So we'll simply remove lvm myvolume and
+Now let’s free up some of the loop devices so that we can try to add
+them into the btrfs_pool. So we’ll simply remove lvm myvolume and
 resize lvol001 so we can remove /dev/loop2. Note that myvolume is
 mounted so we have to unmount it first.:
 
@@ -560,7 +560,7 @@ Add device to the btrfs file system:
 
    # ssm add /dev/loop2 -p btrfs_pool
 
-Now let's see what happened. Note that to actually see btrfs
+Now let’s see what happened. Note that to actually see btrfs
 subvolumes you have to mount the file system first:
 
    # mount -L btrfs_pool /mnt/test1/
@@ -709,7 +709,7 @@ Crypt backend
 For developers
 **************
 
-We are accepting patches! If you're interested in contributing to the
+We are accepting patches! If you’re interested in contributing to the
 System Storage Manager code, just checkout the git repository located
 on SourceForge. Please, base all of your work on the "devel" branch
 since it is more up-to-date and it will save us some work when merging
@@ -741,13 +741,13 @@ Tests in System Storage Manager are divided into four levels.
    commands actually result in the proper backend callbacks. It does
    not require root permissions and it does not touch your system
    configuration in any way. It actually should not invoke any shell
-   command, and if it does it's a bug.
+   command, and if it does it’s a bug.
 
 3. Second part of unittests is backend testing. We are mainly
    testing whether ssm commands result in proper backend operations.
    It does not require root permissions and it does not touch your
    system configuration in any way. It actually should not invoke any
-   shell command and if it does it's a bug.
+   shell command and if it does it’s a bug.
 
 4. And finally there are real bash tests located in
    "tests/bashtests". Bash tests are divided into files. Each file
@@ -769,7 +769,7 @@ Tests in System Storage Manager are divided into four levels.
    prefix.
 
    The standard place for temporary files is within SSM tests
-   directory. However, if for some reason you don't want/can't use
+   directory. However, if for some reason you don’t want/can’t use
    this location, set the SSM_TEST_DIR environment variable to any
    other path.
 
@@ -801,7 +801,7 @@ all documents.
 
 Moreover, parts of the documentation such as *synopsis* or ssm command
 *options* are parsed directly from the ssm help output. This means
-that when you're going to add or change arguments into **ssm** the
+that when you’re going to add or change arguments into **ssm** the
 only thing you have to do is to add or change it in the
 "ssmlib/main.py" source code and then run "make dist" in the "doc/"
 directory and all the documents should be updated automatically.
@@ -832,14 +832,14 @@ Posting patches
 ===============
 
 As already mentioned, we are accepting patches! And we are very happy
-for every contribution. If you're going to send a patch in, please
+for every contribution. If you’re going to send a patch in, please
 make sure to follow some simple rules:
 
-1. Before you're going to post a patch, please run our regression
+1. Before you’re going to post a patch, please run our regression
    testing suite to make sure that your change does not break someone
-   else's work. See Tests section
+   else’s work. See Tests section
 
-2. If you're making a change that might require documentation
+2. If you’re making a change that might require documentation
    update, please update the documentation as well. See Documentation
    section
 
@@ -848,10 +848,14 @@ make sure to follow some simple rules:
    main idea of the change. *Long description* describing what was
    changed with and why and finally Signed-off-by tag.
 
-4. If you're going to send a patch to the mailing list, please send
+4. The preferred way of accepting patches is through pull requests
+   on GitHub, but it is possible to send them to the mailing list if
+   you don’t have GitHub account.
+
+5. If you’re going to send a patch to the mailing list, please send
    the patch inlined in the email body. It is much better for review
    process.
 
 Hint: You can use **git** to do all the work for you. "git format-
   patch" and "git send-email" will help you with creating and sending
-  the patch.
+  the patch to the mailing list.
