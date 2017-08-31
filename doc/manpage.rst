@@ -1,3 +1,5 @@
+:orphan:
+
 System Storage Manager's documentation
 ======================================
 

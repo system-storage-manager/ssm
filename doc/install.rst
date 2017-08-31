@@ -1,3 +1,5 @@
+:orphan:
+
 .. note::
    See README for more information!
 
