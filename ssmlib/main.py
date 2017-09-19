@@ -1254,7 +1254,7 @@ class StorageHandle(object):
                 args.size = None
 
         if have_size == 0:
-            PR.error("Not enough space ({0} KB) to".format(have_size) +
+            PR.error("Not enough space ({0} KB) ".format(have_size) +
                      "to create volume")
 
         # Number of stripes must not exceed number of devices within the pool
