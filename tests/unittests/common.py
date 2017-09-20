@@ -118,22 +118,59 @@ class MockSystemDataSource(unittest.TestCase):
         misc.get_fs_type = self.get_fs_type_orig
         main.SSM_NONINTERACTIVE = False
 
-    def _cmdEq(self, out, index=-1):
-        self.assertEqual(self.run_data[index], out)
+    def _cmdEq(self, expected, index=-1, expected_args=None):
+        """ Note: Permutated arguments are joined 'as is', so if you want a
+            space as a delimiter, it has to be part of the string
+        """
+        if expected_args:
+            arg_permutations = list(misc.permutations(expected_args))
+            args = None
+            # Test cmdEq twice - once for reporting when we found
+            # the equal permutation, and once at the end, if we
+            # did not found any equal permutation to raise a failure.
+            for arg in arg_permutations:
+                args = "".join(arg).strip()
+                if self.run_data[index] == expected + args:
+                    self.assertEqual(self.run_data[index], expected + args)
+                    return
+            self.assertEqual(self.run_data[index], expected + args)
+        else:
+            self.assertEqual(self.run_data[index], expected)
 
-    def _cmdNotEq(self, out, index=-1):
-        self.assertNotEqual(self.run_data[index], out)
+    def _cmdNotEq(self, expected, index=-1, expected_args=None):
+        """ Note: Permutated arguments are joined 'as is', so if you want a
+            space as a delimiter, it has to be part of the string
+        """
+        if expected_args:
+            arg_permutations = list(misc.permutations(expected_args))
+            found = False
+            args = None
+            # Test cmdEq twice - once for reporting when we found
+            # the equal permutation to raise a failure, and once
+            # at the end, if we did not found any equal permutation.
+            for arg in arg_permutations:
+                args = "".join(arg).strip()
+                if self.run_data[-1] == expected + args:
+                    self.assertNotEqual(self.run_data[index], expected + args)
+                    return
+                self.assertNotEqual(self.run_data[index], expected + args)
+        else:
+            self.assertNotEqual(self.run_data[index], expected)
 
-    def _checkCmd(self, command, args, expected=None, NotEq=False):
+
+    def _checkCmd(self, command, args, expected=None, NotEq=False, expected_args=None):
+        """ Note: Permutated arguments are joined 'as is', so if you want a
+            space as a delimiter, it has to be part of the string
+        """
         self.run_data = []
         for case in misc.permutations(args):
             cmd = command + " " + " ".join(case)
             main.main(cmd)
             if expected:
                 if NotEq:
-                    self._cmdNotEq(expected)
+                    self._cmdNotEq(expected, -1, expected_args)
                 else:
-                    self._cmdEq(expected)
+                    self._cmdEq(expected, -1, expected_args)
 
 
     def mock_run(self, cmd, *args, **kwargs):

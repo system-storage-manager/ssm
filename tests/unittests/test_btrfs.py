@@ -167,9 +167,11 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         self._addPool('my_pool', ['/dev/sdc2', '/dev/sdc3', '/dev/sdc1'])
 
         # remove volume
-        self._checkCmd("ssm remove default_pool", [], "wipefs -a -t btrfs /dev/sdb /dev/sda")
+        self._checkCmd("ssm remove default_pool", [], "wipefs -a -t btrfs ",
+                expected_args=["/dev/sdb ", "/dev/sda "])
 
-        self._checkCmd("ssm remove my_pool", [], "wipefs -a -t btrfs /dev/sdc2 /dev/sdc1 /dev/sdc3")
+        self._checkCmd("ssm remove my_pool", [], "wipefs -a -t btrfs ",
+                expected_args=["/dev/sdc3 ", "/dev/sdc2 ", "/dev/sdc1 "])
 
         # remove subvolume
         self._addVol('vol001', 117283225, 1, 'default_pool', ['/dev/sda'], '/mnt/test')
@@ -186,17 +188,20 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         self._addPool('other_pool', ['/dev/sdd', '/dev/sde'])
         self._checkCmd("ssm remove /dev/sdd /dev/sdb other_pool my_pool default_pool:/dev/default_pool/vol001", [],
             "btrfs subvolume delete /mnt/test")
-        self._cmdEq("wipefs -a -t btrfs /dev/sdc2 /dev/sdc3 /dev/sdc1", -2)
-        self._cmdEq("wipefs -a -t btrfs /dev/sdd /dev/sde", -4)
+        self._cmdEq("wipefs -a -t btrfs ", -2,
+                expected_args=["/dev/sdc3 ", "/dev/sdc2 ", "/dev/sdc1 "])
+        self._cmdEq("wipefs -a -t btrfs ", -4,
+                expected_args=["/dev/sdd ", "/dev/sde "])
         self._cmdEq("btrfs device delete /dev/sdb /mnt/test", -6)
         self._cmdEq("btrfs device delete /dev/sdd /tmp/mount", -7)
 
         self._removeMount("/dev/sda")
         # remove all
         self._checkCmd("ssm remove --all", [],
-            "wipefs -a -t btrfs /dev/sdd /dev/sde")
-        self._cmdEq("wipefs -a -t btrfs /dev/sdc2 /dev/sdc3 /dev/sdc1", -3)
-        self._cmdEq("wipefs -a -t btrfs /dev/sdb /dev/sda", -5)
+            "wipefs -a -t btrfs ", expected_args=["/dev/sdd ", "/dev/sde "])
+        self._cmdEq("wipefs -a -t btrfs ", -3,
+                expected_args=["/dev/sdc2 ", "/dev/sdc3 ", "/dev/sdc1 "])
+        self._cmdEq("wipefs -a -t btrfs ", -5, expected_args=["/dev/sdb ", "/dev/sda "])
 
         # TODO
         # remove force
