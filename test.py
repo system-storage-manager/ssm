@@ -88,7 +88,7 @@ def run_bash_tests():
     return ret
 
 
-def quick_test():
+def doc_tests():
     print("[+] Running doctests")
     doctest_flags = doctest.IGNORE_EXCEPTION_DETAIL | doctest.ELLIPSIS | \
                     doctest.REPORT_ONLY_FIRST_FAILURE
@@ -102,6 +102,8 @@ def quick_test():
             raise_on_error=False, optionflags=doctest_flags)
     result = doctest.testmod(misc, exclude_empty=True, report=True,
             raise_on_error=False, optionflags=doctest_flags)
+
+def unit_tests():
     print("[+] Running unittests")
     test_loader = unittest.TestLoader()
     tests_lvm = test_loader.loadTestsFromModule(test_lvm)
@@ -129,7 +131,8 @@ if __name__ == '__main__':
         sys.exit(1)
 
     if args.unit or run_all:
-        quick_test()
+        doc_tests()
+        unit_tests()
 
     if args.bash or run_all:
         if not os.geteuid() == 0:
