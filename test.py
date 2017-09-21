@@ -110,13 +110,29 @@ def doc_tests():
     result = doctest.testmod(misc, exclude_empty=True, report=True,
             raise_on_error=False, optionflags=doctest_flags)
 
-def unit_tests():
+def unit_tests(names):
     print("[+] Running unittests")
+    tests = unittest.TestSuite()
     test_loader = unittest.TestLoader()
-    tests_lvm = test_loader.loadTestsFromModule(test_lvm)
-    tests_btrfs = test_loader.loadTestsFromModule(test_btrfs)
-    tests_ssm = test_loader.loadTestsFromModule(test_ssm)
-    tests = unittest.TestSuite([tests_lvm, tests_btrfs, tests_ssm])
+
+    if names:
+        for name in names:
+            if name[-3:] == ".sh":
+                continue
+            try:
+                tests = unittest.TestSuite([tests, test_loader.loadTestsFromName(name)])
+            except:
+                # maybe the name is in bash tests, just skip...
+                pass
+        if tests.countTestCases() == 0:
+            print("[+] No unittest matches the name(s)")
+            return
+    else:
+        tests_lvm = test_loader.loadTestsFromModule(test_lvm)
+        tests_btrfs = test_loader.loadTestsFromModule(test_btrfs)
+        tests_ssm = test_loader.loadTestsFromModule(test_ssm)
+        tests = unittest.TestSuite([tests_lvm, tests_btrfs, tests_ssm])
+
     test_runner = unittest.TextTestRunner(verbosity=2)
     test_runner.run(tests)
 
@@ -140,8 +156,9 @@ if __name__ == '__main__':
         sys.exit(1)
 
     if args.unit or run_all:
-        doc_tests()
-        unit_tests()
+        if not args.tests:
+            doc_tests()
+        unit_tests(args.tests)
 
     if args.bash or run_all:
         if not os.geteuid() == 0:
