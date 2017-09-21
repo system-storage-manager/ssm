@@ -89,7 +89,7 @@ for fs in $TEST_FS ; do
 	ret1=0
 	filesystem_check $pool1 $lvol1 $fs || ret1=$?
 	ret2=0
-	ssm check $pool1/$lvol1 | ret2=$?
+	ssm check $pool1/$lvol1 || ret2=$?
 	test "$ret1" -eq "$ret2" || [[ "$ret1" -ne 0 && "$ret2" -ne 0 ]]
 	ret2=0
 	ssm check `lvs --noheadings -o lv_path $pool1/$lvol1` || ret2=$?
