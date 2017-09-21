@@ -24,6 +24,7 @@ import sys
 import time
 import doctest
 import unittest
+import argparse
 
 os.environ['SSM_NONINTERACTIVE'] = "1"
 
@@ -112,10 +113,28 @@ def quick_test():
 
 
 if __name__ == '__main__':
-    quick_test()
-    if not os.geteuid() == 0:
-        print("\nRoot privileges required to run more tests!\n")
-        sys.exit(0)
-    print("[+] Running bash tests")
-    result = run_bash_tests()
+    result = 0
+    parser = argparse.ArgumentParser(description="Run the test suite for SSM."
+            "If both --bash and --unit arguments are ommited, run both groups.")
+    parser.add_argument('-b', '--bash', dest='bash', action='store_true',
+                    help='run only bash tests')
+    parser.add_argument('-u', '--unit', dest='unit', action='store_true',
+                    help='run only unit tests')
+
+    args = parser.parse_args()
+    run_all = not args.unit and not args.bash
+    if args.unit and args.bash:
+        print("Do not use both --bash and --unit at once."
+            "All tests are run when these options are omitted.")
+        sys.exit(1)
+
+    if args.unit or run_all:
+        quick_test()
+
+    if args.bash or run_all:
+        if not os.geteuid() == 0:
+            print("\nRoot privileges required to run more tests!\n")
+            sys.exit(0)
+        print("[+] Running bash tests")
+        result = run_bash_tests()
     sys.exit(result)
