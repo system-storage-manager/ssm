@@ -34,7 +34,7 @@ from ssmlib.backends import lvm, crypt, btrfs
 
 from tests.unittests import *
 
-def run_bash_tests():
+def run_bash_tests(names):
     cur = os.getcwd()
     os.chdir('./tests/bashtests')
     command = ['ls', '-m']
@@ -50,6 +50,8 @@ def run_bash_tests():
     for script in output.split(","):
         script = script.strip()
         if not re.match("^\d\d\d-.*\.sh$", script):
+            continue
+        if names and script not in names:
             continue
         count += 1
         sys.stdout.write("{0:<29}".format(script) + " ")
@@ -72,6 +74,11 @@ def run_bash_tests():
         else:
             print("\033[92m[PASSED]\033[0m")
             passed.append(script)
+
+    if count == 0 and names:
+        print("[+] No bash test matches the name(s)")
+        return 0
+
     t1 = time.time() - t0
     print("Ran {0} tests in {1} seconds.".format(count, round(t1, 2)))
     print("{0} tests PASSED: {1}".format(len(passed), ", ".join(passed)))
@@ -122,6 +129,8 @@ if __name__ == '__main__':
                     help='run only bash tests')
     parser.add_argument('-u', '--unit', dest='unit', action='store_true',
                     help='run only unit tests')
+    parser.add_argument('tests', metavar='TEST', type=str, nargs='*',
+                    help='specific tests to be run')
 
     args = parser.parse_args()
     run_all = not args.unit and not args.bash
@@ -139,5 +148,5 @@ if __name__ == '__main__':
             print("\nRoot privileges required to run more tests!\n")
             sys.exit(0)
         print("[+] Running bash tests")
-        result = run_bash_tests()
+        result = run_bash_tests(args.tests)
     sys.exit(result)
