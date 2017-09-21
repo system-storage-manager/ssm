@@ -62,10 +62,13 @@ btrfs filesystem show
 ssm add $TEST_DEVS
 btrfs filesystem show
 check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count $DEV_COUNT
-ssm -f remove $TEST_DEVS
+# Skip first few devices, because btrfs is now in a raid mode
+# and won't allow us to delete the last few devices.
+# We only want to see if removal works, so deleting only some is ok.
+ssm -f remove $(echo $TEST_DEVS | cut -d' ' -f5-)
 btrfs filesystem show
 ssm list
-check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count 1
+check btrfs_fs_field $SSM_BTRFS_DEFAULT_POOL dev_count 4
 ssm -f remove --all
 
 # Remove multiple things
