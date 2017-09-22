@@ -320,7 +320,12 @@ class SsmFunctionCheck(MockSystemDataSource):
             if arg is None:
                 cmd[i] = ''
             elif type(arg) is not str:
-                cmd[i] = str(arg)
+                # python 3 prints sometimes too many decimals in case of numbers
+                # like 123.00000001, so cut it down to one, like python 2 did
+                if isinstance(arg, float):
+                    cmd[i] = "%.1f" % arg
+                else:
+                    cmd[i] = str(arg)
 
         self.run_data.append(re.sub('\s\s+',' '," ".join(cmd).strip()))
         output = ""
@@ -860,6 +865,10 @@ class VolumeInfo(MyInfo):
                   str(resize_fs)])
 
     def snapshot(self, volume, destination, name, snap_size=None):
+        # python 3 prints sometimes too many decimals in case of numbers
+        # like 123.00000001, so cut it down to one, like python 2 did
+        if snap_size:
+            snap_size = "%.1f" % snap_size
         misc.run([self.f, self.v, self.y, 'vol snapshot', volume, destination,
                 name, str(snap_size)])
 
