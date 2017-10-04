@@ -9,4 +9,12 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-$run_coverage $SSM "$@"
+# If we want to run coverage, we can't pass it a bash script.
+# So, run coverage now only if $SSM is not the local bash script,
+# othervise, just run the script and it will run coverage on its own.
+
+if [ $(grep -c "ssm.local" $SSM) -eq 0 ]; then
+	$run_coverage $SSM "$@"
+else
+	$SSM $@
+fi
