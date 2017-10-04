@@ -56,6 +56,7 @@ def get_lvm_version():
     return version
 
 LVM_VERSION = get_lvm_version()
+LVM_THIN_SUPPORT = [2,2,112]
 
 def create_thin_volume(parent_pool, thin_pool, virtsize, lvname):
     pool_volume = parent_pool + '/' + thin_pool
@@ -206,6 +207,7 @@ class VgsInfo(LvmInfo, template.BackendPool):
             lvname = self._generate_lvname("lvol", vg)
 
         if 'virtsize' in options:
+            self.supported_since(LVM_THIN_SUPPORT,"thin provisioning")
             command.extend(['-T'])
 
         if size:
@@ -565,6 +567,7 @@ class ThinPool(LvmInfo, template.BackendPool):
         self.problem.check(self.problem.NOT_SUPPORTED, msg)
 
     def extend(self, vg, devices):
+        self.supported_since(LVM_THIN_SUPPORT,"thin provisioning")
         # Add devices to the parent pool first
         vg = self[vg]
         pool = vg['parent_pool']
@@ -589,6 +592,7 @@ class ThinPool(LvmInfo, template.BackendPool):
 
     def create(self, vg, size=None, name=None, devs=None,
                options=None):
+        self.supported_since(LVM_THIN_SUPPORT,"thin provisioning")
         vg = self[vg]
         if vg['active'] == False:
             self.problem.check(self.DEVICE_INACTIVE, lv)
