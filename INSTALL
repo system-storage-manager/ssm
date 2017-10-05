@@ -82,6 +82,10 @@ Lvm backend
 
 * lvm2 binaries
 
+Some distributions (e.g. Debian) have thin provisioning tools for LVM
+as an optional dependency, while others install it automatically. Thin
+provisioning without these tools installed is not supported by SSM.
+
 
 Btrfs backend
 =============
