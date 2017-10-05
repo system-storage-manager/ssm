@@ -34,7 +34,7 @@ SUPPORTED_RAID = ['0', '1', '10']
 os.environ['LC_NUMERIC'] = "C"
 
 # If you change this please change doc/conf.py as well
-VERSION = '0.4'
+VERSION = '0.5'
 
 # Should the script be run in interactive or non interactive mode ?
 try:
