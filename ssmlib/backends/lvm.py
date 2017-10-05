@@ -56,7 +56,6 @@ def get_lvm_version():
     return version
 
 LVM_VERSION = get_lvm_version()
-LVM_THIN_SUPPORT = [2,2,112]
 
 def create_thin_volume(parent_pool, thin_pool, virtsize, lvname):
     pool_volume = parent_pool + '/' + thin_pool
@@ -134,6 +133,34 @@ class LvmInfo(template.Backend):
             self.problem.check(self.problem.NOT_SUPPORTED, msg)
         return True
 
+    def require_thin_support(self):
+
+        # Old versions of lvm had a bug for some cases of thin provisioning.
+        # Because Debian 8 still has an affected version in its repository,
+        # check the version and prevent any thin provisioning related
+        # operations.
+        self.supported_since([2,2,112],"thin provisioning")
+
+        # Test if thin provisioning tools are installed.
+        # SSM is not directly using them, but lvm does. ome distributions
+        # have it only as an optional dependency for lvm2 and if it is not installed,
+        # lvm behaves strangely and can fail without any useful information
+        # in middle of a sequence of commands SSM does.
+        found = False
+        for path in os.environ["PATH"].split(os.pathsep):
+            path = path.strip('"')
+            if os.path.isfile(os.path.join(path, 'thin_check')):
+                    found = True
+                    break
+
+        if not found:
+            msg = "ERROR: lvm does not have installed thin provisioning tools. " +\
+                  "Some distributions mark it as an optional dependency for lvm2, " +\
+                  "in which case, you need to install it manually"
+            self.problem.check(self.problem.GENERAL_ERROR, msg)
+
+        return True
+
 
 class VgsInfo(LvmInfo, template.BackendPool):
 
@@ -207,7 +234,7 @@ class VgsInfo(LvmInfo, template.BackendPool):
             lvname = self._generate_lvname("lvol", vg)
 
         if 'virtsize' in options:
-            self.supported_since(LVM_THIN_SUPPORT,"thin provisioning")
+            self.require_thin_support()
             command.extend(['-T'])
 
         if size:
@@ -567,7 +594,7 @@ class ThinPool(LvmInfo, template.BackendPool):
         self.problem.check(self.problem.NOT_SUPPORTED, msg)
 
     def extend(self, vg, devices):
-        self.supported_since(LVM_THIN_SUPPORT,"thin provisioning")
+        self.require_thin_support()
         # Add devices to the parent pool first
         vg = self[vg]
         pool = vg['parent_pool']
@@ -592,7 +619,7 @@ class ThinPool(LvmInfo, template.BackendPool):
 
     def create(self, vg, size=None, name=None, devs=None,
                options=None):
-        self.supported_since(LVM_THIN_SUPPORT,"thin provisioning")
+        self.require_thin_support()
         vg = self[vg]
         if vg['active'] == False:
             self.problem.check(self.DEVICE_INACTIVE, lv)
