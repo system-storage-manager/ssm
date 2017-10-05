@@ -38,7 +38,7 @@ export TEST_MNT=$TESTDIR/mnt
 # check if coverage exists
 export COVERAGE=$(which coverage) || unset COVERAGE
 if test -n "$COVERAGE"; then
-    export run_coverage="$COVERAGE run -a"
+    export RUN_COVERAGE="$COVERAGE run -a"
     export COVERAGE_FILE=$OLDDIR/.coverage
     $COVERAGE erase
 fi

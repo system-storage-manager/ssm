@@ -14,7 +14,7 @@
 # othervise, just run the script and it will run coverage on its own.
 
 if [ $(grep -c "ssm.local" $SSM) -eq 0 ]; then
-	$run_coverage $SSM "$@"
+	$RUN_COVERAGE $SSM "$@"
 else
 	$SSM $@
 fi

@@ -25,8 +25,8 @@ SSMDIR="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )/../" && pwd )"
 export PYTHONPATH="$SSMDIR"
 
 # Run coverage if the environment variable is set up.
-if [ "$run_coverage" = "" ]; then
+if [ "$RUN_COVERAGE" = "" ]; then
 	python $SSMDIR/bin/ssm "$@"
 else
-	$run_coverage $SSMDIR/bin/ssm "$@"
+	$RUN_COVERAGE $SSMDIR/bin/ssm "$@"
 fi
