@@ -450,6 +450,25 @@ def humanize_size(arg):
         unit = "???"
     return ("{0:.2f} {1}").format(size, unit)
 
+def _can_fail_hacks(cmd, returncode, error):
+    """ A workaround for tools reporting weird exit codes. Return true
+        when a non-zero return code should be ignored.
+    """
+
+    if returncode == 5 \
+        and cmd[0:2] == ['lvm', 'lvs'] \
+        and str(error).endswith('is exported\n'):
+        # FIXME A workaround for LVM behaviour:
+        # lvm lvs' exit code is 5 on exported volumes, even if everything
+        # is ok. So, if the code is 5, command was 'lvm lvs ...'
+        # and error message says that a volume was exported, set up can_fail
+        # flag.
+        # We can't use per-object status, because that would break backward
+        # compatibility. And we can't deal with it on a higher level, because
+        # we don't have all the information then.
+        return True
+
+    return False
 
 def run(cmd, show_cmd=False, stdout=False, stderr=True, can_fail=False,
         stdin_data=None, return_stdout=True):
@@ -493,6 +512,9 @@ def run(cmd, show_cmd=False, stdout=False, stderr=True, can_fail=False,
         stdin_thread.join()
 
     err_msg = "ERROR running command: \"{0}\"".format(" ".join(cmd))
+    if _can_fail_hacks(cmd, proc.returncode, error):
+        can_fail = True
+
     if proc.returncode != 0 and show_cmd:
         if output is not None:
             print(output)
