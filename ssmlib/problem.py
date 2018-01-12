@@ -128,8 +128,9 @@ class CanNotRun(SsmError):
 
 
 class CommandFailed(SsmError):
-    def __init__(self, msg, errcode=2012):
+    def __init__(self, msg, errcode=2012, exitcode=-1):
         super(CommandFailed, self).__init__(msg, errcode)
+        self.exitcode = exitcode
 
 
 class UserInterrupted(SsmError):

@@ -497,7 +497,7 @@ def run(cmd, show_cmd=False, stdout=False, stderr=True, can_fail=False,
 
     output, error = proc.communicate(input=stdin_data)
 
-    err_msg = "ERROR running command: \"{0}\"".format(" ".join(cmd))
+    err_msg = "ERROR exit code {0} for running command: \"{1}\"".format(proc.returncode, " ".join(cmd))
     if _can_fail_hacks(cmd, proc.returncode, error):
         can_fail = True
 
@@ -513,7 +513,7 @@ def run(cmd, show_cmd=False, stdout=False, stderr=True, can_fail=False,
             print(output)
         if error is not None:
             print(error)
-        raise problem.CommandFailed(err_msg)
+        raise problem.CommandFailed(err_msg, exitcode=proc.returncode)
 
     if not return_stdout:
         output = None
