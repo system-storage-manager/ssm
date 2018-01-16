@@ -495,21 +495,7 @@ def run(cmd, show_cmd=False, stdout=False, stderr=True, can_fail=False,
     proc = subprocess.Popen(cmd, stdout=stdout,
                             stderr=stderr, stdin=stdin, close_fds=True)
 
-    if stdin_data is not None:
-
-        class StdinThread(threading.Thread):
-
-            def run(self):
-                proc.stdin.write(stdin_data)
-                proc.stdin.close()
-        stdin_thread = StdinThread()
-        stdin_thread.daemon = True
-        stdin_thread.start()
-
-    output, error = proc.communicate()
-
-    if stdin_data is not None:
-        stdin_thread.join()
+    output, error = proc.communicate(input=stdin_data)
 
     err_msg = "ERROR running command: \"{0}\"".format(" ".join(cmd))
     if _can_fail_hacks(cmd, proc.returncode, error):
