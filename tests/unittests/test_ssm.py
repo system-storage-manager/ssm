@@ -287,6 +287,12 @@ class SimpleSsmSanityCheck(unittest.TestCase):
         self.assert_("mount" in obj)
         self.assert_("set_globals" in obj)
 
+    def test_run(self):
+        ret,out = misc.run(["echo", "x"])
+        self.assertEqual('x\n', out)
+        ret,out = misc.run(["cat"], stdin_data="foo".encode())
+        self.assertEqual('foo', out)
+
 
 class SsmFunctionCheck(MockSystemDataSource):
     """
