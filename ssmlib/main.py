@@ -21,6 +21,7 @@ import sys
 import stat
 import atexit
 import argparse
+import getpass
 from ssmlib import misc
 from ssmlib import problem
 
@@ -1179,6 +1180,31 @@ class StorageHandle(object):
         if new_size != vol_size:
             args.volume.resize(new_size, fs)
 
+    def get_check_passphrase(self):
+        """
+        Ask for a passphrase and check its quality.
+        """
+
+        def getpwd(text):
+            # gepass always requires tty access, so pipes would not work
+            if sys.stdin.isatty():
+                return getpass.getpass(text)
+            else:
+                return sys.stdin.readline()[:-1]
+
+        password = getpwd('Enter passphrase: ')
+        if self.options.interactive or True:
+            password2 = getpwd('Verify passphrase: ')
+            if password != password2:
+                raise problem.GeneralError("The passwords entered do not match.")
+
+        # check password strength before we do anything
+        crypt = self.pool.get_backend("crypt")
+        tmp = crypt.check_passphrase_strength(password)
+        del crypt
+
+        return password
+
     def create(self, args):
         """
         Create new volume (or subvolume in case of btrfs) using the devices
@@ -1189,11 +1215,18 @@ class StorageHandle(object):
             PR.warn("Mount options are set, but no mount point was " +
                     "provided. Device will not be mounted")
 
+        passphrase = None
+        if args.encrypt and SSM_DEFAULT_BACKEND != 'crypt':
+            # we have to check the password quality before we do any operation
+            # so check that now
+            passphrase = self.get_check_passphrase()
+
         lvname = self.create_volume(args)
 
         if args.encrypt and misc.is_bdevice(lvname) and \
            SSM_DEFAULT_BACKEND != 'crypt':
             crypt = self.pool.get_backend("crypt")
+            crypt.set_passphrase(passphrase)
             args.pool = Item(crypt, crypt.default_pool_name)
             options = {'encrypt': args.encrypt}
             lvname = args.pool.create(devs=[lvname],
