@@ -290,10 +290,9 @@ class Btrfs(template.Backend):
 
     def _store_data(self, vol, pool, fs_used, fs_size, pool_size, pool_name):
         vol['fs_type'] = 'btrfs'
-        vol['fs_used'] = str(fs_used)
+        vol['fs_used'] = pool['pool_used'] = str(fs_used)
         vol['fs_free'] = str(fs_size - fs_used)
-        vol['fs_size'] = vol['vol_size'] = pool['pool_used'] = \
-            str(fs_size)
+        vol['fs_size'] = vol['vol_size'] = str(fs_size)
         pool['pool_free'] = str(pool_size - fs_used)
         pool['pool_size'] = pool_size
         pool['pool_name'] = vol['pool_name'] = vol['dev_name'] = pool_name
