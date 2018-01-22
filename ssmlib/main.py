@@ -26,11 +26,11 @@ from ssmlib import misc
 from ssmlib import problem
 
 # Import backends
-from ssmlib.backends import lvm, crypt, btrfs, md
+from ssmlib.backends import lvm, crypt, btrfs, md, multipath
 
 EXTN = ['ext2', 'ext3', 'ext4']
 SUPPORTED_FS = ['xfs', 'btrfs'] + EXTN
-SUPPORTED_BACKENDS = ['lvm', 'btrfs', 'crypt']
+SUPPORTED_BACKENDS = ['lvm', 'btrfs', 'crypt', 'multipath']
 SUPPORTED_RAID = ['0', '1', '10']
 os.environ['LC_NUMERIC'] = "C"
 
@@ -753,6 +753,11 @@ class Pool(Storage):
         except RuntimeError as err:
             PR.warn(err)
             PR.warn("Can not get information about crypt pools")
+        try:
+            self._data['multipath'] = multipath.MultipathPool(options=self.options)
+        except RuntimeError as err:
+            PR.warn(err)
+            PR.warn("Can not get information about multipath pools")
 
         backend = self.get_backend(SSM_DEFAULT_BACKEND)
         self.default = Item(backend, backend.default_pool_name)
@@ -804,11 +809,19 @@ class Devices(Storage):
             PR.warn("Can not get information about crypt devices")
             my_crypt = Struct()
             my_crypt.data = {}
+        try:
+            my_multipath = multipath.MultipathDevice(options=self.options)
+        except RuntimeError as err:
+            PR.warn(err)
+            PR.warn("Can not get information about multipath devices")
+            my_multipath = Struct()
+            my_multipath.data = {}
 
         self._data['dev'] = DeviceInfo(data=dict(list(my_lvm.data.items()) +
                                                  list(my_btrfs.data.items()) +
                                                  list(my_md.data.items()) +
-                                                 list(my_crypt.data.items())),
+                                                 list(my_crypt.data.items()) +
+                                                 list(my_multipath.data.items())),
                                        options=self.options)
         self.header = ['Device', 'Free', 'Used',
                        'Total', 'Pool', 'Mount point']
@@ -847,6 +860,11 @@ class Volumes(Storage):
         except RuntimeError as err:
             PR.warn(err)
             PR.warn("Can not get information about md raid volumes")
+        try:
+            self._data['multipath'] = multipath.MultipathVolume(options=self.options)
+        except RuntimeError as err:
+            PR.warn(err)
+            PR.warn("Can not get information about multipath volumes")
 
         self.header = ['Volume', 'Pool', 'Volume size', 'FS', 'FS size',
                        'Free', 'Type', 'Mount point']
