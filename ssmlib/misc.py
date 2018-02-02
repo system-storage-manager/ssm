@@ -81,15 +81,14 @@ def get_unit_size(string):
     units = {'B': 1, 'K': 2 ** 10, 'M': 2 ** 20, 'G': 2 ** 30, 'T': 2 ** 40,
              'P': 2 ** 50}
     unit = re.sub(r'^\+?-?\d+(\.\d*)?', '', string)
-    if len(unit) > 0 and unit[0].upper() in units:
+    if unit and unit[0].upper() in units:
         mult = units[unit[0].upper()]
     all_units = ['B', 'K', 'M', 'G', 'T', 'P',
                  'KB', 'MB', 'GB', 'TB', 'PB',
                  'KIB', 'MIB', 'GIB', 'TIB', 'PIB']
     if unit.upper() in all_units:
         return mult, unit
-    else:
-        return 0, ""
+    return 0, ""
 
 
 def is_number(string):
@@ -216,7 +215,7 @@ def send_udev_event(device, event):
 def get_device_by_uuid(uuid):
     path = "/dev/disk/by-uuid/{0}".format(uuid)
     return os.path.abspath(os.path.join(os.path.dirname(path),
-                           os.readlink(path)))
+                                        os.readlink(path)))
 
 
 def get_major_minor(device):
@@ -240,8 +239,7 @@ def check_binary(name):
     command = ['which', name]
     if run(command, can_fail=True)[0]:
         return False
-    else:
-        return True
+    return True
 
 
 def do_mount(device, directory, options=None):
@@ -296,8 +294,7 @@ def get_signature(device, types=None):
 
     if ret:
         return None
-    else:
-        return output
+    return output
 
 
 def get_fs_type(device):
@@ -307,9 +304,8 @@ def get_fs_type(device):
 def get_real_device(device):
     if os.path.islink(device):
         return os.path.abspath(os.path.join(os.path.dirname(device),
-                               os.readlink(device)))
-    else:
-        return device
+                                            os.readlink(device)))
+    return device
 
 
 def get_swaps():
@@ -323,10 +319,11 @@ def get_swaps():
 def get_partitions():
     partitions = []
     new_line = []
-    output = run(["lsblk","-l","-b","-n","-p","-o","MAJ:MIN,SIZE,KNAME"], stdout=False)
+    output = run(["lsblk", "-l", "-b", "-n", "-p", "-o", "MAJ:MIN,SIZE,KNAME"],
+                 stdout=False)
 
     for line in output[1].splitlines():
-        new_line = re.split('\s+|:',line.strip())
+        new_line = re.split(r'\s+|:', line.strip())
         if len(new_line) == 4:
             new_line[2] = int(new_line[2])//1024
             partitions.append(new_line)
@@ -346,7 +343,10 @@ def get_mountinfo(regex=".*"):
                 continue
             array = line.split(None, 6)
             row = dict([(names[index], array[index])
-                for index in min(list(range(len(array) - 1)), list(range(len(names))))])
+                        for index in min(
+                            list(range(len(array) - 1)),
+                            list(range(len(names)))
+                        )])
             array = line.rsplit(None, 3)
             row['fs'] = array[1]
             row['dev'] = array[2]
@@ -374,8 +374,7 @@ def get_mounts_old(regex=".*"):
 def get_mounts(regex=".*"):
     if os.path.exists("/proc/self/mountinfo"):
         return get_mountinfo(regex)
-    else:
-        return get_mounts_old(regex)
+    return get_mounts_old(regex)
 
 
 def get_dmnumber(name):
@@ -391,9 +390,9 @@ def get_dmnumber(name):
 
 
 def wipefs(devices, signatures):
-    if type(devices) is not list:
+    if not isinstance(devices, list):
         devices = [devices]
-    if type(signatures) is not list:
+    if not isinstance(signatures, list):
         signatures = [signatures]
     command = ['wipefs', '-a', '-t', ','.join(signatures)] + devices
     # Avoid race with udev
@@ -437,7 +436,7 @@ def humanize_size(arg):
     ValueError: could not convert string to float: hello world
     """
     count = 0
-    if type(arg) is str and len(arg) == 0:
+    if isinstance(arg, str) and not arg:
         return ""
     size = float(arg)
     while abs(size) >= 1024 and count < 7:
@@ -489,7 +488,7 @@ def run(cmd, show_cmd=False, stdout=False, stderr=True, can_fail=False,
 
     # Convert all parts of cmd into string
     for i, item in enumerate(cmd):
-        if type(item) is not str:
+        if not isinstance(item, str):
             cmd[i] = str(item)
 
     proc = subprocess.Popen(cmd, stdout=stdout,
@@ -497,7 +496,9 @@ def run(cmd, show_cmd=False, stdout=False, stderr=True, can_fail=False,
 
     output, error = proc.communicate(input=stdin_data)
 
-    err_msg = "ERROR exit code {0} for running command: \"{1}\"".format(proc.returncode, " ".join(cmd))
+    err_msg = "ERROR exit code {0} for running command: \"{1}\"".format(
+        proc.returncode,
+        " ".join(cmd))
     if _can_fail_hacks(cmd, proc.returncode, error):
         can_fail = True
 
@@ -520,8 +521,7 @@ def run(cmd, show_cmd=False, stdout=False, stderr=True, can_fail=False,
 
     if output is not None:
         return (proc.returncode, __str__(output))
-    else:
-        return (proc.returncode, output)
+    return (proc.returncode, output)
 
 
 def chain(*iterables):
@@ -635,7 +635,7 @@ def terminal_size(default=(25, 80)):
     try:
         env = os.environ
         cr = (env['LINES'], env['COLUMNS'])
-    except:
+    except KeyError:
         cr = _ioctl_GWINSZ(0) or _ioctl_GWINSZ(1) or _ioctl_GWINSZ(2)
         if not cr:
             try:
