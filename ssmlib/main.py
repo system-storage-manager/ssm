@@ -15,6 +15,8 @@
 #
 # System Storage Manager - ssm
 
+from __future__ import print_function
+
 import re
 import os
 import sys
@@ -110,7 +112,7 @@ def calculate_size(arg_size, pool):
         return arg_size
     # Size argument specified in kilobytes, just return it
     if arg_size[1] == 'K':
-         return float(arg_size[0])
+        return float(arg_size[0])
 
     if not pool or not pool.exists():
         # There is no pooling support, we do not support specifying
@@ -307,8 +309,8 @@ class FsInfo(object):
         # Ext3/4 can resize offline in both directions, but It can not shrink
         # the file system while online. In addition ext2 can only resize
         # offline.
-        if self.mounted and (self.fstype == "ext2" or
-           new_size < self.data['fs_size']):
+        if self.mounted and (self.fstype == "ext2" or \
+                new_size < self.data['fs_size']):
             raise problem.FsMounted(
                 "{0} is mounted on {1}.".format(self.device, self.mounted) +
                 " In this case, mounted file system can not be resized.")
@@ -632,7 +634,7 @@ class Storage(object):
             if (cond_func and not cond_func(data)) or 'hide' in data:
                 continue
             len_matrix.append([len(self.header[i])
-                              for i in range(len(self.header))])
+                               for i in range(len(self.header))])
             line = ()
             # Iterate through all attributes in each item
             for i, attr in enumerate(self.attrs):
@@ -654,7 +656,7 @@ class Storage(object):
 
         header = [item for item in misc.compress(self.header, columns)]
         alignment = list([(len(self.header[i]))
-                         for i in range(len(self.header))])
+                          for i in range(len(self.header))])
         term_width = misc.terminal_size()[0]
 
         # Update matrix of attribute lengths and construct the final list
@@ -681,10 +683,10 @@ class Storage(object):
             # only screw the formatting even more.
             length = sum(alignment) + 2 * len(header) - 2
             if length > term_width and \
-               (length - term_width) < (alignment[0] - len(header[0])) and \
-               line is not None:
-                    alignment[0] = len(header[0])
-                    len_matrix[line][0] = len(header[0])
+                    (length - term_width) < (alignment[0] - len(header[0])) and \
+                    line is not None:
+                alignment[0] = len(header[0])
+                len_matrix[line][0] = len(header[0])
             else:
                 break
 
@@ -1175,7 +1177,7 @@ class StorageHandle(object):
 
         # No need to do anything with provided devices since
         # we do have enough space to cover the resize
-        if (pool_free < size_change):
+        if pool_free < size_change:
             have_size, devices = self._filter_device_list(args,
                                                           pool_free,
                                                           new_size)
@@ -1278,7 +1280,7 @@ class StorageHandle(object):
 
         if args.size and args.size[1] == 'K':
             # If the exact size was provided than just use that
-             vol_size = float(args.size[0])
+            vol_size = float(args.size[0])
         else:
             # Otherwise we have to wait after the pool is created, or
             # devices are added into a existing one
@@ -1436,7 +1438,7 @@ class StorageHandle(object):
                         signature = misc.get_fs_type(dev)
                         if signature and \
                            PR.check(PR.EXISTING_FILESYSTEM,
-                                        [signature, dev]):
+                                    [signature, dev]):
                             misc.wipefs(dev, signature)
                         elif signature:
                             args.device.remove(dev)
@@ -1745,7 +1747,7 @@ def valid_create_size(size):
         return (ret, 'K')
     except:
         try:
-            ret =  misc.get_perc_size_argument(size)
+            ret = misc.get_perc_size_argument(size)
             if float(ret[0]) < 0:
                 raise argparse.ArgumentTypeError(err)
         except:
