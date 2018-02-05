@@ -622,6 +622,7 @@ class ThinPool(LvmInfo, template.BackendPool):
         self.require_thin_support()
         vg = self[vg]
         if vg['active'] == False:
+            lv = vg['parent_pool'] + '/' + vg['lv_name']
             self.problem.check(self.DEVICE_INACTIVE, lv)
 
         if name:
