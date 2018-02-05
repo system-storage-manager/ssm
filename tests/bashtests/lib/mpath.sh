@@ -26,6 +26,9 @@ mpath_setup() {
 		1>&2 echo "An error occured with multipath configuration."
 		return 1
 	fi
+	# I don't know why, but without this sleep, a subsequent multipath -ll
+	# command would sometimes fail with no result
+	sleep 1
 	return 0
 }
 
