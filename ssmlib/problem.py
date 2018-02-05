@@ -15,6 +15,7 @@
 #
 # problem.py - dealing with problems and errors in ssm
 
+from __future__ import print_function
 import sys
 
 __all__ = ["ProblemSet", "SsmError", "GeneralError", "ProgrammingError",
