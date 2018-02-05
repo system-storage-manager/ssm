@@ -108,7 +108,6 @@ class DmCryptPool(DmObject, template.BackendPool):
             tmp.write( ('\0' * (10 * 1000 * 1000)).encode())  # 10 MB
             tmp.flush()
             command = ['-q', 'luksFormat', tmp.name]
-            ret = 0
             try:
                 if passphrase:
                     self.run_cryptsetup(command, password=passphrase.encode())

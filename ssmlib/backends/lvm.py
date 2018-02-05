@@ -222,7 +222,6 @@ class VgsInfo(LvmInfo, template.BackendPool):
         options = options or {}
         devices = devs or []
         command = ['lvcreate', vg]
-        virtsize = None
 
         if 'virtsize' in options:
             # We're going to create new lv which is going to be thin pool

@@ -114,15 +114,11 @@ class Multipath(template.Backend):
             for entry in zip(output[2::2],output[3::2]):
                 """ Some string operations to remove the tree path symbols
                     from the output. """
-                first = list(filter(None,
-                            entry[0][re.search(r"[a-zA-Z0-9]", entry[0])
-                                     .start():].split(" ")
-                        ))
-                second = list(filter(None,
+                dev = list(filter(None,
                             entry[1][re.search(r"[a-zA-Z0-9]", entry[1])
                                      .start():].split(" ")
                         ))
-                data['nodes'].append("/dev/"+self.get_real_device(second[1]))
+                data['nodes'].append("/dev/"+self.get_real_device(dev[1]))
                 data['total_nodes'] += 1
         return data
 
