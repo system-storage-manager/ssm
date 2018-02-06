@@ -603,7 +603,7 @@ class Storage(object):
             if 'fs_type' in item:
                 yield item
 
-    def ptable(self, cond=None, more_data=None, cond_func=None):
+    def psummary(self, cond=None, more_data=None, cond_func=None):
         """
         Print information table about the source (devices, pools, volumes)
         using the predefined variables (below). cond, or cond_func can be
@@ -1389,20 +1389,20 @@ class StorageHandle(object):
         List devices, pools, volumes
         """
         if not args.type:
-            self.dev.ptable()
-            self.pool.ptable()
-            self.vol.ptable(more_data=self.dev.filesystems())
-            self.snap.ptable()
+            self.dev.psummary()
+            self.pool.psummary()
+            self.vol.psummary(more_data=self.dev.filesystems())
+            self.snap.psummary()
         elif args.type in ['fs', 'filesystems']:
-            self.vol.ptable(more_data=self.dev.filesystems(), cond="fs_only")
+            self.vol.psummary(more_data=self.dev.filesystems(), cond="fs_only")
         elif args.type in ['dev', 'devices']:
-            self.dev.ptable()
+            self.dev.psummary()
         elif args.type in ["volumes", "vol"]:
-            self.vol.ptable(more_data=self.dev.filesystems())
+            self.vol.psummary(more_data=self.dev.filesystems())
         elif args.type in ["pool", "pools"]:
-            self.pool.ptable()
+            self.pool.psummary()
         elif args.type in ['snap', 'snapshots']:
-            self.snap.ptable()
+            self.snap.psummary()
 
     def add(self, args, skip_check=False):
         """

@@ -211,7 +211,7 @@ class StorageHandleSanityCheck(BaseStorageHandleInit):
             self.assert_("__contains__" in obj)
             self.assert_("__getitem__" in obj)
             self.assert_("filesystems" in obj)
-            self.assert_("ptable" in obj)
+            self.assert_("psummary" in obj)
             self.assert_("set_globals" in obj)
             # Variables
             self.assert_("_data" in obj)
