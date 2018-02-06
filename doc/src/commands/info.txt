@@ -1,0 +1,7 @@
+**EXPERIMENTAL** This feature is currently experimental. The output format can
+change and fields can be added or removed.
+
+Show detailed information about all detected devices, pools, volumes and
+snapshots found on the system. The **info** command can be used either alone
+to show all available items, or you can specify a device, pool, or any other
+identifier to see information about the specific item.

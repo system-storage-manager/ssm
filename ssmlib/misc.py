@@ -328,12 +328,14 @@ def get_swaps():
 def get_partitions():
     partitions = []
     new_line = []
-    output = run(["lsblk", "-l", "-b", "-n", "-p", "-o", "MAJ:MIN,SIZE,KNAME"],
+    output = run(["lsblk", "-l", "-b", "-n", "-p", "-o", "MAJ:MIN,SIZE,KNAME,NAME,PKNAME"],
                  stdout=False)
 
     for line in output[1].splitlines():
         new_line = re.split(r'\s+|:', line.strip())
-        if len(new_line) == 4:
+        # Not every line has the parent device name, but in either case,
+        # if we got data, convert the size to kB
+        if len(new_line) in [5, 6]:
             new_line[2] = int(new_line[2])//1024
             partitions.append(new_line)
         else:
