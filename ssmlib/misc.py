@@ -15,6 +15,8 @@
 
 # Miscellaneous functions for use by System Storage Manager
 
+from __future__ import print_function
+
 import os
 import re
 import sys
@@ -24,6 +26,13 @@ import threading
 import subprocess
 from ssmlib import problem
 from base64 import encode
+
+if sys.version < '3':
+    def __next__(iter):
+        return iter.next()
+else:
+    def __next__(iter):
+        return next(iter)
 
 # List of temporary mount points which should be cleaned up
 # before exiting
@@ -671,3 +680,129 @@ def get_device_size(device):
         for line in f:
             size = int(line)//2
             return size
+
+def ptable(data, table_header=None):
+    """
+    Print data in a table, optionally with a header.
+    The data has to be a list of tuples of strings [('a', 'b', 'c'), ...]
+    The header is a tuple: (('name', type), ... ), where the type is used to decide alignment.
+    Int and float aligns to right, anything else to left.
+    All the tuples has to have the same number of members.
+    """
+    if len(data) == 0:
+        return
+
+    header = []
+    types = []
+    fmt = ""
+    skip_header = True
+    # Keep track of used columns. Then we only print out columns with values.
+    columns = [False] * len(data[0])
+
+    len_matrix = []
+    if table_header:
+        skip_header = False
+        line = []
+        for n, t in table_header:
+            if not isinstance(n, str) or not isinstance(t, type):
+                raise ValueError("The header for ptable has to be a tuple/list in the format: " +
+                                 "[('name', type), ...], but got [..., ({}, {}), ...]".format(n, t))
+            line.append(len(n))
+            header.append(n)
+            types.append(t)
+        # add header lengths into the matrix
+        len_matrix.append(line)
+    else:
+        header = [''] * len(data[0])
+        types = [str] * len(data[0])
+
+    for _ in data:
+        len_matrix.append([0 for _ in data[0]])
+
+    index = 0
+    # Gather all lines which are going to be printed into the list
+    # and create matrix of attribute lengths.
+    # Iterate through all items.
+    for itemsline in data:
+        # a line
+        for i, item in enumerate(itemsline):
+            len_matrix[index][i] = len(item)
+            if len(item) > 0:
+                columns[i] = True
+        index += 1
+
+
+    if header:
+        alignment = [(len(item)) for item in header]
+    else:
+        alignment = [0]*len(data[0])
+        types = [str]*len(data[0])
+    term_width = terminal_size()[0]
+
+    # Update matrix of attribute lengths and construct the final list
+    # of alignment for each column in the table.
+    for index in range(len(len_matrix)):
+        line = None
+        # Find maximum length for each column
+        for a, array in enumerate(len_matrix):
+            for i, item in enumerate(array):
+                if not columns[i]:
+                    alignment[i] = 0
+                    continue
+                if item > alignment[i]:
+                    alignment[i] = item
+                    line = a
+
+        # Check the overall line length and if it is longer then the
+        # actual terminal width we can wrap the line right after the
+        # first attribute. Simply set the alignment to the smaller
+        # possible and let recalculate the list of column alignments.
+        # Note that when even with the line wrap we would still exceed
+        # the terminal width, then there is nothing we can do about it
+        # so do not bother with line wrapping at all since it would
+        # only screw the formatting even more.
+        length = sum(alignment) + 2 * len(header) - 2
+        if length > term_width and \
+                (length - term_width) < (alignment[0] - len(header[0])) and \
+                line is not None:
+            alignment[0] = len(header[0])
+            len_matrix[line][0] = len(header[0])
+        else:
+            break
+
+    # Get the actual line width
+    width = sum(compress(alignment, columns)) + 2 * len(header) - 2
+
+    pos = 0
+    # Use column alignments list to construct formatting string for each
+    # line in the table. Note that some lines might be wrapped later on.
+    for i, t in enumerate(types):
+        if not columns[i]:
+            continue
+        if t in (float, int):
+            fmt += "{{{0}:>{1}}}  ".format(pos, alignment[i])
+        else:
+            # Do not append additional spaces if this is the last item
+            if i == len(header) - 1:
+                fmt += "{{{0}:{1}}}".format(pos, alignment[i])
+            else:
+                fmt += "{{{0}:{1}}}  ".format(pos, alignment[i])
+        pos += 1
+
+
+    if not skip_header:
+        print("-" * width)
+        print(fmt.format(*tuple(header)))
+    print("-" * width)
+    # Now print each line of the table. When the first attribute of the
+    # line is longer than it should be we know that we have to wrap the
+    # line.
+    for i, line in enumerate(data):
+        line = compress(line, columns)
+        tmp1 = __next__(line)
+        if len(tmp1) > alignment[0]:
+            print(tmp1)
+            print(fmt.format('', *line))
+        else:
+            print(fmt.format(tmp1, *line))
+    print("-" * width)
