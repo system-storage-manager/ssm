@@ -108,16 +108,43 @@ class MiscCheck(unittest.TestCase):
             "a3    b3--  cde3---\n" + \
             "a4    b4    cde4   \n" + \
             "-------------------\n")
-    def test_ptable_no_header_no_types(self):
-        self.assertEqual(self._get_ptable_output([
-                ('a1', 'b1', 'cde1'),
-                ('a2--', 'b2', 'cde2'),
-                ('a3', 'b3--', 'cde3---'),
-                ('a4', 'b4', 'cde4'),
-            ]),
-            "-------------------\n" + \
-            "a1    b1    cde1   \n" + \
-            "a2--  b2    cde2   \n" + \
-            "a3    b3--  cde3---\n" + \
-            "a4    b4    cde4   \n" + \
-            "-------------------\n")
+
+
+class NodeCheck(unittest.TestCase):
+    def setUp(self):
+        self.root = misc.Node()
+        self.nodes = nodes = [misc.Node() for _ in range(4)]
+        #            root--->--0
+        #           /          |
+        #   2--<---1----->-----3
+        self.root.add_children(nodes[0])
+        self.root.add_children(nodes[1])
+        nodes[0].add_children(nodes[3])
+        nodes[1].add_children(nodes[3])
+        nodes[1].add_children(nodes[2])
+
+    def test_sanity(self):
+        self.assertTrue(self.nodes[0] in self.root.neighbours())
+        self.assertTrue(self.nodes[0] in self.root.children())
+        self.assertFalse(self.nodes[0] in self.root.parents())
+
+        self.assertTrue(self.nodes[3] in self.nodes[0].neighbours())
+        self.assertTrue(self.root in self.nodes[0].neighbours())
+        self.assertTrue(self.nodes[3] in self.nodes[0].children())
+        self.assertTrue(self.root in self.nodes[0].parents())
+
+        self.assertTrue(self.nodes[0] in self.nodes[3].neighbours())
+        self.assertTrue(self.nodes[1] in self.nodes[3].neighbours())
+        self.assertEqual(self.nodes[3].children(), [])
+        self.assertTrue(self.nodes[0] in self.nodes[3].parents())
+        self.assertTrue(self.nodes[1] in self.nodes[3].parents())
+
+    def test_multiple_insertions(self):
+        a = misc.Node()
+        b = misc.Node()
+        a.add_children(b)
+        a.add_children(b)
+        self.assertEqual(a.children(), [b])
+        self.assertEqual(b.parents(), [a])
+        self.assertEqual(b.neighbours(), [a])
+        self.assertEqual(a.neighbours(), [b])

@@ -806,3 +806,82 @@ def ptable(data, table_header=None):
         else:
             print(fmt.format(tmp1, *line))
     print("-" * width)
+
+
+class Node(object):
+    """ A simple graph node class """
+
+    def __init__(self):
+        self._neighbours = []
+        self._parents = []
+        self._children = []
+
+    @property
+    def neighbours(self):
+        return self._neighbours
+
+    @property
+    def parents(self):
+        return self._parents
+
+    @property
+    def children(self):
+        return self._children
+
+    def add_neighbour(self, node):
+        """ A two-way method. It will add self into the other node as well. """
+        if not isinstance(node, Node):
+            raise ValueError("Only other Nodes can be added as a neighbour.")
+        if not node in self._neighbours:
+            self._neighbours.append(node)
+            node.add_neighbour(self)
+
+    def add_children(self, node):
+        """ A two-way method. It will add self into the other node as well. """
+        if not node in self._children:
+            self.add_neighbour(node)
+            self._children.append(node)
+            node.add_parent(self)
+
+    def add_parent(self, node):
+        """ A two-way method. It will add self into the other node as well. """
+        if not node in self._parents:
+            self.add_neighbour(node)
+            self._parents.append(node)
+            node.add_children(self)
+
+    def get_roots(self):
+        """ Find all root nodes by recursively traversing up all the parents. """
+        roots = set()
+        for parent in self.parents:
+            roots |= parent.get_roots()
+
+        if not roots:
+            return {self}
+        return roots
+
+    @staticmethod
+    def find_node(name, node_cls):
+        """ Search item of class node_cls and try to find one
+            with specific name.
+        """
+        if node_cls is Pool:
+            for item in pools:
+                if item['pool_name'] == name:
+                    return item
+
+        elif node_cls is Volumes:
+            for item in volumes:
+                if item['dev_name'] == name:
+                    return item
+
+        elif node_cls is Devices:
+            for item in devices:
+                if item['dev_name'] == name:
+                    return item
+
+        elif node_cls is Snapshots:
+            for item in snapshots:
+                if item['dev_name'] == name:
+                    return item
+        return None
