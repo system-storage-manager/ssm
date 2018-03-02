@@ -455,6 +455,9 @@ class DeviceInfo(object):
             return self.data[device]
         return None
 
+    def __str__(self):
+        return repr(self.data)
+
 
 class Item(object):
     """
@@ -502,6 +505,10 @@ class Item(object):
             return True
         else:
             return False
+
+    def __str__(self):
+        self._fill_fs_info()
+        return repr((self.names, repr(self.data)))
 
     def _fill_fs_info(self):
         if 'dm_name' in self.data:
