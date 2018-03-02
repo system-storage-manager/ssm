@@ -412,6 +412,20 @@ list_table()
     udev_wait
 }
 
+info_table()
+{
+	section="$1"
+	ssm_output="$2"
+	shift; shift
+
+	if [ "$section" = "none" ]; then
+		list_table "$ssm_output" "$@"
+	else
+		section_output=$(echo "$ssm_output" | awk "/^$section/{flag=1;next}/^[^ ]/{flag=0}flag")
+		list_table "$section_output" "$@"
+	fi
+}
+
 mountpoint()
 {
 	if [ $# -lt 2 ] ; then

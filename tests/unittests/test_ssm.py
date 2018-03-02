@@ -281,6 +281,7 @@ class SimpleSsmSanityCheck(unittest.TestCase):
         self.assert_("resize" in obj)
         self.assert_("create" in obj)
         self.assert_("list" in obj)
+        self.assert_("info" in obj)
         self.assert_("add" in obj)
         self.assert_("remove" in obj)
         self.assert_("snapshot" in obj)
@@ -782,7 +783,6 @@ class SsmFunctionCheck(MockSystemDataSource):
         main.main("ssm mount -o discard,rw nonexisting /mnt/test1")
         self._cmdEq("mount -o discard,rw nonexisting /mnt/test1")
 
-
 class MyInfo(object):
     def __init__(self, options, data=None):
         self.data = data or {}
@@ -897,8 +897,12 @@ class Pool(main.Storage):
     def __init__(self, *args, **kwargs):
         super(Pool, self).__init__(*args, **kwargs)
         _default_backend = PoolInfo(options=self.options)
+        self.item_cls = main.PoolItem
         self._data = {'test': _default_backend}
-        self.default = main.Item(_default_backend, main.DEFAULT_DEVICE_POOL)
+        self.name_fields = set(['pool_name', 'dev_name'])
+        self.default = main.PoolItem(
+            obj=_default_backend, name=main.DEFAULT_DEVICE_POOL,
+            source=self)
         self.header = ['Pool', 'Devices', 'Free', 'Used', 'Total']
         self.attrs = ['pool_name', 'dev_count', 'pool_free', 'pool_used', 'pool_size']
         self.types = [str, str, float, float, float]
@@ -907,6 +911,8 @@ class Pool(main.Storage):
 class Volumes(main.Storage):
     def __init__(self, *args, **kwargs):
         super(Volumes, self).__init__(*args, **kwargs)
+        self.name_fields = set(['dev_name', 'dm_name', 'real_dev','lv_name'])
+        self.item_cls = main.VolumeItem
         self._data = {'test': VolumeInfo(options=self.options)}
         self.header = ['Volume', 'Volume size', 'FS', 'Free',
                        'Used', 'FS size', 'Type', 'Mount point']
@@ -918,6 +924,8 @@ class Volumes(main.Storage):
 class Devices(main.Storage):
     def __init__(self, *args, **kwargs):
         super(Devices, self).__init__(*args, **kwargs)
+        self.name_fields = set(['dev_name', 'mount'])
+        self.item_cls = main.DeviceItem
         self._data = {'dev': main.DeviceInfo(options=self.options,
                                 data=DevInfo(options=self.options).data)}
         self.header = ['Device', 'Free', 'Used',

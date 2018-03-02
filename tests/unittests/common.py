@@ -194,7 +194,7 @@ class MockSystemDataSource(unittest.TestCase):
         partitions = []
         for (_, data) in self.dev_data.items():
             partitions.append([data['major'], data['minor'], data['dev_size'],
-                               data['dev_name']])
+                               data['dev_name'], data['dev_name']])
         return partitions
 
     def mock_get_real_device(self, devname):

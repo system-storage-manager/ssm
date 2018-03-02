@@ -133,8 +133,9 @@ def unit_tests(names):
         tests_lvm = test_loader.loadTestsFromModule(test_lvm)
         tests_btrfs = test_loader.loadTestsFromModule(test_btrfs)
         tests_ssm = test_loader.loadTestsFromModule(test_ssm)
+        tests_misc = test_loader.loadTestsFromModule(test_misc)
         tests_multipath = test_loader.loadTestsFromModule(test_multipath)
-        tests = unittest.TestSuite([tests_lvm, tests_btrfs, tests_ssm, tests_multipath])
+        tests = unittest.TestSuite([tests_lvm, tests_btrfs, tests_ssm, tests_misc, tests_multipath])
 
     test_runner = unittest.TextTestRunner(verbosity=2)
     test_runner.run(tests)
