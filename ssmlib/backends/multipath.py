@@ -80,9 +80,9 @@ class Multipath(template.Backend):
         devices = []
         command = [MP, '-ll']
         try:
-            output = misc.run(command, stderr=False)[1].split("\n")
+            output = misc.run(command, stderr=False, can_fail=True)[1].split("\n")
             pattern = re.compile(r"^([a-z0-9]+) \([0-9a-f]+\)")
-        except OSError:
+        except (problem.CommandFailed, OSError):
             # probably multipath not installed
             output = []
 
