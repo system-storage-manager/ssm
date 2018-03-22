@@ -419,8 +419,6 @@ class DeviceInfo(object):
                 self.data[item[0]]['mount'] = "SWAP"
 
         for i, dev in enumerate(self.data.values()):
-            if 'minor' in dev and dev['minor'] != '0':
-                continue
             part = 0
             for a, d in enumerate(self.data.values()):
                 if a == i:
