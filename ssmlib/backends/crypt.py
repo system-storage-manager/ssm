@@ -104,20 +104,23 @@ class DmCryptPool(DmObject, template.BackendPool):
         """ Verify is the password is in line with system-imposed requirements.
             This will create a temporary file and try encrypt it.
         """
-        with tempfile.NamedTemporaryFile() as tmp:
-            tmp.write( ('\0' * (10 * 1000 * 1000)).encode())  # 10 MB
-            tmp.flush()
-            command = ['-q', 'luksFormat', tmp.name]
-            try:
-                if passphrase:
-                    self.run_cryptsetup(command, password=passphrase.encode())
-                else:
-                    self.run_cryptsetup(command)
-            except problem.CommandFailed as ex:
-                if ex.exitcode == 2:
-                    raise problem.GeneralError("Password quality check failed, see your system configuration for password requirements.")
-                else:
-                    raise ex
+        try:
+            with tempfile.NamedTemporaryFile() as tmp:
+                tmp.write( ('\0' * (10 * 1000 * 1000)).encode())  # 10 MB
+                tmp.flush()
+                command = ['-q', 'luksFormat', tmp.name]
+                try:
+                    if passphrase:
+                        self.run_cryptsetup(command, password=passphrase.encode())
+                    else:
+                        self.run_cryptsetup(command)
+                except problem.CommandFailed as ex:
+                    if ex.exitcode == 2:
+                        raise problem.GeneralError("Password quality check failed, see your system configuration for password requirements.")
+                    else:
+                        raise ex
+        except IOError as ex:
+            raise problem.GeneralError("SSM could not create a temporary file to test password strength.\n{}".format(str(ex)))
 
     def create(self, pool, size=None, name=None, devs=None,
                options=None):
