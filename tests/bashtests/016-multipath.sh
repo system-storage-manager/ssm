@@ -27,7 +27,7 @@ if ! mpath_is_configured; then
 	echo "sudo mpathconf --enable --with_multipathd y"
 	exit 1
 fi
-if mpath_verify; then
+if [ mpath_verify -eq 0]; then
 	echo "This test can't be run, because there already is an existing multipath configuration."
 	exit 1
 fi

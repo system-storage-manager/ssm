@@ -22,16 +22,14 @@ mpath_is_configured() {
 mpath_setup() {
 	filename="$1"
 	mpath_setup_targets "$filename"
-	if mpath_verify; then
+	if [ mpath_verify -ne 0 ]; then
 		1>&2 echo "An error occured with multipath configuration."
 		return 1
 	fi
-	# I don't know why, but without this sleep, a subsequent multipath -ll
-	# command would sometimes fail with no result
-	sleep 1
 	return 0
 }
 
+# return 0 if mpath devices are configured
 mpath_verify() {
 	multipath -ll | grep "mpath" &>/dev/null || return 1
 	return 0
@@ -58,9 +56,18 @@ mpath_setup_targets() {
 
 	iscsiadm -m discovery -t sendtargets -p 127.0.0.1 -o new -o delete >/dev/null
 	iscsiadm -m node -L all >/dev/null
-	multipath -ll >/dev/null
 
-	return 0
+	# give it few seconds to propagate
+	tries=5
+	while [ $tries -gt 0 ]; do
+		found=$(multipath -ll | wc -l)
+		tries=$((tries - 1))
+		if [ $found -gt 0 ]; then
+			return 0
+		fi
+		sleep 1
+	done
+	return 1
 }
 
 mpath_cleanup() {
