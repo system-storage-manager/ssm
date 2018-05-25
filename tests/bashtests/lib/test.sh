@@ -70,4 +70,25 @@ echo "@TESTDIR=$TESTDIR"
 echo "@PREFIX=$PREFIX"
 echo "@SSM_PREFIX_FILTER=$SSM_PREFIX_FILTER"
 
+# Set a debugging help - if an error occurs, it will tell the exact line number
+# and trace lines. Works only on bash 4.1+. Because bash can only work with
+# integers, it is easier to do a negative check for unsupported versions.
+if (( ${BASH_VERSION%%.*} <= 3 )) || [[ ${BASH_VERSION%.*} = 4.0 ]]; then
+	echo "Bash version does not support an easy detection of line number on a failure. Disabled."
+else
+	set -o functrace
+	function handle_error {
+		local retval=$?
+		set +x
+		local line=${last_lineno:-$1}
+		echo "============ TEST FAILED ============="
+		echo "Failed at line $line"
+		echo "Trace (lines): " "$@"
+		echo "Command: $BASH_COMMAND"
+		exit $retval
+	}
+
+	trap 'handle_error $LINENO ${BASH_LINENO[@]}' ERR
+fi
+
 set -vx
