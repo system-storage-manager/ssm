@@ -2146,10 +2146,10 @@ class StorageHandle(object):
                 return
         return self.get_bdevice(path)
 
-    def get_bdevice(self, path):
-        path = misc.is_bdevice(path)
+    def get_bdevice(self, string):
+        path = misc.is_bdevice(string)
         if path == False:
-            err = "'{0}' is not valid block device".format(path)
+            err = "'{0}' is not valid block device".format(string)
             raise argparse.ArgumentTypeError(err)
         return self._find_device_record(path)
 
