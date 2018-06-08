@@ -402,6 +402,9 @@ class BtrfsDev(Btrfs, template.BackendDevice):
         else:
             self.data = self._dev
 
+        for name, _ in self.data.items():
+            self.data[name]['hide'] = False
+
     def remove(self, devices):
         raise Exception("Not sure what you want to" +
                         "achieve by removing {0}".format(devices))
