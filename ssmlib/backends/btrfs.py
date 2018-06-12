@@ -558,6 +558,36 @@ class BtrfsPool(Btrfs, template.BackendPool):
             vol = self._create_filesystem(pool, pool, devs, size, options)
         return vol
 
+    def migrate(self, pool, source, target):
+        """ Replace a device in a btrfs pool.
+
+        Parameters
+        ----------
+        pool : [str]
+            Pool into which the replaced device belongs.
+        source : [main.DeviceItem]
+            Source device.
+        target : [str]
+            Path to the target device.
+        """
+        pool = self._pool[pool]
+
+        if 'mount' not in pool:
+            tmp = misc.temp_mount("UUID={0}".format(pool['uuid']))
+            pool['mount'] = tmp
+
+        dev = BtrfsDev(options=self.options).data
+        if dev.get(target) and dev.get(source.name):
+            # both source and target are already members of the pool
+            # so we are going to only remove source
+            command = ['device', 'delete', source.name, pool['mount']]
+        else:
+            command = ['replace', 'start', '-B', source.name, target, pool['mount']]
+
+        self.run_btrfs(command)
+        misc.send_udev_event(source.name, "change")
+        misc.send_udev_event(target, "change")
+
 
 class BtrfsSnap(Btrfs):
 

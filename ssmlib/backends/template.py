@@ -74,6 +74,10 @@ class BackendPool(Backend):
         self.problem.check(self.problem.NOT_IMPLEMENTED,
                         ["Creating volume", "{} backend".format(self.type)])
 
+    def migrate(self, pool, sources, targets=None):
+        self.problem.check(self.problem.NOT_IMPLEMENTED,
+                        ["Migrating data in pools", "{} backend".format(self.type)])
+
 
 class BackendVolume(Backend):
     def __init__(self, *args, **kwargs):

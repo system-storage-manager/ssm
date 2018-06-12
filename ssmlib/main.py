@@ -964,6 +964,37 @@ class DeviceItem(Item):
                     return True
         return False
 
+    @classmethod
+    def migrate(cls, source, target):
+        """ Migrate (in this case clone) the device onto another one.
+            Pure dd is used.
+        """
+        # TODO some possibilities:
+        # - error handling: conv=noerror,sync (continue on error and pad
+        #   with zeros), or better to fail on error?
+
+        if misc.get_signature(source) == 'btrfs':
+            raise problem.ProgrammingError("BTRFS SHOULD NOT BE CLONED WITH DD")
+
+        if misc.get_device_size(source) > misc.get_device_size(target):
+            raise problem.GeneralError("Target device is smaller than source device")
+
+        if misc.get_mountinfo(source):
+            raise problem.GeneralError("You have to umount the source device first")
+        if misc.get_mountinfo(target):
+            raise problem.GeneralError("You have to umount the target device first")
+
+        print("Migrating {s} ({size}) to {t}. This may take a long time...".format(
+            s=source,
+            t=target,
+            size=misc.humanize_size(misc.get_device_size(source))))
+
+        command = ['dd', 'if={}'.format(source), 'of={}'.format(target)]
+        misc.run(command)
+        misc.send_udev_event(source, "change")
+        misc.send_udev_event(target, "change")
+
+
 class VolumeItem(Item):
     def __init__(self, *args, **kwargs):
         super(VolumeItem, self).__init__(*args, **kwargs)
@@ -1457,6 +1488,9 @@ class StorageHandle(object):
         self._snapshots = None
         self.set_globals(options)
         self.options = options
+        # this is a workaround for limited argparse capabilities,
+        # where we need to do cross-option validation
+        self.__argparse_helper = dict()
 
     def set_globals(self, options):
         if self._dev:
@@ -2086,6 +2120,90 @@ class StorageHandle(object):
                      "{0} with options \'{1}\'".format(args.directory,
                                                        args.options))
 
+    def migrate(self, args):
+        """ Migrate data from a device to a device"""
+        source = self._find_device_record(args.source)
+        target = self._find_device_record(args.target)
+
+        # decide if we have PVs or non-PV block devices
+        found_pv = False
+        pool = None
+        check_fs = True
+        signature = misc.get_signature(target)
+
+        # get source dev and try to detect if it is a member of a pool
+        source_dev = self.dev[source]
+        if source_dev and 'pool_name' in source_dev:
+            found_pv = True
+            pool = self.pool[source_dev['pool_name']]
+        else:
+            pass
+            # This seems to be only a case for some tests where the /tmp/<TEMP>/dev/...
+            # devices gets incorrectly identified (sometimes they do, sometimes they don't).
+            # Keep it commented out for now, because it seems to be rather an issue with
+            # the tests
+            # source_signature = misc.get_signature(source)
+            # if source_signature == 'btrfs':
+            #    print("found btrfs")
+            #    found_pv = True
+            #    import pdb; pdb.set_trace()
+
+        target_dev = self.dev[target]
+        if target_dev:
+            if 'pool_name' in target_dev and\
+                (signature != 'btrfs' or (pool and int(pool['dev_count']) > 1)):
+                check_fs = False
+
+                if target_dev['pool_name'] != '':
+                    if target_dev['pool_name'] != pool.name:
+                        if PR.check(PR.DEVICE_USED,
+                            [target_dev.name, target_dev['pool_name']]):
+                            remove_args = Struct()
+                            remove_args.all = False
+                            remove_args.items = [target_dev]
+                            if not self.remove(remove_args):
+                                raise problem.CommandFailed("The device {} could not be removed from the pool {}".format(
+                                    target,
+                                    target_dev['pool_name']
+                                ))
+                            misc.wipefs(target_dev.name, signature)
+                        else:
+                            raise problem.UserInterrupted("Aborted")
+            else:
+                check_fs = True
+
+
+
+        if check_fs:
+            mounts = misc.get_mountinfo(target)
+            if mounts:
+                if PR.check(PR.FS_MOUNTED, [target, mounts[target]['mp']]):
+                    misc.do_umount(target)
+                else:
+                    raise problem.CommandFailed("Umount of {} was not possible".format(target))
+
+            if signature and not self.options.force and\
+                PR.check(PR.EXISTING_FILESYSTEM,
+                        [signature, target]):
+                misc.wipefs(target, signature)
+            elif signature and not self.options.force:
+                # user wants to skip
+                raise problem.UserInterrupted("Aborted")
+            elif signature and self.options.force:
+                misc.wipefs(target, signature)
+
+        PR.info("Migrating from device {} to {}. This may take a long time...".format(
+            source,
+            target
+        ))
+        if not found_pv:
+            DeviceItem.migrate(source, target)
+
+        elif found_pv:
+            pool.migrate(source_dev, target)
+        else:
+            raise problem.ProgrammingError("Neither PV or non-PV was found. This is a bug")
+
     def can_check(self, device):
         fs = self.is_fs(device)
         if fs is False:
@@ -2420,6 +2538,7 @@ class SsmParser(object):
         self.parser_remove = self._get_parser_remove()
         self.parser_snapshot = self._get_parser_snapshot()
         self.parser_mount = self._get_parser_mount()
+        self.parser_migrate = self._get_parser_migrate()
         self.args = None
 
     def parse(self):
@@ -2683,6 +2802,22 @@ class SsmParser(object):
                 type=is_directory)
         parser_mount.set_defaults(func=self.storage.mount)
         return parser_mount
+
+    def _get_parser_migrate(self):
+        """
+        Migrate command
+        """
+        parser_migrate = self.subcommands.add_parser('migrate',
+                help='''Move data from one device or pv to another.
+                     For btrfs and lvm their specialized utilities are used.
+                     Any other device is copied with dd.''')
+        parser_migrate.add_argument('source',
+                type=self.storage.get_bdevice)
+        parser_migrate.add_argument('target',
+                type=self.storage.get_bdevice)
+
+        parser_migrate.set_defaults(func=self.storage.migrate)
+        return parser_migrate
 
 
 def main(args=None):
