@@ -2155,7 +2155,7 @@ class StorageHandle(object):
                 check_fs = False
 
                 if target_dev['pool_name'] != '':
-                    if target_dev['pool_name'] != pool.name:
+                    if pool and target_dev['pool_name'] != pool.name:
                         if PR.check(PR.DEVICE_USED,
                             [target_dev.name, target_dev['pool_name']]):
                             remove_args = Struct()
