@@ -1,3 +1,4 @@
+
 System Storage Manager
 **********************
 
@@ -66,8 +67,9 @@ Create command
 
 This command creates a new volume with defined parameters. If a
 **device** is provided it will be used to create the volume, hence it
-will be added into the **pool** prior to volume creation (See Add
-command section). More than one device can be used to create a volume.
+will be added into the **pool** prior to volume creation (See *Add
+command section*). More than one device can be used to create a
+volume.
 
 If the **device** is already being used in a different pool, then
 **ssm** will ask you whether you want to remove it from the original
@@ -101,11 +103,11 @@ system is not present on the volume.
 
 If the backend allows it (currently only supported with **lvm**
 backend), **ssm** can be used to create **thinly provisioned volumes**
-by specifying **--virtual-size** option. This will automatically create
-a **thin pool** of a given size provided with **--size** option and
-**thin volume** of a given size provided with **--virtual-size** option
-and name provided with **--name** option. Virtual size can be much
-bigger than available space in the **pool**.
+by specifying **--virtual-size** option. This will automatically
+create a **thin pool** of a given size provided with **--size** option
+and **thin volume** of a given size provided with **--virtual-size**
+option and name provided with **--name** option. Virtual size can be
+much bigger than available space in the **pool**.
 
 
 List command
@@ -186,7 +188,7 @@ This will be handled by **ssm** automatically by mounting the
 
 In addition to specifying new size of the volume directly, percentage
 can be specified as well. Specify **--size 70%** to resize the volume
-to 70% of it’s original size. Additionally, percentage of the used, or
+to 70% of it's original size. Additionally, percentage of the used, or
 free pool space can be specified as well using keywords FREE, or USED
 respectively.
 
@@ -229,7 +231,7 @@ Add command
 ***********
 
 This command adds a **device** into the pool. By default, the
-**device** will not be added if it’s already a part of a different
+**device** will not be added if it's already a part of a different
 pool, but the user will be asked whether or not to remove the device
 from its pool. When multiple devices are provided, all of them are
 added into the pool. If one of the devices cannot be added into the
@@ -284,8 +286,8 @@ pool
    When creating a new btrfs pool, the name of the pool is used as the
    file system label. If there is an already existing btrfs file
    system in the system without a label, a btrfs pool name will be
-   generated for internal use in the following format “btrfs_{device
-   base name}”.
+   generated for internal use in the following format "btrfs_{device
+   base name}".
 
    A btrfs pool is created when the **create** or **add** command is
    used with specified devices and non existing pool name.
@@ -302,7 +304,7 @@ volume
    The volume name is used as subvolume path in the btrfs file system
    and every object in this path must exist in order to create a
    volume. The volume name for internal tracking and that is visible
-   to the user is generated in the format “{pool_name}:{volume name}”,
+   to the user is generated in the format "{pool_name}:{volume name}",
    but volumes can be also referenced by its mount point.
 
    The btrfs volumes are only shown in the *list* output, when the
@@ -358,7 +360,7 @@ volume
 snapshot
    Lvm volumes can be snapshotted as well. When a snapshot is created
    from the lvm volume, a new *snapshot* volume is created, which can
-   be handled as any other lvm volume. Unlike btrfs lvm is able to
+   be handled as any other lvm volume. Unlike *btrfs* lvm is able to
    distinguish snapshot from regular volume, so there is no need for a
    snapshot name to match special pattern.
 
@@ -466,7 +468,7 @@ group) is lvm_pool:
 
    # ssm create --fs ext4 -s 15G /dev/loop0 /dev/loop1
 
-The name of the new volume is ‘/dev/lvm_pool/lvol001’. Resize the
+The name of the new volume is '/dev/lvm_pool/lvol001'. Resize the
 volume to 10GB:
 
    # ssm resize -s-5G /dev/lvm_pool/lvol001
@@ -476,7 +478,7 @@ the pool:
 
    # ssm resize -s 100G /dev/lvm_pool/lvol001 /dev/loop2
 
-Now we can try to create a new lvm volume named ‘myvolume’ from the
+Now we can try to create a new lvm volume named 'myvolume' from the
 remaining pool space with the xfs file system and mount it to
 /mnt/test1:
 
@@ -499,7 +501,7 @@ You can then easily remove the old volume with:
 
    # ssm remove /dev/lvm_pool/lvol001
 
-Now let’s try to create a btrfs volume. Btrfs is a separate backend,
+Now let's try to create a btrfs volume. Btrfs is a separate backend,
 not just a file system. That is because btrfs itself has an integrated
 volume manager. The default btrfs pool name is btrfs_pool.:
 
@@ -546,8 +548,8 @@ for you.:
    /dev/sda5                              49.44 GB  ext4   49.44 GB  29.77 GB  part    /mnt/test
    -----------------------------------------------------------------------------------------------
 
-Now let’s free up some of the loop devices so that we can try to add
-them into the btrfs_pool. So we’ll simply remove lvm myvolume and
+Now let's free up some of the loop devices so that we can try to add
+them into the btrfs_pool. So we'll simply remove lvm myvolume and
 resize lvol001 so we can remove /dev/loop2. Note that myvolume is
 mounted so we have to unmount it first.:
 
@@ -560,7 +562,7 @@ Add device to the btrfs file system:
 
    # ssm add /dev/loop2 -p btrfs_pool
 
-Now let’s see what happened. Note that to actually see btrfs
+Now let's see what happened. Note that to actually see btrfs
 subvolumes you have to mount the file system first:
 
    # mount -L btrfs_pool /mnt/test1/
@@ -618,7 +620,7 @@ To install System Storage Manager into your system simply run:
    python setup.py install
 
 as root in the System Storage Manager directory. Make sure that your
-system configuration meets the requirements in order for ssm to work
+system configuration meets the *requirements* in order for ssm to work
 correctly.
 
 Note that you can run **ssm** even without installation by using the
@@ -713,7 +715,7 @@ Crypt backend
 For developers
 **************
 
-We are accepting patches! If you’re interested in contributing to the
+We are accepting patches! If you're interested in contributing to the
 System Storage Manager code, just checkout the git repository located
 on SourceForge. Please, base all of your work on the "devel" branch
 since it is more up-to-date and it will save us some work when merging
@@ -722,7 +724,7 @@ your patches:
    git clone --branch devel git@github.com:system-storage-manager/ssm.git storagemanager-code
 
 Any form of contribution - patches, documentation, reviews or rants
-are appreciated. See Mailing list section section.
+are appreciated. See *Mailing list section* section.
 
 
 Tests
@@ -745,21 +747,20 @@ Tests in System Storage Manager are divided into four levels.
    commands actually result in the proper backend callbacks. It does
    not require root permissions and it does not touch your system
    configuration in any way. It actually should not invoke any shell
-   command, and if it does it’s a bug.
+   command, and if it does it's a bug.
 
-3. Second part of unittests is backend testing. We are mainly
-   testing whether ssm commands result in proper backend operations.
-   It does not require root permissions and it does not touch your
-   system configuration in any way. It actually should not invoke any
-   shell command and if it does it’s a bug.
+3. Second part of unittests is backend testing. We are mainly testing
+   whether ssm commands result in proper backend operations. It does
+   not require root permissions and it does not touch your system
+   configuration in any way. It actually should not invoke any shell
+   command and if it does it's a bug.
 
-4. And finally there are real bash tests located in
-   "tests/bashtests". Bash tests are divided into files. Each file
-   tests one command for one backend and it contains a series of test
-   cases followed by checks as to whether the command created the
-   expected result. In order to test real system commands we have to
-   create a system device to test on and not touch the existing system
-   configuration.
+4. And finally there are real bash tests located in "tests/bashtests".
+   Bash tests are divided into files. Each file tests one command for
+   one backend and it contains a series of test cases followed by
+   checks as to whether the command created the expected result. In
+   order to test real system commands we have to create a system
+   device to test on and not touch the existing system configuration.
 
    Before each test a number of devices are created using *dmsetup* in
    the test directory. These devices will be used in test cases
@@ -773,7 +774,7 @@ Tests in System Storage Manager are divided into four levels.
    prefix.
 
    The standard place for temporary files is within SSM tests
-   directory. However, if for some reason you don’t want/can’t use
+   directory. However, if for some reason you don't want/can't use
    this location, set the SSM_TEST_DIR environment variable to any
    other path.
 
@@ -786,9 +787,9 @@ If you change or create new functionality, please make sure that it is
 covered by the System Storage Manager regression test suite to make
 sure that we do not break it unintentionally.
 
-Important: Please, make sure to run full tests before you send a
-  patch to the mailing list. To do so, simply run "python test.py" as
-  root on your test machine.
+Important: Please, make sure to run full tests before you send a patch to the
+  mailing list. To do so, simply run "python test.py" as root on your
+  test machine.
 
 
 Documentation
@@ -805,15 +806,15 @@ all documents.
 
 Moreover, parts of the documentation such as *synopsis* or ssm command
 *options* are parsed directly from the ssm help output. This means
-that when you’re going to add or change arguments into **ssm** the
+that when you're going to add or change arguments into **ssm** the
 only thing you have to do is to add or change it in the
 "ssmlib/main.py" source code and then run "make dist" in the "doc/"
 directory and all the documents should be updated automatically.
 
-Important: Please make sure you update the documentation when you
-  add or change **ssm** functionality if the format of the change
-  requires it. Then regenerate all the documents using "make dist" and
-  include changes in the patch.
+Important: Please make sure you update the documentation when you add or change
+  **ssm** functionality if the format of the change requires it. Then
+  regenerate all the documents using "make dist" and include changes
+  in the patch.
 
 
 Mailing list
@@ -836,30 +837,30 @@ Posting patches
 ===============
 
 As already mentioned, we are accepting patches! And we are very happy
-for every contribution. If you’re going to send a patch in, please
+for every contribution. If you're going to send a patch in, please
 make sure to follow some simple rules:
 
-1. Before you’re going to post a patch, please run our regression
+1. Before you're going to post a patch, please run our regression
    testing suite to make sure that your change does not break someone
-   else’s work. See Tests section
+   else's work. See *Tests section*
 
-2. If you’re making a change that might require documentation
-   update, please update the documentation as well. See Documentation
-   section
+2. If you're making a change that might require documentation update,
+   please update the documentation as well. See *Documentation
+   section*
 
 3. Make sure your patch has all the requisites such as a *short
    description* preferably 50 characters long at max describing the
    main idea of the change. *Long description* describing what was
    changed with and why and finally Signed-off-by tag.
 
-4. The preferred way of accepting patches is through pull requests
-   on GitHub, but it is possible to send them to the mailing list if
-   you don’t have GitHub account.
+4. The preferred way of accepting patches is through pull requests on
+   GitHub, but it is possible to send them to the mailing list if you
+   don't have GitHub account.
 
-5. If you’re going to send a patch to the mailing list, please send
+5. If you're going to send a patch to the mailing list, please send
    the patch inlined in the email body. It is much better for review
    process.
 
-Hint: You can use **git** to do all the work for you. "git format-
-  patch" and "git send-email" will help you with creating and sending
-  the patch to the mailing list.
+Hint: You can use **git** to do all the work for you. "git format-patch"
+  and "git send-email" will help you with creating and sending the
+  patch to the mailing list.
