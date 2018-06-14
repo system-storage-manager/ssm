@@ -37,10 +37,10 @@ export TEST_MNT=$TESTDIR/mnt
 
 # check if coverage exists
 export COVERAGE=$(which coverage) || unset COVERAGE
-if test -n "$COVERAGE"; then
-    export RUN_COVERAGE="$COVERAGE run -a"
-    export COVERAGE_FILE=$OLDDIR/.coverage
-    $COVERAGE erase
+if [ -n "$COVERAGE" ]; then
+	export RUN_COVERAGE="$COVERAGE run -a"
+	export COVERAGE_FILE=$OLDDIR/.coverage
+	$COVERAGE erase
 fi
 
 trap 'aux teardown' EXIT # don't forget to clean up
@@ -48,7 +48,7 @@ trap 'aux teardown' EXIT # don't forget to clean up
 export LVM_SYSTEM_DIR=$TESTDIR/etc
 DM_DEV_DIR=$TESTDIR/dev
 mkdir $LVM_SYSTEM_DIR $TESTDIR/lib $DM_DEV_DIR
-if test -n "$LVM_TEST_DEVDIR" ; then
+if [ -n "$LVM_TEST_DEVDIR"  ]; then
 	DM_DEV_DIR="$LVM_TEST_DEVDIR"
 else
 	mknod $DM_DEV_DIR/testnull c 1 3 || exit 1;
