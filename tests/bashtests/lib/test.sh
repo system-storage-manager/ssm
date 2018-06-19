@@ -78,6 +78,10 @@ if (( ${BASH_VERSION%%.*} <= 3 )) || [[ ${BASH_VERSION%.*} = 4.0 ]]; then
 else
 	set -o functrace
 	function handle_error {
+		# do nothing if -e was not set
+		if [ $(printf %s\\n "$-" | grep -c e) -eq 0 ]; then
+			return
+		fi
 		local retval=$?
 		set +x
 		local line=${last_lineno:-$1}
