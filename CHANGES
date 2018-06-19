@@ -1,3 +1,47 @@
+* Tue Jun  19 2018 Jan Tulak <jtulak@redhat.com> - 1.0
+- tests: ignore errors when -e is set
+- tests: sanitize style in bashtests lib
+- main: test for None before access in migrate()
+- doc: Update the format of README and INSTALL
+- ssm: add migrate command
+- btrfs: unhide devices in tests
+- ssmlib: fix not_supported error
+- ssmlib: better error message when bdev is required but not provided
+- tests: add a bash test for ssm info
+- ssm: add 'info' command
+- misc: add a graph-implementing class Node
+- tests: add failed-at-line detection to bash tests
+- tests: fix multipath configuration
+- Account for IOError when testing LUKS passwd strength
+- ssmlib: add __str__ to DeviceInfo and Item
+- multipath: do not display error message if mpath not configured
+- main: remove a check check for minor number == 0
+- ssm: split table printing into a standalone function
+- ssm: rename ptable to psummary
+- tests: a fix for sometimes-failing multipath bash test
+- clean backends
+- lvm: fix undefined variable
+- fix typo in __init__.py - allow importing whole backends directory
+- clean problem.py
+- clean main
+- clean misc
+- clean test common
+- doc: add a short info about multipath
+- tests: add multipath tests
+- ssmlib: add multipath backend
+- New mock functions for unittests
+- btrfs: fix pool used + free != total
+- tests: Verify values for free/used/total for btrfs pool
+- crypt: change how passphrase is acquired
+- tests: add a test case for crypt and a weak password
+- ssmlib: extend CommandFailed exception with exit code
+- ssmlib: change how stdin data are passed to subprocesses
+- tests: make test.py executable
+- tests: add a test of misc.run
+- tests: add a test for exported lvm volume
+- ssm: add a workaround for lvm and exported volumes
+- ssm: add test outputs to gitignore
+
 * Mon Oct  30 2017 Jan Tulak <jtulak@redhat.com> - 0.5
 - lvm: better test for thin provisioning support (Jan Tulak)
 - doc: mention the dependency on thin provisioning tools in lvm (Jan Tulak)
