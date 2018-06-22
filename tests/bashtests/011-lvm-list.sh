@@ -327,5 +327,14 @@ for fs in $TEST_FS; do
 done
 ssm -f remove $SSM_LVM_DEFAULT_POOL
 
+# Check how ssm handles exported volume groups
+# This was originally fixed by commit
+# 7449db6 ("ssm: add a workaround for lvm and exported volumes")
+ssm add $TEST_DEVS
+vgexport $SSM_LVM_DEFAULT_POOL
+ssm list
+vgimport $SSM_LVM_DEFAULT_POOL
+ssm -f remove $SSM_LVM_DEFAULT_POOL
+
 # Some situation should fail
 not ssm list wrong_type
