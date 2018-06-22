@@ -110,7 +110,21 @@ class LvmInfo(template.Backend):
     def _parse_data(self, command):
         if not self.binary:
             return
-        self.output = misc.run(command, stderr=False)[1]
+        ret, self.output, err = misc.run(command, stderr=False, can_fail=True)
+        # A workaround for LVM behaviour:
+        # lvm lvs' exit code is 5 on exported volumes, even if everything
+        # is ok. So, if the code is 5, command was 'lvm lvs ...'
+        # and error message says that a volume was exported, ignore the
+        # error
+        if ret != 0:
+            err_msg = "ERROR exit code {0} for running command: \"{1}\"".format(
+                      ret, " ".join(command))
+            if ret != 5 or command[0:2] != ['lvm', 'lvs'] or \
+               not str(err).endswith('is exported\n'):
+                if err is not None:
+                    print(err)
+                raise problem.CommandFailed(err_msg, exitcode=ret)
+
         for line in self.output.split("\n"):
             if not line:
                 break
