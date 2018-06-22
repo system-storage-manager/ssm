@@ -153,6 +153,7 @@ class Btrfs(template.Backend):
                     int(partitions[dev['dev_name']][2])
                 pool_size += dev_size
                 dev['dev_free'] = dev_size - dev_used
+                dev['hide'] = False
                 self._dev[dev['dev_name']] = dev
                 dev = {}
 
@@ -401,9 +402,6 @@ class BtrfsDev(Btrfs, template.BackendDevice):
             self.data.update(self._dev)
         else:
             self.data = self._dev
-
-        for name, _ in self.data.items():
-            self.data[name]['hide'] = False
 
     def remove(self, devices):
         raise Exception("Not sure what you want to" +
