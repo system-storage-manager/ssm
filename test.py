@@ -59,7 +59,7 @@ def run_bash_tests(names):
         bad_file = re.sub("\.sh$",".bad", script)
         if os.access(bad_file, os.R_OK):
             os.remove(bad_file)
-        ret, out = misc.run(['./' + script], stdout=False, can_fail=True)
+        ret, out, err = misc.run(['./' + script], stdout=False, can_fail=True)
         if ret:
             print("\033[91m[FAILED]\033[0m")
             failed.append(script)

@@ -40,10 +40,12 @@ TMP_MOUNTED = []
 
 if sys.version < '3':
     def __str__(x):
-        return str(x)
+        if x is not None:
+            return str(x)
 else:
     def __str__(x):
-        return str(x, encoding='utf-8', errors='strict')
+        if x is not None:
+            return str(x, encoding='utf-8', errors='strict')
 
 
 def get_unit_size(string):
@@ -298,7 +300,7 @@ def get_signature(device, types=None):
         command.extend(['-u', types])
     command.append(device)
 
-    ret, output = run(command, can_fail=True, stderr=False)
+    ret, output, err = run(command, can_fail=True, stderr=False)
     output = output.strip()
 
     if ret:
@@ -530,9 +532,7 @@ def run(cmd, show_cmd=False, stdout=False, stderr=True, can_fail=False,
     if not return_stdout:
         output = None
 
-    if output is not None:
-        return (proc.returncode, __str__(output))
-    return (proc.returncode, output)
+    return (proc.returncode, __str__(output), __str__(error))
 
 
 def chain(*iterables):

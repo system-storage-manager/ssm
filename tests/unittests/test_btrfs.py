@@ -84,7 +84,7 @@ class BtrfsFunctionCheck(MockSystemDataSource):
                               v_data['dev_name'])
         if 'return_stdout' in kwargs and not kwargs['return_stdout']:
             output = None
-        return (0, output)
+        return (0, output, None)
 
     def test_btrfs_create(self):
         default_pool = btrfs.SSM_BTRFS_DEFAULT_POOL

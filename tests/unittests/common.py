@@ -55,7 +55,7 @@ class BaseStorageHandleInit(unittest.TestCase):
         output = ""
         if 'return_stdout' in kwargs and not kwargs['return_stdout']:
             output = None
-        return (0, output)
+        return (0, output, None)
 
     def tearDown(self):
         self.storage = None

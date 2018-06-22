@@ -289,9 +289,9 @@ class SimpleSsmSanityCheck(unittest.TestCase):
         self.assert_("set_globals" in obj)
 
     def test_run(self):
-        ret,out = misc.run(["echo", "x"])
+        ret,out,err = misc.run(["echo", "x"])
         self.assertEqual('x\n', out)
-        ret,out = misc.run(["cat"], stdin_data="foo".encode())
+        ret,out,err = misc.run(["cat"], stdin_data="foo".encode())
         self.assertEqual('foo', out)
 
 
@@ -344,7 +344,7 @@ class SsmFunctionCheck(MockSystemDataSource):
             return self.dev_data
         if 'return_stdout' in kwargs and not kwargs['return_stdout']:
             output = None
-        return (0, output)
+        return (0, output, None)
 
     def test_resize(self):
         # Generate some storage data

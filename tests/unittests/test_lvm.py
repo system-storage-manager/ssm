@@ -64,7 +64,7 @@ class LvmFunctionCheck(MockSystemDataSource):
                         data['origin'], data['attr'])
         if 'return_stdout' in kwargs and not kwargs['return_stdout']:
             output = None
-        return (0, output)
+        return (0, output, None)
 
     def test_lvm_create(self):
         default_pool = lvm.SSM_LVM_DEFAULT_POOL

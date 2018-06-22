@@ -172,7 +172,8 @@ class Btrfs(template.Backend):
             command.append('-a')
         if list_snapshots:
             command.append('-s')
-        ret, output = misc.run(command + [mount], stdout=False, can_fail=True)
+        ret, output, err = misc.run(command + [mount], stdout=False,
+                                    can_fail=True)
         if ret:
             command = ['btrfs', 'subvolume', 'list']
             if list_snapshots:

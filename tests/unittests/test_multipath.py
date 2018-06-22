@@ -121,7 +121,7 @@ class MultipathFunctionCheck(MockSystemDataSource):
                     output += "  `- 11:0:0:1  {0} 8:64 active ready running\n".format(d_data['dev_name'][5:])
         if 'return_stdout' in kwargs and not kwargs['return_stdout']:
             output = None
-        return (0, output)
+        return (0, output, None)
 
     def test_mp_get_real_device(self):
         mp = MultipathVolume(options=self._options)
