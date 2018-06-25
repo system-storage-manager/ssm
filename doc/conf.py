@@ -226,5 +226,8 @@ latex_documents = [
 man_pages = [
     ('manpage', 'ssm',
      u('System Storage Manager: a single tool to manage your storage'),
-     [u('Jan Ťulák <jtulak@redhat.com>, Lukáš Czerner <lczerner@redhat.com>')], 8)
+     [
+         u('Jan Ťulák <jtulak@redhat.com>'),
+         u('Lukáš Czerner <lczerner@redhat.com>')
+     ], 8)
 ]

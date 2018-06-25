@@ -15,3 +15,4 @@ System Storage Manager Commands
     snapshot
     add
     mount
+    migrate

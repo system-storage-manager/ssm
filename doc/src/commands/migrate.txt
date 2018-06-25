@@ -1,0 +1,8 @@
+Move data from one device to another. For btrfs and lvm their specialized
+utilities are used, so the data are moved in an all-or-nothing fashion and no
+other operation is needed to add/remove the devices or rebalance the pool.
+Devices that do not belong to a **backend** that supports specialized
+device migration tools will be migrated using **dd**.
+
+This operation is not intended to be used for duplication, because the process
+can change metadata and an access to the data may be difficult.

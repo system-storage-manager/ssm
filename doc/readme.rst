@@ -25,6 +25,10 @@ List command
 ============
 .. include:: src/commands/list.txt
 
+Info command
+============
+.. include:: src/commands/info.txt
+
 Remove command
 ==============
 .. include:: src/commands/remove.txt
@@ -45,12 +49,23 @@ Add command
 ===========
 .. include:: src/commands/add.txt
 
+Mount command
+=============
+.. include:: src/commands/mount.txt
+
+Migrate command
+===============
+.. include:: src/commands/migrate.txt
+
+
+
 Backends
 ========
 .. include:: src/backends/backends_introduction.rst
 .. include:: src/backends/btrfs.rst
 .. include:: src/backends/lvm.rst
 .. include:: src/backends/crypt.rst
+.. include:: src/backends/multipath.rst
 
 .. include:: src/env_variables.rst
 .. include:: src/examples.rst

@@ -13,14 +13,23 @@ tools required by a backend are missing, that backend will not work.
 
 Python modules
 --------------
+* argparse
+* atexit
+* base64
+* datetime
+* fcntl
+* getpass
 * os
 * re
-* sys
+* socket
 * stat
-* argparse
-* datetime
-* threading
+* struct
 * subprocess
+* sys
+* tempfile
+* termios
+* threading
+* tty
 
 System tools
 ------------
@@ -35,6 +44,7 @@ System tools
 * mount
 * blkid
 * wipefs
+* dd
 
 Lvm backend
 -----------
@@ -52,3 +62,7 @@ Crypt backend
 --------------
 * dmsetup
 * cryptsetup
+
+Multipath backend
+-----------------
+* multipath

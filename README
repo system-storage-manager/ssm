@@ -145,6 +145,19 @@ The following sections can be specified:
    recognized.
 
 
+Info command
+************
+
+**EXPERIMENTAL** This feature is currently experimental. The output
+format can change and fields can be added or removed.
+
+Show detailed information about all detected devices, pools, volumes
+and snapshots found on the system. The **info** command can be used
+either alone to show all available items, or you can specify a device,
+pool, or any other identifier to see information about the specific
+item.
+
+
 Remove command
 **************
 
@@ -238,6 +251,36 @@ added into the pool. If one of the devices cannot be added into the
 pool for any reason, the add command will fail. If no pool is
 specified, the default pool will be chosen. In the case of a non
 existing pool, it will be created using the provided devices.
+
+
+Mount command
+*************
+
+This command will mount the **volume** at the specified **directory**.
+The **volume** can be specified in the same way as with **mount(8)**,
+however in addition, one can also specify a **volume** in the format
+as it appears in the **ssm list** table.
+
+For example, instead of finding out what the device and subvolume id
+of the btrfs subvolume "btrfs_pool:vol001" is in order to mount it,
+one can simply call **ssm mount btrfs_pool:vol001 /mnt/test**.
+
+One can also specify *OPTIONS* in the same way as with **mount(8)**.
+
+
+Migrate command
+***************
+
+Move data from one device to another. For btrfs and lvm their
+specialized utilities are used, so the data are moved in an all-or-
+nothing fashion and no other operation is needed to add/remove the
+devices or rebalance the pool. Devices that do not belong to a
+**backend** that supports specialized device migration tools will be
+migrated using **dd**.
+
+This operation is not intended to be used for duplication, because the
+process can change metadata and an access to the data may be
+difficult.
 
 
 Backends
@@ -408,6 +451,15 @@ snapshot
 device
    The crypt backend does not require a special device to be created
    on.
+
+
+Multipath backend
+*****************
+
+Multipath backend in **ssm** is currently limited to only gather the
+information about multipath volumes in the system. You can not create
+or manage multipath volumes or pools, but this functionality will be
+extended in the future.
 
 
 Environment variables
@@ -645,21 +697,39 @@ work.
 Python modules
 ==============
 
+* argparse
+
+* atexit
+
+* base64
+
+* datetime
+
+* fcntl
+
+* getpass
+
 * os
 
 * re
 
-* sys
+* socket
 
 * stat
 
-* argparse
+* struct
 
-* datetime
+* subprocess
+
+* sys
+
+* tempfile
+
+* termios
 
 * threading
 
-* subprocess
+* tty
 
 
 System tools
@@ -687,6 +757,8 @@ System tools
 
 * wipefs
 
+* dd
+
 
 Lvm backend
 ===========
@@ -710,6 +782,12 @@ Crypt backend
 * dmsetup
 
 * cryptsetup
+
+
+Multipath backend
+=================
+
+* multipath
 
 
 For developers

@@ -34,21 +34,39 @@ work.
 Python modules
 ==============
 
+* argparse
+
+* atexit
+
+* base64
+
+* datetime
+
+* fcntl
+
+* getpass
+
 * os
 
 * re
 
-* sys
+* socket
 
 * stat
 
-* argparse
+* struct
 
-* datetime
+* subprocess
+
+* sys
+
+* tempfile
+
+* termios
 
 * threading
 
-* subprocess
+* tty
 
 
 System tools
@@ -76,6 +94,8 @@ System tools
 
 * wipefs
 
+* dd
+
 
 Lvm backend
 ===========
@@ -99,3 +119,9 @@ Crypt backend
 * dmsetup
 
 * cryptsetup
+
+
+Multipath backend
+=================
+
+* multipath
