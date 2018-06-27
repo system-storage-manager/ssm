@@ -382,7 +382,7 @@ _ssm()
   prev="${COMP_WORDS[COMP_CWORD-1]}"
   opts="${HELP} ${HELP_LONG} --version -v --verbose -f --force -b --backend -n --dry-run"
   actions="create list remove resize check snapshot add mount"
-  backends="lvm btrfs crypt"
+  backends="lvm btrfs crypt multipath"
   if [[ ${VISITED_CREATE} = '' || ! ${VISITED_CREATE} > 0 ]] ; then VISITED_CREATE=0 ; fi
   if [[ ${VISITED_LIST} = '' || ! ${VISITED_LIST} > 0 ]] ; then VISITED_LIST=0 ; fi
 
