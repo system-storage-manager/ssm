@@ -413,7 +413,7 @@ _ssm()
   actions="create list remove resize check snapshot add mount info"
   backends="lvm btrfs crypt multipath"
   if [[ ${VISITED_CREATE} = '' || ! ${VISITED_CREATE} > 0 ]] ; then VISITED_CREATE=0 ; fi
-  if [[ ${VISITED_LIST} = '' || ! ${VISITED_LIST} > 0 ]] ; then VISITED_LIST=0 ; fi
+	if [[ ${VISITED_LIST} = '' || ! ${VISITED_LIST} > 0 ]] ; then VISITED_LIST=0 ; fi
 
   if [[ ${COMP_WORDS[*]} =~ "mount" ]]; then
     _action_mount
