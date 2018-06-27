@@ -369,6 +369,35 @@ _action_snapshot()
   
 }
 
+_action_info() {
+	local cur prev opts_proper opts_all volumes pools devices devices_possible
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD-1]}"
+  opts_proper=""
+  opts_all="${HELP} ${HELP_LONG} ${opts_proper}" 
+
+	# Possible devices for action list are
+	# - volumes
+	# - pools
+	# - devices
+	# - or none =>  Running 'ssm info' is valid
+	# Running 'ssm info item1 item2 .. itemN' is not valid
+	# After first item, return
+	volumes=$(__get_all_volumes)
+	pools=$(__get_all_pools)
+	devices=$(__get_all_devs)
+	devices_possible="${volumes} ${pools} ${devices}"
+
+  if [[ ${prev} = "${HELP}"  			||
+				${prev} = "${HELP_LONG}"	|| 
+				$(${ECHO} ${devices_possible} | ${GREP} ${prev} > /dev/null ; ${ECHO} $?) = 0
+			]] ; then # just return (help/first item)
+    return 0
+	else 
+		COMPREPLY=( $(compgen -W "${devices_possible}" -- ${cur}) )
+  fi
+}
+
 # The main function must not bear the same name 
 # as the program calling this bash-completion.
 # Otherwise:
@@ -381,7 +410,7 @@ _ssm()
   cur="${COMP_WORDS[COMP_CWORD]}"
   prev="${COMP_WORDS[COMP_CWORD-1]}"
   opts="${HELP} ${HELP_LONG} --version -v --verbose -f --force -b --backend -n --dry-run"
-  actions="create list remove resize check snapshot add mount"
+  actions="create list remove resize check snapshot add mount info"
   backends="lvm btrfs crypt multipath"
   if [[ ${VISITED_CREATE} = '' || ! ${VISITED_CREATE} > 0 ]] ; then VISITED_CREATE=0 ; fi
   if [[ ${VISITED_LIST} = '' || ! ${VISITED_LIST} > 0 ]] ; then VISITED_LIST=0 ; fi
@@ -409,6 +438,9 @@ _ssm()
     return 0
   elif [[ ${COMP_WORDS[*]} =~ "snapshot" ]]; then
     _action_snapshot
+    return 0
+  elif [[ ${COMP_WORDS[*]} =~ "info" ]]; then
+    _action_info
     return 0
   elif [[ ${prev} = "${HELP}" || ${prev} = "${HELP_LONG}" ]]; then
     return 0
