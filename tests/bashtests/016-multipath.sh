@@ -61,17 +61,20 @@ USED_DEVS=$(multipath -ll | \
 MPATH=$(multipath -ll | head -n1 | cut -d " " -f 1)
 DM=$(multipath -ll | head -n1 | cut -d " " -f 3)
 
-# some things the ssm should (not) list
-ssm list vol | grep multipath
-ssm list vol | grep $DM
-for d in $USED_DEVS; do
-	! ssm list dev |grep -c $dev
-done
-! ssm list dev |grep -c $MPATH
-! ssm list pool |grep -c $MPATH
-! ssm list vol | grep $MPATH
 
-# Some cases which should fail
+ssm list dev | grep $DM
+for dev in $USED_DEVS; do
+	! ssm list dev | grep -c $dev
+done
 ! ssm remove $MPATH
 
+
+
+ssm info $MPATH
+
+
+
+
+
+ssm list
 exit 0

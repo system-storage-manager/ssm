@@ -557,7 +557,6 @@ class Item(misc.Node):
             'thin': 'lvm thin pool',
             'btrfs': 'btrfs',
             'crypt': 'encrypted pool',
-            'multipath': 'multipat'
         }
         if pool in pools:
             return pools[pool]
@@ -582,7 +581,6 @@ class Item(misc.Node):
             'thin': 'lvm thin volume',
             'btrfs': 'btrfs',
             'crypt': 'encrypted volume',
-            'multipath': 'multipath'
         }
         if pool in pools:
             return pools[pool]
@@ -1263,11 +1261,6 @@ class Pool(Storage):
         except RuntimeError as err:
             PR.warn(err)
             PR.warn("Can not get information about crypt pools")
-        try:
-            self._data['multipath'] = multipath.MultipathPool(options=self.options)
-        except RuntimeError as err:
-            PR.warn(err)
-            PR.warn("Can not get information about multipath pools")
 
         self.item_cls = PoolItem
 
@@ -1376,11 +1369,6 @@ class Volumes(Storage):
         except RuntimeError as err:
             PR.warn(err)
             PR.warn("Can not get information about md raid volumes")
-        try:
-            self._data['multipath'] = multipath.MultipathVolume(options=self.options)
-        except RuntimeError as err:
-            PR.warn(err)
-            PR.warn("Can not get information about multipath volumes")
 
         self.item_cls = VolumeItem
         self.header = ['Volume', 'Pool', 'Volume size', 'FS', 'FS size',

@@ -23,12 +23,7 @@ from ssmlib import problem
 
 from ssmlib.backends import template
 
-__all__ = ["MultipathVolume", "MultipathDevice"]
-
-try:
-    SSM_MULTIPATH_DEFAULT_POOL = os.environ['SSM_MULTIPATH_DEFAULT_POOL']
-except KeyError:
-    SSM_MULTIPATH_DEFAULT_POOL = "multipath_pool"
+__all__ = ["MultipathDevice"]
 
 MP="multipath"
 
@@ -36,20 +31,16 @@ class Multipath(template.Backend):
     def __init__(self, options, data=None):
         self.type = 'multipath'
         self.data = data or {}
-        self._vol = {}
-        self._pool = {}
         self._dev = {}
         self.options = options
         self.output = None
-        self.default_pool_name = SSM_MULTIPATH_DEFAULT_POOL
         self.problem = problem.ProblemSet(options)
 
-        for vol in self.get_volumes_list():
-            volname = self.get_real_device(vol)
-            self._vol[vol] = self.get_volume_data(vol)
-            #self._dev[volname] = self.get_device_data(volname, None, 0)
-            for devname in self._vol[vol]['nodes']:
-                self._dev[devname] = self.get_device_data(devname, volname, 0)
+        for mp_dev in self.get_mp_devices():
+            mpname = self.get_real_device(mp_dev)
+            self._dev[mp_dev] = self.get_volume_data(mp_dev)
+            for devname in self._dev[mp_dev]['nodes']:
+                self._dev[devname] = self.get_device_data(devname, mpname, 0)
 
     def __str__(self):
         return "mp: %s" % repr(self.data)
@@ -66,16 +57,17 @@ class Multipath(template.Backend):
         return devname
 
 
-    def get_device_data(self, devname, volname, devsize):
+    def get_device_data(self, devname, mpname, devsize):
         data = {}
         data['dev_name'] = devname
         data['hide'] = False
-        if volname:
-            data['multipath_volname'] = volname
-            data['pool_name'] = self.get_real_device(volname)
+        if mpname:
+            data['multipath_volname'] = mpname
+            data['pool_name'] = self.get_real_device(mpname)
+            data['mount'] = 'MULTIPATH'
         return data
 
-    def get_volumes_list(self):
+    def get_mp_devices(self):
         """ Find all multipath devices (but not their nodes). """
         devices = []
         command = [MP, '-ll']
@@ -96,7 +88,6 @@ class Multipath(template.Backend):
     def get_volume_data(self, volname):
         data = {}
         data['dev_name'] = self.get_real_device(volname)
-        data['type'] = "multipath"
         data['hide'] = False
         command = [MP, '-ll', volname]
         try:
@@ -108,7 +99,7 @@ class Multipath(template.Backend):
         if len(output) > 0:
             match = re.search(r"\(([0-9a-f]+)\)",output[0])
             data['wwid'] = match.group(1)
-            data['vol_size'] = misc.get_device_size(data['dev_name'])
+            data['dev_size'] = misc.get_device_size(data['dev_name'])
             data['nodes'] = []
             data['total_nodes'] = 0
             for entry in zip(output[2::2],output[3::2]):
@@ -121,31 +112,6 @@ class Multipath(template.Backend):
                 data['nodes'].append("/dev/"+self.get_real_device(dev[1]))
                 data['total_nodes'] += 1
         return data
-
-
-
-class MultipathVolume(Multipath, template.BackendVolume):
-    def __init__(self, *args, **kwargs):
-        super(MultipathVolume, self).__init__(*args, **kwargs)
-        if self.data:
-            self.data.update(self._vol)
-        else:
-            self.data = self._vol
-
-
-"""
-The multipath pool exists because SSM has issues without it, but is not useful
-for multipath itself. So just hide it everytime...
-"""
-class MultipathPool(Multipath, template.BackendPool):
-    def __init__(self, *args, **kwargs):
-        super(MultipathPool, self).__init__(*args, **kwargs)
-        if self.data:
-            self.data.update(self._vol)
-        else:
-            self.data = self._vol
-        for i in self.data:
-            self.data[i]['hide'] = True
 
 
 class MultipathDevice(Multipath, template.BackendDevice):
