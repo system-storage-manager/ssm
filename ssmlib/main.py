@@ -1992,7 +1992,9 @@ class StorageHandle(object):
             for source in sources:
                 found |= source.pinfo(item=args.item)
             if not found:
-                print("The item '%s' was not found." % args.item)
+                err = "The item '%s' was not found." % args.item
+                raise argparse.ArgumentTypeError(err)
+
 
     def add(self, args, skip_check=False):
         """

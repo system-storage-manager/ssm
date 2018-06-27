@@ -82,7 +82,9 @@ ssm create -p $pool3 -s ${size6}m -n $vol6
 lvchange -an $pool3/$vol6
 
 # test a not found case
-ssm info foobarbaznotfound | grep "The item 'foobarbaznotfound' was not found."
+# first grep output, then test return code
+! ssm info foobarbaznotfound | grep "The item 'foobarbaznotfound' was not found."
+! ssm info foobarbaznotfound
 
 # Check vol, dev, pool, resized vol, and snapshot
 output=`ssm info $pool0`
