@@ -248,7 +248,7 @@ _action_add()
   local cur prev opts_proper opts_all devices_possible pools_existent
   cur="${COMP_WORDS[COMP_CWORD]}"
   prev="${COMP_WORDS[COMP_CWORD-1]}"
-  pts_proper="-p"
+	opts_proper="-p"
   opts_all="${HELP} ${HELP_LONG} ${opts_proper}"
 
   pools_existent=$(__get_all_pools)
