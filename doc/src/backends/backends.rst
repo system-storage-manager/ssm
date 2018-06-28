@@ -10,3 +10,4 @@ Back-ends
     lvm
     crypt
     md
+    multipath

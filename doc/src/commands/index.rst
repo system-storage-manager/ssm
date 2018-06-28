@@ -7,6 +7,7 @@ System Storage Manager Commands
 
     commands_introduction
     create
+    info
     list
     remove
     resize

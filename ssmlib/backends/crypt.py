@@ -18,7 +18,9 @@
 import re
 import os
 import stat
+import tempfile
 from ssmlib import misc
+from ssmlib import problem
 from ssmlib.backends import template
 
 __all__ = ["DmCryptVolume"]
@@ -69,11 +71,14 @@ class DmObject(template.Backend):
            not misc.check_binary('cryptsetup'):
             return
 
-    def run_cryptsetup(self, command, stdout=True):
+    def run_cryptsetup(self, command, stdout=True, password=None):
         if not misc.check_binary('cryptsetup'):
             self.problem.check(self.problem.TOOL_MISSING, 'cryptsetup')
         command.insert(0, "cryptsetup")
-        return misc.run(command, stdout=stdout)
+        if password != None:
+            return misc.run(command, stdout=stdout, stdin_data=password)
+        else:
+            return misc.run(command, stdout=stdout)
 
 
 class DmCryptPool(DmObject, template.BackendPool):
@@ -89,10 +94,36 @@ class DmCryptPool(DmObject, template.BackendPool):
                 'hide': True}
         self.data[self.default_pool_name] = pool
         '''
+        self.passphrase = None
+
+    def set_passphrase(self, passphrase):
+        self.passphrase = passphrase.encode()
+
+
+    def check_passphrase_strength(self, passphrase):
+        """ Verify is the password is in line with system-imposed requirements.
+            This will create a temporary file and try encrypt it.
+        """
+        try:
+            with tempfile.NamedTemporaryFile() as tmp:
+                tmp.write( ('\0' * (10 * 1000 * 1000)).encode())  # 10 MB
+                tmp.flush()
+                command = ['-q', 'luksFormat', tmp.name]
+                try:
+                    if passphrase:
+                        self.run_cryptsetup(command, password=passphrase.encode())
+                    else:
+                        self.run_cryptsetup(command)
+                except problem.CommandFailed as ex:
+                    if ex.exitcode == 2:
+                        raise problem.GeneralError("Password quality check failed, see your system configuration for password requirements.")
+                    else:
+                        raise ex
+        except IOError as ex:
+            raise problem.GeneralError("SSM could not create a temporary file to test password strength.\n{}".format(str(ex)))
 
     def create(self, pool, size=None, name=None, devs=None,
                options=None):
-
         if CRYPTSETUP_VERSION < [1, 6, 0]:
             msg = "You need at least cryptsetup version " + \
                   "{0}. Creating encrypted volumes".format('1.6.0')
@@ -124,10 +155,10 @@ class DmCryptPool(DmObject, template.BackendPool):
             command.extend(args)
             if self.options.force:
                 command.append('--force-password')
-            if self.options.interactive:
+            if self.options.interactive and not self.passphrase:
                 command.append('-y')
             command.extend(['luksFormat', device])
-            self.run_cryptsetup(command)
+            self.run_cryptsetup(command, password=self.passphrase)
         command = []
         command.extend(args)
         command.append('open')
@@ -136,7 +167,7 @@ class DmCryptPool(DmObject, template.BackendPool):
             size = str(float(size) * 2).split('.')[0]
             command.extend(['--size', size])
         command.extend(['--type', options['encrypt'], device, name])
-        self.run_cryptsetup(command)
+        self.run_cryptsetup(command, password=self.passphrase)
         return "{0}/mapper/{1}".format(DM_DEV_DIR, name)
 
     def _generate_devname(self):

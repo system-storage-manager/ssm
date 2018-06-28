@@ -5,3 +5,4 @@ doc/src/options/
 *.pyc
 *.swp
 tests/bashtests/*.bad
+tests/bashtests/*.out

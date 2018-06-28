@@ -93,6 +93,7 @@ ssm remove ${DEV}/$crypt_vol1 ${DEV}/$crypt_vol3 ${DEV}/$crypt_vol2 ${DEV}/$cryp
 # Try non existing extension
 not ssm create -e enigma $dev1
 
+
 # Create encrypted lvm volume
 export SSM_LVM_DEFAULT_POOL=${vg1}_lvm
 export LVOL_PREFIX="lvol"
@@ -148,3 +149,17 @@ check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$lvol1 $SSM_LVM_DEFAULT
 
 ssm remove ${DEV}/$crypt_vol1
 ssm  -f remove $SSM_LVM_DEFAULT_POOL
+
+# Try a short password, one that should not be allowed if password quality is
+# checked. If the OS is configured to allow all passwords, ssm will pass. If
+# not, then ssm should abort before doing anything, and we check if a LV was
+# created (a bug) or not (the correct behaviour).
+
+set +e
+echo -e "a\na" | ssm create $dev1 -e luks
+res=$?
+set -e
+
+if [ $res -ne 0 ]; then
+	not check lv_exists $SSM_LVM_DEFAULT_POOL $lvol1
+fi

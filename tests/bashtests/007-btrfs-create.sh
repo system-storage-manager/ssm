@@ -37,9 +37,30 @@ vol3=${VOL_PREFIX}003
 pool1=$vg2
 pool2=$vg3
 
+dehumanise() {
+  for v in "${@:-$(</dev/stdin)}"
+  do
+    echo $v | awk \
+      'BEGIN{IGNORECASE = 1}
+       function printpower(n,b,p) {printf "%u\n", n*b^p; next}
+       /[0-9]$/{print $1;next};
+       /K(iB)?$/{printpower($1,  2, 10)};
+       /M(iB)?$/{printpower($1,  2, 20)};
+       /G(iB)?$/{printpower($1,  2, 30)};
+       /T(iB)?$/{printpower($1,  2, 40)};
+       /KB$/{    printpower($1, 10,  3)};
+       /MB$/{    printpower($1, 10,  6)};
+       /GB$/{    printpower($1, 10,  9)};
+       /TB$/{    printpower($1, 10, 12)}'
+  done
+}
 # Create volume with all devices at once
 ssm create $TEST_DEVS $mnt1
 not ssm create $TEST_DEVS -p $pool1
+
+# List and see if Free + Used == Total (allow 5 percent difference for rounding)
+ssm list pools
+test 1 -eq "$(dehumanise `ssm list pools | grep SSMTEST | awk '{print $4 $5 " " $6 $7 " " $8 $9}'` | paste  - - - | awk '{print (($1 + $2 - $3) < (0.05 * $3))}')"
 
 #Create subvolume with nonexisting path
 not ssm create -n $vol1/$vol2

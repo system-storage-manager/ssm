@@ -449,3 +449,16 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         self._cmdEq("mount nonexisting /mnt/test1")
         main.main("ssm mount -o discard,rw nonexisting /mnt/test1")
         self._cmdEq("mount -o discard,rw nonexisting /mnt/test1")
+
+
+    def test_btrfs_migrate(self):
+        # Generate some storage data
+        self._addPool('my_pool', ['/dev/sdc1', '/dev/sdc2', '/dev/sdc3'])
+        self._addVol('vol002', 237284225, 1, 'my_pool', ['/dev/sdc1'])
+        self._addDevice('/dev/sde', 11489037516)
+
+        self._checkCmd("ssm migrate /dev/sdc1 /dev/sdc2", [],
+        "btrfs device delete /dev/sdc1 /tmp/mount")
+
+        self._checkCmd("ssm migrate /dev/sdc2 /dev/sde", [],
+        "btrfs replace start -B /dev/sdc2 /dev/sde /tmp/mount")

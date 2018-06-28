@@ -8,18 +8,18 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software Foundation,
-# Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+# Inc., 59 Temple Place, Suite 330, Boston, MA	02111-1307	USA
 
 # check.sh: assert various things about volumes
 
 # USAGE
-#  check linear VG LV
-#  check lv_on VG LV PV
+#	check linear VG LV
+#	check lv_on VG LV PV
 
-#  check mirror VG LV [LOGDEV|core]
-#  check mirror_nonredundant VG LV
-#  check mirror_legs VG LV N
-#  check mirror_images_on VG LV DEV [DEV...]
+#	check mirror VG LV [LOGDEV|core]
+#	check mirror_nonredundant VG LV
+#	check mirror_legs VG LV N
+#	check mirror_images_on VG LV DEV [DEV...]
 
 # ...
 
@@ -28,7 +28,7 @@ set -e -o pipefail
 udev_wait() {
 	pgrep udev >/dev/null || return 0
 	which udevadm >/dev/null || return 0
-	if test -n "$1" ; then
+	if [ -n "$1"  ]; then
 		udevadm settle --exit-if-exists=$1
 	else
 		udevadm settle --timeout=15
@@ -37,10 +37,10 @@ udev_wait() {
 
 trim()
 {
-    trimmed=${1%% }
-    trimmed=${trimmed## }
+	trimmed=${1%% }
+	trimmed=${trimmed## }
 
-    echo "$trimmed"
+	echo "$trimmed"
 }
 
 lvl() {
@@ -53,22 +53,22 @@ lvdevices() {
 
 mirror_images_redundant()
 {
-  vg=$1
-  lv=$vg/$2
+	vg=$1
+	lv=$vg/$2
 
-  lvs -a $vg -o+devices
-  for i in `lvdevices $lv`; do
-	  echo "# $i:"
-	  lvdevices $vg/$i | sort | uniq
-  done > check.tmp.all
+	lvs -a $vg -o+devices
+	for i in `lvdevices $lv`; do
+		echo "# $i:"
+		lvdevices $vg/$i | sort | uniq
+	done > check.tmp.all
 
-  (grep -v ^# check.tmp.all || true) | sort | uniq -d > check.tmp
+	(grep -v ^# check.tmp.all || true) | sort | uniq -d > check.tmp
 
-  test "`cat check.tmp | wc -l`" -eq 0 || {
-	  echo "mirror images of $lv expected redundant, but are not:"
-	  cat check.tmp.all
-	  exit 1
-  }
+	test "`cat check.tmp | wc -l`" -eq 0 || {
+		echo "mirror images of $lv expected redundant, but are not:"
+		cat check.tmp.all
+		exit 1
+	}
 }
 
 mirror_images_on() {
@@ -103,7 +103,7 @@ mirror_log_on()
 	vg="$1"
 	lv="$2"
 	where="$3"
-	if test "$where" = "core"; then
+	if [ "$where" = "core" ]; then
 		lvl -omirror_log "$vg/$lv" | not grep mlog
 	else
 		lv_on $vg "${lv}_mlog" "$where"
@@ -160,7 +160,7 @@ mirror_nonredundant() {
 			exit 1
 		fi
 	}
-	if test -n "$3"; then mirror_log_on "$1" "$2" "$3"; fi
+	if [ -n "$3" ]; then mirror_log_on "$1" "$2" "$3"; fi
 }
 
 mirror_legs() {
@@ -229,65 +229,65 @@ lv_exists() {
 
 pv_field()
 {
-    actual=$(trim $(pvs --noheadings $4 -o $2 $1))
-    udev_wait
-    test "$actual" = "$3" || {
-        echo "pv_field: PV=$1, field=$2, actual=$actual, expected=$3"
-        exit 1
-    }
+	actual=$(trim $(pvs --noheadings $4 -o $2 $1))
+	udev_wait
+	if [ "$actual" != "$3" ]; then
+		echo "pv_field: PV=$1, field=$2, actual=$actual, expected=$3"
+		exit 1
+	fi
 }
 
 vg_field()
 {
-    actual=$(trim $(vgs --noheadings $4 -o $2 $1))
-    udev_wait
-    test "$actual" = "$3" || {
-        echo "vg_field: vg=$1, field=$2, actual=$actual, expected=$3"
-        exit 1
-    }
+	actual=$(trim $(vgs --noheadings $4 -o $2 $1))
+	udev_wait
+	if [ "$actual" != "$3" ]; then
+		echo "vg_field: vg=$1, field=$2, actual=$actual, expected=$3"
+		exit 1
+	fi
 }
 
 lv_field()
 {
-    actual=$(trim $(lvs --noheadings $4 -o $2 $1))
-    udev_wait
-    test "$actual" = "$3" || {
-        echo "lv_field: lv=$1, field=$2, actual=$actual, expected=$3"
-        exit 1
-    }
+	actual=$(trim $(lvs --noheadings $4 -o $2 $1))
+	udev_wait
+	if [ "$actual" != "$3" ]; then
+		echo "lv_field: lv=$1, field=$2, actual=$actual, expected=$3"
+		exit 1
+	fi
 }
 
 compare_fields()
 {
-    local cmd1=$1;
-    local obj1=$2;
-    local field1=$3;
-    local cmd2=$4;
-    local obj2=$5;
-    local field2=$6;
-    local val1;
-    local val2;
+	local cmd1=$1;
+	local obj1=$2;
+	local field1=$3;
+	local cmd2=$4;
+	local obj2=$5;
+	local field2=$6;
+	local val1;
+	local val2;
 
-    val1=$($cmd1 --noheadings -o $field1 $obj1)
-    val2=$($cmd2 --noheadings -o $field2 $obj2)
-    test "$val1" = "$val2" || {
-        echo "compare_fields $obj1($field1): $val1 $obj2($field2): $val2"
-        exit 1
-    }
+	val1=$($cmd1 --noheadings -o $field1 $obj1)
+	val2=$($cmd2 --noheadings -o $field2 $obj2)
+	if [ "$val1" != "$val2" ]; then
+		echo "compare_fields $obj1($field1): $val1 $obj2($field2): $val2"
+		exit 1
+	fi
 }
 
 compare_vg_field()
 {
-    local vg1=$1;
-    local vg2=$2;
-    local field=$3;
+	local vg1=$1;
+	local vg2=$2;
+	local field=$3;
 
-    val1=$(vgs --noheadings -o $field $vg1)
-    val2=$(vgs --noheadings -o $field $vg2)
-    test "$val1" = "$val2" || {
-        echo "compare_vg_field: $vg1: $val1, $vg2: $val2"
-        exit 1
-    }
+	val1=$(vgs --noheadings -o $field $vg1)
+	val2=$(vgs --noheadings -o $field $vg2)
+	if [ "$val1" != "$val2" ]; then
+		echo "compare_vg_field: $vg1: $val1, $vg2: $val2"
+		exit 1
+	fi
 }
 
 pvlv_counts()
@@ -328,10 +328,10 @@ crypt_vol_field()
 	esac
 	udev_wait
 
-	test "$actual" = "$expected" || {
+	if [ "$actual" != "$expected" ]; then
 		echo "crypt_vol_field: volume=$1, field=$2, actual=$actual, expected=$expected"
 		exit 1
-	}
+	fi
 }
 
 btrfs_fs_field()
@@ -352,10 +352,10 @@ btrfs_fs_field()
 	esac
 	udev_wait
 
-	test "$actual" = "$3" || {
+	if [ "$actual" != "$3" ]; then
 		echo "btrfs_fs_field: label=$1, field=$2, actual=$actual, expected=$3"
 		exit 1
-	}
+	fi
 }
 
 btrfs_vol_field()
@@ -376,40 +376,54 @@ btrfs_vol_field()
 			exit 1
 			;;
 	esac
-	test "$actual" = "$3" || {
+	if [ "$actual" != "$3" ]; then
 		btrfs subvolume list $1
 		echo "btrfs_fs_field: mount=$1, field=$2, actual=$actual, expected=$3"
 		udev_wait
 		exit 1
-	}
+	fi
 	udev_wait
 }
 
 list_table()
 {
-    # $1=ssm_list_output, $2=unique_value_in_desired_row
-    # if some argument is defined as none = it is not checked
-    # arguments might be regular expressions
-    # size from ssm output is converted from 200.00 MB to 200.00MB
-    row=($(echo "$1" | sed 's/\(.[0-9][0-9]\).\(.B\)/\1\2/g' | \
-        sed 's/\( \+\)/ /g' | grep "$2 ")) || {
-            echo "table_list_failed: pattern \"$2\" not found"
-            udev_wait
-            exit 1
-        }
-    counter=1
-    for arg in "${@:3}"; do
-        if [ $arg != "none" ] ; then
-            if [[ ! ${row[$counter]} =~ $arg ]] ; then
-                echo "table_list_failed: field=$(($counter + 1)), \
-                    actual=${row[$counter]}, expected=$arg"
-                udev_wait
-                exit 1
-            fi
-        fi
-        counter=$(($counter + 1))
-    done
-    udev_wait
+	# $1=ssm_list_output, $2=unique_value_in_desired_row
+	# if some argument is defined as none = it is not checked
+	# arguments might be regular expressions
+	# size from ssm output is converted from 200.00 MB to 200.00MB
+	row=($(echo "$1" | sed 's/\(.[0-9][0-9]\).\(.B\)/\1\2/g' | \
+		sed 's/\( \+\)/ /g' | grep "$2 ")) || {
+			echo "table_list_failed: pattern \"$2\" not found"
+			udev_wait
+			exit 1
+		}
+	counter=1
+	for arg in "${@:3}"; do
+		if [ $arg != "none" ] ; then
+			if [[ ! ${row[$counter]} =~ $arg ]] ; then
+				echo "table_list_failed: field=$(($counter + 1)), \
+				     actual=${row[$counter]}, expected=$arg"
+				udev_wait
+				exit 1
+			fi
+		fi
+		counter=$(($counter + 1))
+	done
+	udev_wait
+}
+
+info_table()
+{
+	section="$1"
+	ssm_output="$2"
+	shift; shift
+
+	if [ "$section" = "none" ]; then
+		list_table "$ssm_output" "$@"
+	else
+		section_output=$(echo "$ssm_output" | awk "/^$section/{flag=1;next}/^[^ ]/{flag=0}flag")
+		list_table "$section_output" "$@"
+	fi
 }
 
 mountpoint()

@@ -15,21 +15,24 @@
 #
 # System Storage Manager - ssm
 
+from __future__ import print_function
+
 import re
 import os
 import sys
 import stat
 import atexit
 import argparse
+import getpass
 from ssmlib import misc
 from ssmlib import problem
 
 # Import backends
-from ssmlib.backends import lvm, crypt, btrfs, md
+from ssmlib.backends import lvm, crypt, btrfs, md, multipath
 
 EXTN = ['ext2', 'ext3', 'ext4']
 SUPPORTED_FS = ['xfs', 'btrfs'] + EXTN
-SUPPORTED_BACKENDS = ['lvm', 'btrfs', 'crypt']
+SUPPORTED_BACKENDS = ['lvm', 'btrfs', 'crypt', 'multipath']
 SUPPORTED_RAID = ['0', '1', '10']
 os.environ['LC_NUMERIC'] = "C"
 
@@ -109,7 +112,7 @@ def calculate_size(arg_size, pool):
         return arg_size
     # Size argument specified in kilobytes, just return it
     if arg_size[1] == 'K':
-         return float(arg_size[0])
+        return float(arg_size[0])
 
     if not pool or not pool.exists():
         # There is no pooling support, we do not support specifying
@@ -306,8 +309,8 @@ class FsInfo(object):
         # Ext3/4 can resize offline in both directions, but It can not shrink
         # the file system while online. In addition ext2 can only resize
         # offline.
-        if self.mounted and (self.fstype == "ext2" or
-           new_size < self.data['fs_size']):
+        if self.mounted and (self.fstype == "ext2" or \
+                new_size < self.data['fs_size']):
             raise problem.FsMounted(
                 "{0} is mounted on {1}.".format(self.device, self.mounted) +
                 " In this case, mounted file system can not be resized.")
@@ -385,7 +388,7 @@ class DeviceInfo(object):
     def __init__(self, options, data=None):
         self.type = 'device'
         self.data = data or {}
-        self.attrs = ['major', 'minor', 'dev_size', 'dev_name']
+        self.attrs = ['major', 'minor', 'dev_size', 'dev_name', 'human_name', 'parent_name']
         self.options = options
 
         hide_dmnumbers = []
@@ -399,6 +402,7 @@ class DeviceInfo(object):
             devices = dict(zip(self.attrs, items))
             devices['vol_size'] = devices['dev_size']
             devices['dev_name'] = devices['dev_name']
+            devices['human_name'] = devices['human_name']
             if devices['major'] in hide_dmnumbers:
                 devices['hide'] = True
             if devices['dev_name'] in self.data:
@@ -416,8 +420,6 @@ class DeviceInfo(object):
                 self.data[item[0]]['mount'] = "SWAP"
 
         for i, dev in enumerate(self.data.values()):
-            if 'minor' in dev and dev['minor'] != '0':
-                continue
             part = 0
             for a, d in enumerate(self.data.values()):
                 if a == i:
@@ -454,22 +456,305 @@ class DeviceInfo(object):
             return self.data[device]
         return None
 
+    def __str__(self):
+        return repr(self.data)
 
-class Item(object):
+
+class Item(misc.Node):
     """
     Meta object which provides encapsulation for all devices, pools and
     volumes, so we can work with them as with the usual objects without the
     need to call Dev, Pool or Vol methods directly.
     """
 
-    def __init__(self, obj, name):
+    def __init__(self, obj, name, source):
+        """
+        Parameters:
+        ----------
+        obj : dict
+            Raw data from a backend
+        name : str
+            Primary name/path
+        source : Storage
+            An instance implementing Storage, which created this object
+        """
+        super(Item, self).__init__()
         self.obj = obj
         self.name = name
+        self._name_fields = None
+        self.aliases = set()
         self.type = obj.type
+        self.source = source
+        self.info_printed = False
+
+    @property
+    def name_fields(self):
+        if self._name_fields is None:
+            raise NotImplementedError("Item.name_fields has to be set in an implementing subclass")
+        return self._name_fields
+
+    @name_fields.setter
+    def name_fields(self, vals):
+        self._name_fields = set(vals)
 
     @property
     def data(self):
         return self.obj[self.name]
+
+    @property
+    def names(self):
+        """ Get a set of all names that can be used to reference this object.
+            E.g /dev/dm-0 and /dev/mapper/some_name.
+
+        Returns
+        -------
+        set
+            A set of names of this object.
+        """
+        names = set([self.name])
+        for field in self.name_fields:
+            name = self[field]
+            # skip some 'names' that are not names
+            if name in ['PARTITIONED', 'SWAP', '']:
+                continue
+            names.add(name)
+        if 'pool_name' in self and 'lv_name' in self:
+            names.add("{}/{}".format(self['pool_name'], self['lv_name']))
+        return names
+
+    def matches_name(self, name):
+        """ Return true if the object matches the name. That can be a path,
+            pool name, ... See set_names() for that.
+        """
+        return name in self.names
+
+    def get_alias(self):
+        """ Return an alias. Use if you don't care which alias is returned.
+            Useful e.g. for LVM volumes, where the ssm mapping is:
+                DM device <-> LV
+        """
+        # Aliases are a set, so we can't just do self.aliases[0]
+        for alias in self.aliases:
+            return alias
+
+    @classmethod
+    def pool_type_name(cls, pool):
+        """
+        Translate the internal pool name into user-visible string.
+
+        Parameters:
+        ----------
+        pool : {str}
+            Internal name, like 'lvm', 'thin', 'crypt', ...
+        Returns
+        -------
+        {str}
+            User-visible string, like 'LVM Thin Pool'
+        """
+
+        pools = {
+            'lvm': 'lvm volume group',
+            'thin': 'lvm thin pool',
+            'btrfs': 'btrfs',
+            'crypt': 'encrypted pool',
+            'multipath': 'multipat'
+        }
+        if pool in pools:
+            return pools[pool]
+        return 'Unknown ({})'.format(pool)
+
+    @classmethod
+    def volume_type_name(cls, pool):
+        """
+        Translate the internal volume name into user-visible string.
+
+        Parameters:
+        ----------
+        pool : {str}
+            Internal name, like 'lvm', 'thin', 'crypt', ...
+        Returns
+        -------
+        {str}
+            User-visible string, like 'LVM Thin Volume'
+        """
+        pools = {
+            'lvm': 'lvm logical volume',
+            'thin': 'lvm thin volume',
+            'btrfs': 'btrfs',
+            'crypt': 'encrypted volume',
+            'multipath': 'multipath'
+        }
+        if pool in pools:
+            return pools[pool]
+        return 'Unknown ({})'.format(pool)
+
+    @classmethod
+    def fs_info(cls, node):
+        """
+        Get a list of pairs (description, value) about the filesystem on
+        the given node. Both values are user-visible strings, any number as a
+        size is converted to a human-friendly format.
+
+        Parameters:
+        ----------
+        node : {Item}
+            An item we want to learn about.
+        Returns
+        -------
+        {list}
+            List of (str, str) tuples, with (description, value) meaning.
+        """
+
+        out = []
+        if 'fs_info' in node and node['fs_type']:
+            out.append(('filesystem', ''))
+            out.append(('  type', node['fs_type']))
+            if node['fs_size']:
+                out.append(('  size', misc.humanize_size(node['fs_size'])))
+            if node['fs_used']:
+                out.append(('  used', misc.humanize_size(node['fs_used'])))
+            if node['fs_free']:
+                out.append(('  free', misc.humanize_size(node['fs_free'])))
+
+            out.append(('  mounted',
+                node['mount'] if node['mount'] else 'None'))
+        elif node['mount'] == 'SWAP':
+            out.append(('filesystem', ''))
+            out.append(('  type', 'Swap'))
+        return out
+
+    @classmethod
+    def get_pool_node(cls, node):
+        """
+        Get the node of the pool into which this node belongs. If the
+        Item passed as 'node' argument is an LVM volume which is a member of
+        a pool 'foo', then this function will return Item object of 'foo'.
+
+        Parameters:
+        ----------
+        node : {Item}
+            A volume in a pool.
+        Returns
+        -------
+        {Item}
+            An object that represents a pool, usually PoolItem.
+        """
+        if isinstance(node.source, Devices):
+            alias = None
+            if 'pool_name' in node:
+                # this is a PV
+                alias = node.children[0].get_alias()
+            else:
+                # this is LV acessed from PV:
+                alias = node.get_alias()
+
+            if alias:
+                return alias.parents[0]
+            return None
+
+        elif isinstance(node.source, Volumes):
+            # this is a LV acessed directly
+            return node.parents[0]
+
+        elif isinstance(node.source, Snapshots):
+            return node.parents[0]
+
+        else:
+            raise NotImplementedError("Not implemented for {}: {}".format(
+                node.source, dict(node)))
+        return None
+
+    @classmethod
+    def volume_info(cls, node):
+        """
+        Get a list of pairs (description, value) about the volume on the
+        given node. Both values are user-visible strings, any number as a
+        size is converted to a human-friendly format.
+
+        Parameters:
+        ----------
+        node : {Item}
+            An item we want to learn about.
+        Returns
+        -------
+        {list}
+            List of (str, str) tuples, with (description, value) meaning.
+        """
+        out = []
+        for name in node.names:
+            if name in node['mount']:
+                continue
+            out.append(('object name', name))
+        if node['dev_size']:
+            out.append(('size', misc.humanize_size(node['dev_size'])))
+        else:
+            out.append(('size', misc.humanize_size(node['vol_size'])))
+        return out
+
+    @classmethod
+    def parent_pool_info(cls, node, title='Pool'):
+        """
+        Get a list of pairs (description, value) about the pool into
+        which the given node (volume) belongs. Both values are user-visible
+        strings, any number as a size is converted to a human-friendly
+        format.
+
+        Parameters:
+        ----------
+        node : {Item}
+            An item we want to learn about.
+        Returns
+        -------
+        {list}
+            List of (str, str) tuples, with (description, value) meaning.
+        """
+        out = []
+        if 'pool_name' in node:
+            pool = cls.get_pool_node(node)
+            if pool:
+                out.append((title, ''))
+                out.append(('  type', cls.pool_type_name(pool['type'])))
+                out.append(('  name', pool['pool_name']))
+        return out
+
+    def get_printable_details(self):
+        """ Get a list of tuples with detailed information about an item.
+
+        Returns
+        -------
+        list
+            A list of tuples (str, str), e.g. ('visible name', 'value').
+        """
+
+        if self.info_printed or self.skip_info():
+            return []
+
+        self.info_printed = True
+        return self._get_printable_details()
+
+    def _get_printable_details(self):
+        """ Get a list of tuples with detailed information about an item.
+            A private, type-specific variant, to be called only by the generic
+            get_printable_details().
+
+        Returns
+        -------
+        list
+            A list of tuples (str, str), e.g. ('visible name', 'value').
+        """
+        # has to be overriden
+        raise NotImplementedError("This method has to be overriden in a subclass.")
+
+    def skip_info(self):
+        """
+        Test if this item should be skipped during info printing. Subclasses
+        should overwrite this method.
+
+        Returns
+        -------
+        bool
+        """
+        return False
 
     def __getattr__(self, func_name):
         func = getattr(self.obj, func_name)
@@ -487,7 +772,7 @@ class Item(object):
         return _new_func
 
     def __getitem__(self, key):
-        if key not in self.data and \
+        if key not in self.data and isinstance(key, str) and \
            re.match(r"fs_.*", key):
             self._fill_fs_info()
         try:
@@ -502,13 +787,19 @@ class Item(object):
         else:
             return False
 
+    def __str__(self):
+        self._fill_fs_info()
+        return repr((self.names, repr(self.data)))
+
     def _fill_fs_info(self):
         if 'dm_name' in self.data:
             name = self.data['dm_name']
         elif 'real_dev' in self.data:
             name = self.data['real_dev']
-        else:
+        elif 'dev_name' in self.data:
             name = self.data['dev_name']
+        else:
+            name = None
         fs = FsInfo(name, self.obj.options)
         if 'fs_type' not in fs.data:
             # Not a file system
@@ -526,6 +817,246 @@ class Item(object):
         else:
             return False
 
+class PoolItem(Item):
+
+    def __init__(self, *args, **kwargs):
+        super(PoolItem, self).__init__(*args, **kwargs)
+        self.name_fields = set(['pool_name', 'dev_name'])
+
+    def _get_printable_details(self):
+        out = []
+        out.append(('type', self.pool_type_name(self['type'])))
+        out.append(('pool name', self['pool_name']))
+        # Iterate over all aliases of all children to get the physical
+        # devices. It has to be this way because volumes and pools are
+        # a separate graph from physical devices.
+        pvs = set()
+        lvs = set()
+        for lv in self.children:
+            if lv['dm_name']:
+                lvs.add(lv['dm_name'])
+            else:
+                lvs.add(lv.name)
+
+            for alias in lv.aliases:
+                for pv in alias.get_roots():
+                    if pv.name == self.name:
+                        continue
+                    pvs.add(pv.name)
+        for pv in pvs:
+            out.append(('physical volume', pv))
+        for lv in lvs:
+            out.append(('logical volume', lv))
+        out.append(('size', misc.humanize_size(self['pool_size'])))
+        out.append(('used', misc.humanize_size(self['pool_used'])))
+
+        return out
+
+class DeviceItem(Item):
+    def __init__(self, *args, **kwargs):
+        super(DeviceItem, self).__init__(*args, **kwargs)
+        self.name_fields = set(['dev_name', 'mount', 'human_name'])
+        self.__is_dm_dev = None
+        if self._is_lvm_snapshot():
+            self.data['snapshot_child_name'] = self._is_lvm_snapshot()
+
+    def _is_lvm_snapshot(self):
+        """ Find out if this item is in fact a real/cow device for LVM snapshots
+
+        Returns
+        -------
+        str
+            name of child snapshot volume, otherwhise empty string
+        """
+
+        if self['human_name'][-4:] == "-cow":
+            return self['human_name'][:-4]
+        if self['human_name'][-5:] == "-real":
+            return self['human_name'][:-5]
+        return ''
+
+    @property
+    def _is_dm_dev(self):
+        """ Return True if this device is created by device mapper. """
+        if self.__is_dm_dev is not None:
+            return self.__is_dm_dev
+
+        if os.path.exists("/sys/dev/block/{}:{}/dm".format(self['major'], self['minor'])):
+            self.__is_dm_dev = True
+        else:
+            self.__is_dm_dev = False
+
+        return self.__is_dm_dev
+
+    def _get_printable_details(self):
+        out = []
+        if self['partition']:
+            # a standalone partition
+            out.append(('Type', 'Partition'))
+            out += self.volume_info(self)
+            out += self.parent_pool_info(self)
+
+        elif 'parent_name' in self:
+            # A volume in a pool
+
+            alias = self.get_alias()
+            if alias:
+                if alias.info_printed:
+                    return []
+                alias.info_printed = True
+                pool = self.get_pool_node(self)
+                out.append(('type', self.volume_type_name(pool['type'])))
+                out += self.volume_info(alias)
+                out += self.parent_pool_info(alias)
+            else:
+                # this kind of device seems to appear only with snapshots
+                if self._is_lvm_snapshot():
+                    if self['human_name'][-4:] == "-cow":
+                        out.append(('type', 'lvm snapshot - cow (groups snapshot layers)'))
+                    elif self['human_name'][-5:] == "-real":
+                        out.append(('type', 'lvm snapshot - real (groups original volumes)'))
+                    else:
+                        out.append(('type', 'lvm snapshot - UNKNOWN (report bug)'))
+                    out.append(('parent', self['parent_name']))
+                    out += self.volume_info(self)
+                    out += self.parent_pool_info(self)
+                    for child in self.children:
+                        out.append(('logical volume', child.name))
+                elif self._is_dm_dev:
+                    out.append(('type', 'dm-dev'))
+                    out.append(('parent', self['parent_name']))
+                    out += self.volume_info(self)
+                    out += self.parent_pool_info(self)
+                else:
+                    out.append(('type', 'UNKNOWN (report bug)'))
+                    out.append(('parent', self['parent_name']))
+                    out += self.volume_info(self)
+                    out += self.parent_pool_info(self)
+
+
+        else:
+            # a physical device
+            out.append(('type', 'disk'))
+            out.append(('object name', self.name))
+            out.append(('size', misc.humanize_size(self['dev_size'])))
+            out.append(('partitions', str(self['partitioned'])))
+            for child in self.children:
+                out.append(('  partition', child.name))
+
+        out += self.fs_info(self)
+        return out
+
+    def skip_info(self):
+        """
+        If this is an alias to a snapshot, then we want to print the snapshot,
+        and not volume item, so skip.
+
+        Returns
+        -------
+        bool
+        """
+        if not self.aliases:
+            return False
+
+        for alias in self.aliases:
+            if isinstance(alias, SnapshotItem):
+                if self.name in alias.names:
+                    return True
+        return False
+
+    @classmethod
+    def migrate(cls, source, target):
+        """ Migrate (in this case clone) the device onto another one.
+            Pure dd is used.
+        """
+        # TODO some possibilities:
+        # - error handling: conv=noerror,sync (continue on error and pad
+        #   with zeros), or better to fail on error?
+
+        if misc.get_signature(source) == 'btrfs':
+            raise problem.ProgrammingError("BTRFS SHOULD NOT BE CLONED WITH DD")
+
+        if misc.get_device_size(source) > misc.get_device_size(target):
+            raise problem.GeneralError("Target device is smaller than source device")
+
+        if misc.get_mountinfo(source):
+            raise problem.GeneralError("You have to umount the source device first")
+        if misc.get_mountinfo(target):
+            raise problem.GeneralError("You have to umount the target device first")
+
+        print("Migrating {s} ({size}) to {t}. This may take a long time...".format(
+            s=source,
+            t=target,
+            size=misc.humanize_size(misc.get_device_size(source))))
+
+        command = ['dd', 'if={}'.format(source), 'of={}'.format(target)]
+        misc.run(command)
+        misc.send_udev_event(source, "change")
+        misc.send_udev_event(target, "change")
+
+
+class VolumeItem(Item):
+    def __init__(self, *args, **kwargs):
+        super(VolumeItem, self).__init__(*args, **kwargs)
+        self.name_fields = set(['dev_name', 'dm_name', 'real_dev'])
+
+    def _get_printable_details(self):
+        out = []
+        pool = self.get_pool_node(self)
+        out.append(('type', self.volume_type_name(pool['type'])))
+        out += self.volume_info(self)
+        out += self.parent_pool_info(self, 'parent pool')
+        out += self.fs_info(self)
+        return out
+
+    def skip_info(self):
+        """
+        If this is an alias to a snapshot, then we want to print the snapshot,
+        and not volume item, so skip.
+
+        Returns
+        -------
+        bool
+        """
+        if not self.aliases:
+            return False
+
+        for alias in self.aliases:
+            if isinstance(alias, SnapshotItem):
+                if self.name in alias.names:
+                    return True
+        return False
+
+
+class SnapshotItem(Item):
+    def __init__(self, *args, **kwargs):
+        super(SnapshotItem, self).__init__(*args, **kwargs)
+        self.name_fields = set(['dev_name', 'mount', 'origin'])
+
+    def _get_printable_details(self):
+        out = []
+        out.append(('type', 'snapshot'))
+        names = self.names
+        names.discard(self['origin'])
+        for name in names:
+            if name in self['mount']:
+                continue
+            out.append(('object name', name))
+
+        # print information about parent volume/pool
+        if self['pool_name']:
+            out.append(('parent volume', "{}/{}".format(
+                self['pool_name'],
+                self['origin']
+            )))
+        else:
+            out.append(('parent volume', self['origin']))
+        parent_pool = self.get_pool_node(self)
+        out.append(('pool type', self.pool_type_name(parent_pool['type'])))
+
+        out.append(('size', misc.humanize_size(self['vol_size'])))
+        out += self.fs_info(self)
+        return out
 
 class Storage(object):
     """
@@ -536,16 +1067,45 @@ class Storage(object):
     """
 
     def __init__(self, options):
+        super(Storage, self).__init__()
         self._data = {}
+        self._cache = {}
+        self.name_fields = set()
+        self.detail_fields = []
         self.header = None
         self.attrs = None
         self.types = None
+        self.item_cls = None
         self.set_globals(options)
 
+    def _cached_Item(self, backend, item):
+        """ Read self._data to get an Item and use cache so subsequent
+            request for the same Item do not create a new instance all the
+            time.
+
+            Parameters
+            ----------
+            backend : str
+                The name of the backend to use.
+            item : str
+                The name of the item from the backend.
+        """
+        if backend not in self._cache:
+            self._cache[backend] = {}
+
+        if not item in self._cache[backend]:
+            new_item = self.item_cls(
+                obj=self._data[backend],
+                name=item,
+                source=self)
+            self._cache[backend][item] = new_item
+
+        return self._cache[backend][item]
+
     def __iter__(self):
-        for source in self._data.values():
+        for backend, source in self._data.items():
             for item in source:
-                yield Item(source, item)
+                yield self._cached_Item(backend, item)
 
     def __contains__(self, item):
         if self[item]:
@@ -554,10 +1114,10 @@ class Storage(object):
             return False
 
     def __getitem__(self, name):
-        for source in self._data.values():
+        for backend, source in self._data.items():
             item = source[name]
             if item:
-                return Item(source, name)
+                return self._cached_Item(backend, name)
         return None
 
     def reinitialize(self):
@@ -600,7 +1160,32 @@ class Storage(object):
             if 'fs_type' in item:
                 yield item
 
-    def ptable(self, cond=None, more_data=None, cond_func=None):
+    def pinfo(self, item=None):
+        """
+        Print detailed information about a device/volume/pool/...
+        If item is None, then print the info about all items of given class.
+
+        This feature is currently experimental and the format and fields can change.
+        """
+        found = False
+        if item:
+            for node in self:
+                if not node.matches_name(item):
+                    continue
+                misc.ptable(node.get_printable_details())
+                # we found a matchin item
+                found = True
+        else:
+            for node in self:
+                # We are listing everything, so just set it true if there is
+                # anythign.
+                found = True
+                misc.ptable(node.get_printable_details())
+
+        return found
+
+
+    def psummary(self, cond=None, more_data=None, cond_func=None):
         """
         Print information table about the source (devices, pools, volumes)
         using the predefined variables (below). cond, or cond_func can be
@@ -611,7 +1196,6 @@ class Storage(object):
         self.types - types of the attributes to print out (str, or float/int)
         """
         lines = []
-        fmt = ""
 
         if cond == "fs_only":
             iterator = self.filesystems()
@@ -622,7 +1206,6 @@ class Storage(object):
         # values.
         columns = [False] * len(self.attrs)
 
-        len_matrix = []
         index = 0
         # Gather all lines which are going to be printed into the list
         # and create matrix of attribute lengths.
@@ -630,8 +1213,6 @@ class Storage(object):
         for data in misc.chain(iterator, more_data or []):
             if (cond_func and not cond_func(data)) or 'hide' in data:
                 continue
-            len_matrix.append([len(self.header[i])
-                              for i in range(len(self.header))])
             line = ()
             # Iterate through all attributes in each item
             for i, attr in enumerate(self.attrs):
@@ -641,86 +1222,16 @@ class Storage(object):
                     item = data[attr + "_print"]
                 else:
                     item = data[attr]
-                len_matrix[index][i] = len(item)
-                line += item,
-                if len(item) > 0:
+                if item:
                     columns[i] = True
+                line += item,
             lines.append(line)
             index += 1
 
         if len(lines) == 0:
             return
 
-        header = [item for item in misc.compress(self.header, columns)]
-        alignment = list([(len(self.header[i]))
-                         for i in range(len(self.header))])
-        term_width = misc.terminal_size()[0]
-
-        # Update matrix of attribute lengths and construct the final list
-        # of alignment for each column in the table.
-        for index in range(len(len_matrix)):
-            line = None
-            # Find maximum length for each column
-            for a, array in enumerate(len_matrix):
-                for i, item in enumerate(array):
-                    if not columns[i]:
-                        alignment[i] = 0
-                        continue
-                    if item > alignment[i]:
-                        alignment[i] = item
-                        line = a
-
-            # Check the overall line length and if it is longer then the
-            # actual terminal width we can wrap the line right after the
-            # first attribute. Simply set the alignment to the smaller
-            # possible and let recalculate the list of column alignments.
-            # Note that when even with the line wrap we would still exceed
-            # the terminal width, then there is nothing we can do about it
-            # so do not bother with line wrapping at all since it would
-            # only screw the formatting even more.
-            length = sum(alignment) + 2 * len(header) - 2
-            if length > term_width and \
-               (length - term_width) < (alignment[0] - len(header[0])) and \
-               line is not None:
-                    alignment[0] = len(header[0])
-                    len_matrix[line][0] = len(header[0])
-            else:
-                break
-
-        # Get the actual line width
-        width = sum(misc.compress(alignment, columns)) + 2 * len(header) - 2
-
-        pos = 0
-        # Use column alignments list to construct formatting string for each
-        # line in the table. Note that some lines might be wrapped later on.
-        for i, t in enumerate(self.types):
-            if not columns[i]:
-                continue
-            if t in (float, int):
-                fmt += "{{{0}:>{1}}}  ".format(pos, alignment[i])
-            else:
-                # Do not append additional spaces if this is the last item
-                if i == len(header) - 1:
-                    fmt += "{{{0}:{1}}}".format(pos, alignment[i])
-                else:
-                    fmt += "{{{0}:{1}}}  ".format(pos, alignment[i])
-            pos += 1
-
-        print("-" * width)
-        print(fmt.format(*tuple(header)))
-        print("-" * width)
-        # Now print each line of the table. When the first attribute of the
-        # line is longer than it should be we know that we have to wrap the
-        # line.
-        for i, line in enumerate(lines):
-            line = misc.compress(line, columns)
-            tmp1 = __next__(line)
-            if len(tmp1) > alignment[0]:
-                print(tmp1)
-                print(fmt.format('', *line))
-            else:
-                print(fmt.format(tmp1, *line))
-        print("-" * width)
+        misc.ptable(lines, zip(self.header, self.types))
 
 
 class Pool(Storage):
@@ -752,9 +1263,19 @@ class Pool(Storage):
         except RuntimeError as err:
             PR.warn(err)
             PR.warn("Can not get information about crypt pools")
+        try:
+            self._data['multipath'] = multipath.MultipathPool(options=self.options)
+        except RuntimeError as err:
+            PR.warn(err)
+            PR.warn("Can not get information about multipath pools")
+
+        self.item_cls = PoolItem
 
         backend = self.get_backend(SSM_DEFAULT_BACKEND)
-        self.default = Item(backend, backend.default_pool_name)
+        self.default = PoolItem(
+                obj=backend,
+                name=backend.default_pool_name,
+                source=self)
         self.header = ['Pool', 'Type', 'Devices', 'Free', 'Used',
                        'Total', 'Parent']
         self.attrs = ['pool_name', 'type', 'dev_count', 'pool_free',
@@ -803,12 +1324,21 @@ class Devices(Storage):
             PR.warn("Can not get information about crypt devices")
             my_crypt = Struct()
             my_crypt.data = {}
+        try:
+            my_multipath = multipath.MultipathDevice(options=self.options)
+        except RuntimeError as err:
+            PR.warn(err)
+            PR.warn("Can not get information about multipath devices")
+            my_multipath = Struct()
+            my_multipath.data = {}
 
         self._data['dev'] = DeviceInfo(data=dict(list(my_lvm.data.items()) +
                                                  list(my_btrfs.data.items()) +
                                                  list(my_md.data.items()) +
-                                                 list(my_crypt.data.items())),
+                                                 list(my_crypt.data.items()) +
+                                                 list(my_multipath.data.items())),
                                        options=self.options)
+        self.item_cls = DeviceItem
         self.header = ['Device', 'Free', 'Used',
                        'Total', 'Pool', 'Mount point']
         self.attrs = ['dev_name', 'dev_free', 'dev_used', 'dev_size',
@@ -846,7 +1376,13 @@ class Volumes(Storage):
         except RuntimeError as err:
             PR.warn(err)
             PR.warn("Can not get information about md raid volumes")
+        try:
+            self._data['multipath'] = multipath.MultipathVolume(options=self.options)
+        except RuntimeError as err:
+            PR.warn(err)
+            PR.warn("Can not get information about multipath volumes")
 
+        self.item_cls = VolumeItem
         self.header = ['Volume', 'Pool', 'Volume size', 'FS', 'FS size',
                        'Free', 'Type', 'Mount point']
         self.attrs = ['dev_name', 'pool_name', 'vol_size', 'fs_type',
@@ -876,6 +1412,7 @@ class Snapshots(Storage):
             PR.warn(err)
             PR.warn("Can not get information about btrfs snapshots")
 
+        self.item_cls = SnapshotItem
         self.header = ['Snapshot', 'Origin', 'Pool', 'Volume size', 'Used',
                        'Type', 'Mount point']
         self.attrs = ['dev_name', 'origin', 'pool_name', 'vol_size',
@@ -883,6 +1420,59 @@ class Snapshots(Storage):
         self.types = [str, str, str, float, float, str, str]
         self._apply_prefix_filter()
 
+
+def create_graph(pools, devices, volumes, snapshots):
+    """ Connect all the Instances (which inherits from Node) as nodes in an
+        oriented graph. That allows us to get related Items and their info
+        from every Item.
+    """
+    def find_node(name, source):
+        """ Search items of class node_cls and try to find one
+            with specific name.
+        """
+        for item in source:
+            if item.matches_name(name):
+                return item
+        return None
+
+    def find_parents(item, parent_fields, child_fields):
+        for field in parent_fields:
+            for source in [pools, volumes, devices, snapshots]:
+                parent = find_node(item[field], source)
+                if not parent or item.name == parent.name:
+                    continue
+                item.add_parent(parent)
+
+    # To find aliases, we add every item into this 2D map, so we get something
+    # like:
+    # '/dev/dm-0':          set(item1, item2),
+    # '/dev/sda':           set(item3),
+    # '/dev/mapper/root':   set(item1, item2),
+    # ...
+    aliases = {}
+
+    def add_to_aliases(aliases, item):
+        for name in item.names:
+            try:
+                for alias in aliases[name]:
+                    alias.aliases.add(item)
+                    item.aliases.add(alias)
+                aliases[name].add(item)
+            except KeyError:
+                aliases[name] = set([item])
+
+    for item in pools:
+        find_parents(item, ['parent_pool'], [])
+        add_to_aliases(aliases, item)
+    for item in devices:
+        find_parents(item, ['parent_name'], ['pool_name'])
+        add_to_aliases(aliases, item)
+    for item in volumes:
+        find_parents(item, ['pool_name', 'snapshot_child_name'], [])
+        add_to_aliases(aliases, item)
+    for item in snapshots:
+        find_parents(item, ['pool_name', 'origin', 'snapshot_child_name'], [])
+        add_to_aliases(aliases, item)
 
 class StorageHandle(object):
     """
@@ -898,6 +1488,9 @@ class StorageHandle(object):
         self._snapshots = None
         self.set_globals(options)
         self.options = options
+        # this is a workaround for limited argparse capabilities,
+        # where we need to do cross-option validation
+        self.__argparse_helper = dict()
 
     def set_globals(self, options):
         if self._dev:
@@ -1156,7 +1749,7 @@ class StorageHandle(object):
 
         # No need to do anything with provided devices since
         # we do have enough space to cover the resize
-        if (pool_free < size_change):
+        if pool_free < size_change:
             have_size, devices = self._filter_device_list(args,
                                                           pool_free,
                                                           new_size)
@@ -1179,6 +1772,31 @@ class StorageHandle(object):
         if new_size != vol_size:
             args.volume.resize(new_size, fs)
 
+    def get_check_passphrase(self):
+        """
+        Ask for a passphrase and check its quality.
+        """
+
+        def getpwd(text):
+            # gepass always requires tty access, so pipes would not work
+            if sys.stdin.isatty():
+                return getpass.getpass(text)
+            else:
+                return sys.stdin.readline()[:-1]
+
+        password = getpwd('Enter passphrase: ')
+        if self.options.interactive or True:
+            password2 = getpwd('Verify passphrase: ')
+            if password != password2:
+                raise problem.GeneralError("The passwords entered do not match.")
+
+        # check password strength before we do anything
+        crypt = self.pool.get_backend("crypt")
+        tmp = crypt.check_passphrase_strength(password)
+        del crypt
+
+        return password
+
     def create(self, args):
         """
         Create new volume (or subvolume in case of btrfs) using the devices
@@ -1189,12 +1807,19 @@ class StorageHandle(object):
             PR.warn("Mount options are set, but no mount point was " +
                     "provided. Device will not be mounted")
 
+        passphrase = None
+        if args.encrypt and SSM_DEFAULT_BACKEND != 'crypt':
+            # we have to check the password quality before we do any operation
+            # so check that now
+            passphrase = self.get_check_passphrase()
+
         lvname = self.create_volume(args)
 
         if args.encrypt and misc.is_bdevice(lvname) and \
            SSM_DEFAULT_BACKEND != 'crypt':
             crypt = self.pool.get_backend("crypt")
-            args.pool = Item(crypt, crypt.default_pool_name)
+            crypt.set_passphrase(passphrase)
+            args.pool = Item(crypt, crypt.default_pool_name, source=crypt)
             options = {'encrypt': args.encrypt}
             lvname = args.pool.create(devs=[lvname],
                                       size=None,
@@ -1227,7 +1852,7 @@ class StorageHandle(object):
 
         if args.size and args.size[1] == 'K':
             # If the exact size was provided than just use that
-             vol_size = float(args.size[0])
+            vol_size = float(args.size[0])
         else:
             # Otherwise we have to wait after the pool is created, or
             # devices are added into a existing one
@@ -1336,20 +1961,38 @@ class StorageHandle(object):
         List devices, pools, volumes
         """
         if not args.type:
-            self.dev.ptable()
-            self.pool.ptable()
-            self.vol.ptable(more_data=self.dev.filesystems())
-            self.snap.ptable()
+            self.dev.psummary()
+            self.pool.psummary()
+            self.vol.psummary(more_data=self.dev.filesystems())
+            self.snap.psummary()
         elif args.type in ['fs', 'filesystems']:
-            self.vol.ptable(more_data=self.dev.filesystems(), cond="fs_only")
+            self.vol.psummary(more_data=self.dev.filesystems(), cond="fs_only")
         elif args.type in ['dev', 'devices']:
-            self.dev.ptable()
+            self.dev.psummary()
         elif args.type in ["volumes", "vol"]:
-            self.vol.ptable(more_data=self.dev.filesystems())
+            self.vol.psummary(more_data=self.dev.filesystems())
         elif args.type in ["pool", "pools"]:
-            self.pool.ptable()
+            self.pool.psummary()
         elif args.type in ['snap', 'snapshots']:
-            self.snap.ptable()
+            self.snap.psummary()
+
+    def info(self, args):
+        """
+        Show a detailed info about an object
+        """
+        sources = [self.pool, self.dev, self.vol, self.snap]
+        create_graph(*sources)
+        print("EXPERIMENTAL FEATURE (The format can yet change)\n")
+
+        if not args.item:
+            for source in sources:
+                source.pinfo()
+        else:
+            found = False
+            for source in sources:
+                found |= source.pinfo(item=args.item)
+            if not found:
+                print("The item '%s' was not found." % args.item)
 
     def add(self, args, skip_check=False):
         """
@@ -1385,7 +2028,7 @@ class StorageHandle(object):
                         signature = misc.get_fs_type(dev)
                         if signature and \
                            PR.check(PR.EXISTING_FILESYSTEM,
-                                        [signature, dev]):
+                                    [signature, dev]):
                             misc.wipefs(dev, signature)
                         elif signature:
                             args.device.remove(dev)
@@ -1477,6 +2120,90 @@ class StorageHandle(object):
                      "{0} with options \'{1}\'".format(args.directory,
                                                        args.options))
 
+    def migrate(self, args):
+        """ Migrate data from a device to a device"""
+        source = self._find_device_record(args.source)
+        target = self._find_device_record(args.target)
+
+        # decide if we have PVs or non-PV block devices
+        found_pv = False
+        pool = None
+        check_fs = True
+        signature = misc.get_signature(target)
+
+        # get source dev and try to detect if it is a member of a pool
+        source_dev = self.dev[source]
+        if source_dev and 'pool_name' in source_dev:
+            found_pv = True
+            pool = self.pool[source_dev['pool_name']]
+        else:
+            pass
+            # This seems to be only a case for some tests where the /tmp/<TEMP>/dev/...
+            # devices gets incorrectly identified (sometimes they do, sometimes they don't).
+            # Keep it commented out for now, because it seems to be rather an issue with
+            # the tests
+            # source_signature = misc.get_signature(source)
+            # if source_signature == 'btrfs':
+            #    print("found btrfs")
+            #    found_pv = True
+            #    import pdb; pdb.set_trace()
+
+        target_dev = self.dev[target]
+        if target_dev:
+            if 'pool_name' in target_dev and\
+                (signature != 'btrfs' or (pool and int(pool['dev_count']) > 1)):
+                check_fs = False
+
+                if target_dev['pool_name'] != '':
+                    if pool and target_dev['pool_name'] != pool.name:
+                        if PR.check(PR.DEVICE_USED,
+                            [target_dev.name, target_dev['pool_name']]):
+                            remove_args = Struct()
+                            remove_args.all = False
+                            remove_args.items = [target_dev]
+                            if not self.remove(remove_args):
+                                raise problem.CommandFailed("The device {} could not be removed from the pool {}".format(
+                                    target,
+                                    target_dev['pool_name']
+                                ))
+                            misc.wipefs(target_dev.name, signature)
+                        else:
+                            raise problem.UserInterrupted("Aborted")
+            else:
+                check_fs = True
+
+
+
+        if check_fs:
+            mounts = misc.get_mountinfo(target)
+            if mounts:
+                if PR.check(PR.FS_MOUNTED, [target, mounts[target]['mp']]):
+                    misc.do_umount(target)
+                else:
+                    raise problem.CommandFailed("Umount of {} was not possible".format(target))
+
+            if signature and not self.options.force and\
+                PR.check(PR.EXISTING_FILESYSTEM,
+                        [signature, target]):
+                misc.wipefs(target, signature)
+            elif signature and not self.options.force:
+                # user wants to skip
+                raise problem.UserInterrupted("Aborted")
+            elif signature and self.options.force:
+                misc.wipefs(target, signature)
+
+        PR.info("Migrating from device {} to {}. This may take a long time...".format(
+            source,
+            target
+        ))
+        if not found_pv:
+            DeviceItem.migrate(source, target)
+
+        elif found_pv:
+            pool.migrate(source_dev, target)
+        else:
+            raise problem.ProgrammingError("Neither PV or non-PV was found. This is a bug")
+
     def can_check(self, device):
         fs = self.is_fs(device)
         if fs is False:
@@ -1507,7 +2234,7 @@ class StorageHandle(object):
 
     def _find_device_record(self, path):
         """
-        Try to find device name for path, which is used as an key in
+        Try to find object name for path, which is used as an key in
         self.dev - this is usually the real block device, but in some
         rare cases (dmsetup) we can have real block device which name
         does not correspond with what we have in /proc/partitions
@@ -1537,10 +2264,10 @@ class StorageHandle(object):
                 return
         return self.get_bdevice(path)
 
-    def get_bdevice(self, path):
-        path = misc.is_bdevice(path)
+    def get_bdevice(self, string):
+        path = misc.is_bdevice(string)
         if path == False:
-            err = "'{0}' is not valid block device".format(path)
+            err = "'{0}' is not valid block device".format(string)
             raise argparse.ArgumentTypeError(err)
         return self._find_device_record(path)
 
@@ -1694,7 +2421,7 @@ def valid_create_size(size):
         return (ret, 'K')
     except:
         try:
-            ret =  misc.get_perc_size_argument(size)
+            ret = misc.get_perc_size_argument(size)
             if float(ret[0]) < 0:
                 raise argparse.ArgumentTypeError(err)
         except:
@@ -1806,10 +2533,12 @@ class SsmParser(object):
         self.parser_resize = self._get_parser_resize()
         self.parser_create = self._get_parser_create()
         self.parser_list = self._get_parser_list()
+        self.parser_info = self._get_parser_info()
         self.parser_add = self._get_parser_add()
         self.parser_remove = self._get_parser_remove()
         self.parser_snapshot = self._get_parser_snapshot()
         self.parser_mount = self._get_parser_mount()
+        self.parser_migrate = self._get_parser_migrate()
         self.args = None
 
     def parse(self):
@@ -1982,6 +2711,17 @@ class SsmParser(object):
         parser_list.set_defaults(func=self.storage.list)
         return parser_list
 
+    def _get_parser_info(self):
+        """
+        Info command
+        """
+        parser_info = self.subcommands.add_parser("info",
+                help='''Show detailed information about
+                     an object. EXPERIMENTAL''')
+        parser_info.add_argument('item', nargs='?')
+        parser_info.set_defaults(func=self.storage.info)
+        return parser_info
+
     def _get_parser_add(self):
         """
         Add command
@@ -2062,6 +2802,22 @@ class SsmParser(object):
                 type=is_directory)
         parser_mount.set_defaults(func=self.storage.mount)
         return parser_mount
+
+    def _get_parser_migrate(self):
+        """
+        Migrate command
+        """
+        parser_migrate = self.subcommands.add_parser('migrate',
+                help='''Move data from one device or pv to another.
+                     For btrfs and lvm their specialized utilities are used.
+                     Any other device is copied with dd.''')
+        parser_migrate.add_argument('source',
+                type=self.storage.get_bdevice)
+        parser_migrate.add_argument('target',
+                type=self.storage.get_bdevice)
+
+        parser_migrate.set_defaults(func=self.storage.migrate)
+        return parser_migrate
 
 
 def main(args=None):

@@ -250,6 +250,28 @@ class LvmFunctionCheck(MockSystemDataSource):
                                         '/dev/default_pool/vol001'],
             "lvm lvcreate --size 1048576.0K --snapshot --name new_snap /dev/default_pool/vol001")
 
+    def test_lvm_migrate(self):
+        # Generate some storage data
+        self._addPool('my_pool', ['/dev/sdc1', '/dev/sdc2'])
+        self._addVol('vol002', 237284225, 1, 'my_pool', ['/dev/sdc1'])
+        self._addDevice('/dev/sde', 11489037516)
+
+        self._checkCmd("ssm migrate /dev/sdc1 /dev/sdc2", [],
+        "lvm pvremove /dev/sdc1")
+        self.assertEqual(self.run_data[-2],
+            "lvm vgreduce my_pool /dev/sdc1")
+        self.assertEqual(self.run_data[-3],
+            "lvm pvmove --atomic /dev/sdc1 /dev/sdc2")
+
+        self._checkCmd("ssm migrate /dev/sdc2 /dev/sde", [],
+        "lvm pvremove /dev/sdc2")
+        self.assertEqual(self.run_data[-2],
+            "lvm vgreduce my_pool /dev/sdc2")
+        self.assertEqual(self.run_data[-3],
+            "lvm pvmove --atomic /dev/sdc2 /dev/sde")
+        self.assertEqual(self.run_data[-4],
+            "lvm vgextend my_pool /dev/sde")
+
     def test_lvm_resize(self):
         # Generate some storage data
         self._addPool('default_pool', ['/dev/sda', '/dev/sdb'])

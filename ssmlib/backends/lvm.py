@@ -222,7 +222,6 @@ class VgsInfo(LvmInfo, template.BackendPool):
         options = options or {}
         devices = devs or []
         command = ['lvcreate', vg]
-        virtsize = None
 
         if 'virtsize' in options:
             # We're going to create new lv which is going to be thin pool
@@ -322,6 +321,42 @@ class VgsInfo(LvmInfo, template.BackendPool):
                 lvname = self._generate_lvname("tvol", vg)
             path = create_thin_volume(vg, thin_pool, options['virtsize'], lvname)
         return path
+
+    def migrate(self, vg, source, target):
+        """ Migrate a PV to a new device using pvmove.
+
+        Parameters
+        ----------
+        vg : [str]
+            Volume group into which the PV belongs.
+        source : [main.DeviceItem]
+            Source PV device.
+        target : [str]
+            Path to the target device.
+        """
+        pvsinfo = PvsInfo(options=self.options).data
+        if target in pvsinfo:
+            tgt = pvsinfo[target]
+            if tgt['pool_name'] != vg:
+                self.extend(vg, [target])
+        else:
+            self.extend(vg, [target])
+
+        # pvmove does not accept -f, temporarily unset it
+        force = self.options.force
+        self.options.force = False
+
+        command = ['pvmove', '--atomic', source.name, target ]
+        self.run_lvm(command)
+        self.reduce(vg, source.name)
+        command = ['pvremove', source.name]
+        self.run_lvm(command)
+
+        misc.send_udev_event(source.name, "change")
+        misc.send_udev_event(target, "change")
+
+        # restore saved value
+        self.options.force = force
 
 
 class PvsInfo(LvmInfo, template.BackendDevice):
@@ -622,6 +657,7 @@ class ThinPool(LvmInfo, template.BackendPool):
         self.require_thin_support()
         vg = self[vg]
         if vg['active'] == False:
+            lv = vg['parent_pool'] + '/' + vg['lv_name']
             self.problem.check(self.DEVICE_INACTIVE, lv)
 
         if name:

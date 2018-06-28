@@ -12,6 +12,7 @@ SYNOPSIS_INC = "src/synopsis.inc"
 OPTIONS_DIR = "src/options/"
 SSM_OPTIONS_INC = OPTIONS_DIR + "ssm_options.inc"
 CREATE_OPTIONS_INC = OPTIONS_DIR + "create_options.inc"
+INFO_OPTIONS_INC = OPTIONS_DIR + "info_options.inc"
 LIST_OPTIONS_INC = OPTIONS_DIR + "list_options.inc"
 REMOVE_OPTIONS_INC = OPTIONS_DIR + "remove_options.inc"
 RESIZE_OPTIONS_INC = OPTIONS_DIR + "resize_options.inc"
@@ -22,6 +23,7 @@ MOUNT_OPTIONS_INC = OPTIONS_DIR + "mount_options.inc"
 
 SSM_USAGE_INC = OPTIONS_DIR + "ssm_usage.inc"
 CREATE_USAGE_INC = OPTIONS_DIR + "create_usage.inc"
+INFO_USAGE_INC = OPTIONS_DIR + "info_usage.inc"
 LIST_USAGE_INC = OPTIONS_DIR + "list_usage.inc"
 REMOVE_USAGE_INC = OPTIONS_DIR + "remove_usage.inc"
 RESIZE_USAGE_INC = OPTIONS_DIR + "resize_usage.inc"
@@ -64,6 +66,10 @@ class GenerateIncludes(object):
         message = self.format_synopsis(self.ssm_parser.parser_create)
         self._write_message(message, CREATE_USAGE_INC)
 
+    def write_info_usage(self):
+        message = self.format_synopsis(self.ssm_parser.parser_info)
+        self._write_message(message, INFO_USAGE_INC)
+
     def write_list_usage(self):
         message = self.format_synopsis(self.ssm_parser.parser_list)
         self._write_message(message, LIST_USAGE_INC)
@@ -95,6 +101,7 @@ class GenerateIncludes(object):
     def write_usage(self):
         self.write_ssm_usage()
         self.write_create_usage()
+        self.write_info_usage()
         self.write_list_usage()
         self.write_remove_usage()
         self.write_resize_usage()
@@ -122,6 +129,9 @@ class GenerateIncludes(object):
 
         message = self._format_options(self.ssm_parser.parser_create)
         self._write_message(message, CREATE_OPTIONS_INC)
+
+        message = self._format_options(self.ssm_parser.parser_info)
+        self._write_message(message, INFO_OPTIONS_INC)
 
         message = self._format_options(self.ssm_parser.parser_list)
         self._write_message(message, LIST_OPTIONS_INC)

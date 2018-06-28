@@ -15,7 +15,7 @@ teardown_devs() {
 	# Delete any remaining dm/udev semaphores
 	teardown_udev_cookies
 
-	test -n "$PREFIX" && {
+	if [ -n "$PREFIX" ]; then
 		rm -rf $TESTDIR/dev/$PREFIX*
 
 		init_udev_transaction
@@ -26,13 +26,12 @@ teardown_devs() {
 			done
 		done
 		finish_udev_transaction
-
-	}
+	fi
 
 	udev_wait
 	# NOTE: SCSI_DEBUG_DEV test must come before the LOOP test because
 	# prepare_scsi_debug_dev() also sets LOOP to short-circuit prepare_loop()
-	if test -f SCSI_DEBUG_DEV; then
+	if [ -f SCSI_DEBUG_DEV ]; then
 		modprobe -r scsi_debug
 	else
 		test -f LOOP && losetup -d $(cat LOOP)
@@ -42,7 +41,7 @@ teardown_devs() {
 	rm -f LOOP
 
 	# Attempt to remove any loop devices that failed to get torn down if earlier tests aborted
-	test -n "$COMMON_PREFIX" && {
+	if [ -n "$COMMON_PREFIX" ]; then
 		# Resume any linears to be sure we do not deadlock
 		STRAY_DEVS=$(dmsetup table | sed 's/:.*//' | grep $COMMON_PREFIX | cut -d' '  -f 1)
 		for dm in $STRAY_DEVS ; do
@@ -52,7 +51,7 @@ teardown_devs() {
 		done
 
 		STRAY_MOUNTS=`mount | grep $COMMON_PREFIX | cut -d\  -f1`
-		if test -n "$STRAY_MOUNTS"; then
+		if [ -n "$STRAY_MOUNTS" ]; then
 			echo "Removing stray mounted devices containing $COMMON_PREFIX:"
 			mount | grep $COMMON_PREFIX
 			umount -fl $STRAY_MOUNTS || true
@@ -62,7 +61,7 @@ teardown_devs() {
 		init_udev_transaction
 		NUM_REMAINING_DEVS=999
 		while NUM_DEVS=`dmsetup table | grep ^$COMMON_PREFIX | wc -l` && \
-		    test $NUM_DEVS -lt $NUM_REMAINING_DEVS -a $NUM_DEVS -ne 0; do
+			test $NUM_DEVS -lt $NUM_REMAINING_DEVS -a $NUM_DEVS -ne 0; do
 			echo "Removing $NUM_DEVS stray mapped devices with names beginning with $COMMON_PREFIX:"
 			STRAY_DEVS=$(dmsetup table | sed 's/:.*//' | grep $COMMON_PREFIX | cut -d' '  -f 1)
 			dmsetup info -c | grep ^$COMMON_PREFIX
@@ -75,37 +74,35 @@ teardown_devs() {
 		finish_udev_transaction
 		udev_wait
 
-        	STRAY_LOOPS=`losetup -a | grep $COMMON_PREFIX | cut -d: -f1`
-        	if test -n "$STRAY_LOOPS"; then
-                	echo "Removing stray loop devices containing $COMMON_PREFIX:"
-                	losetup -a | grep $COMMON_PREFIX
-                	losetup -d $STRAY_LOOPS || true
-        	fi
-	}
+		STRAY_LOOPS=`losetup -a | grep $COMMON_PREFIX | cut -d: -f1`
+		if [ -n "$STRAY_LOOPS" ]; then
+			echo "Removing stray loop devices containing $COMMON_PREFIX:"
+			losetup -a | grep $COMMON_PREFIX
+			losetup -d $STRAY_LOOPS || true
+		fi
+	fi
 }
 
 teardown() {
-    # Print out coverage
-    if test -n "$COVERAGE"; then
-        $COVERAGE report
-    fi
-    echo -n "## teardown..."
+	# Print out coverage
+	if [ -n "$COVERAGE" ]; then
+		$COVERAGE report
+	fi
+	echo -n "## teardown..."
 
-    # Umount devices
-    umount_all
+	# Umount devices
+	umount_all
 
-    echo -n .
+	echo -n .
+	test -d $DM_DEV_DIR/mapper && teardown_devs
+	echo -n .
 
-    test -d $DM_DEV_DIR/mapper && teardown_devs
+	if [ -n "$TESTDIR" ]; then
+		cd $OLDDIR
+		rm -rf $TESTDIR || echo BLA
+	fi
 
-    echo -n .
-
-    test -n "$TESTDIR" && {
-	cd $OLDDIR
-	rm -rf $TESTDIR || echo BLA
-    }
-
-    echo "ok"
+	echo "ok"
 }
 
 make_ioerror() {
@@ -114,34 +111,29 @@ make_ioerror() {
 }
 
 prepare_mnts() {
-    count=$1
-    [ ! -d $TEST_MNT ] && mkdir $TEST_MNT &> /dev/null
-    for n in $(seq $count); do
-        mnt="$TEST_MNT/test$n"
-        mkdir $mnt
-    done
+	count=$1
+	[ ! -d $TEST_MNT ] && mkdir $TEST_MNT &> /dev/null
+	for n in $(seq $count); do
+		mnt="$TEST_MNT/test$n"
+		mkdir $mnt
+	done
 }
 
 prepare_loop() {
 	size=$1
 	test -n "$size" || size=32
 
-        echo -n "## preparing loop device..."
+	echo -n "## preparing loop device..."
 
 	# skip if prepare_scsi_debug_dev() was used
 	if [ -f "SCSI_DEBUG_DEV" -a -f "LOOP" ]; then
-                echo "(skipped)"
+		echo "(skipped)"
 		return 0
 	fi
 
 	test ! -e LOOP
 	test -n "$DM_DEV_DIR"
-
-	for i in 0 1 2 3 4 5 6 7; do
-		test -e $DM_DEV_DIR/loop$i || mknod $DM_DEV_DIR/loop$i b 7 $i
-	done
-
-        echo -n .
+	echo -n .
 
 	LOOPFILE="$PWD/test.img"
 	dd if=/dev/zero of="$LOOPFILE" bs=$((1024*1024)) count=0 seek=$(($size-1)) 2> /dev/null
@@ -151,7 +143,10 @@ prepare_loop() {
 		# no -s support
 		:
 	else
-		# no -f support 
+		# no -f support
+		for i in 0 1 2 3 4 5 6 7; do
+			test -e $DM_DEV_DIR/loop$i || mknod $DM_DEV_DIR/loop$i b 7 $i
+		done
 		# Iterate through $DM_DEV_DIR/loop{,/}{0,1,2,3,4,5,6,7}
 		for slash in '' /; do
 			for i in 0 1 2 3 4 5 6 7; do
@@ -162,14 +157,14 @@ prepare_loop() {
 				LOOP=$dev
 				break
 			done
-			if [ -n "$LOOP" ]; then 
+			if [ -n "$LOOP" ]; then
 				break
 			fi
 		done
 	fi
 	test -n "$LOOP" # confirm or fail
-        echo "$LOOP" > LOOP
-        echo "ok ($LOOP)"
+	echo "$LOOP" > LOOP
+	echo "ok ($LOOP)"
 }
 
 # A drop-in replacement for prepare_loop() that uses scsi_debug to create
@@ -177,44 +172,44 @@ prepare_loop() {
 # - scripts must take care not to use a DEV_SIZE that will enduce OOM-killer
 prepare_scsi_debug_dev()
 {
-    local DEV_SIZE="$1"
-    shift
-    local SCSI_DEBUG_PARAMS="$@"
+	local DEV_SIZE="$1"
+	shift
+	local SCSI_DEBUG_PARAMS="$@"
 
-    test -f "SCSI_DEBUG_DEV" && return 0
-    test -z "$LOOP"
-    test -n "$DM_DEV_DIR"
+	test -f "SCSI_DEBUG_DEV" && return 0
+	test -z "$LOOP"
+	test -n "$DM_DEV_DIR"
 
-    # Skip test if awk isn't available (required for get_sd_devs_)
-    which awk || skip
+	# Skip test if awk isn't available (required for get_sd_devs_)
+	which awk || skip
 
-    # Skip test if scsi_debug module is unavailable or is already in use
-    modprobe --dry-run scsi_debug || skip
-    lsmod | grep -q scsi_debug && skip
+	# Skip test if scsi_debug module is unavailable or is already in use
+	modprobe --dry-run scsi_debug || skip
+	lsmod | grep -q scsi_debug && skip
 
-    # Create the scsi_debug device and determine the new scsi device's name
-    # NOTE: it will _never_ make sense to pass num_tgts param;
-    # last param wins.. so num_tgts=1 is imposed
-    modprobe scsi_debug dev_size_mb=$DEV_SIZE $SCSI_DEBUG_PARAMS num_tgts=1 || skip
-    sleep 2 # allow for async Linux SCSI device registration
+	# Create the scsi_debug device and determine the new scsi device's name
+	# NOTE: it will _never_ make sense to pass num_tgts param;
+	# last param wins.. so num_tgts=1 is imposed
+	modprobe scsi_debug dev_size_mb=$DEV_SIZE $SCSI_DEBUG_PARAMS num_tgts=1 || skip
+	sleep 2 # allow for async Linux SCSI device registration
 
-    local DEBUG_DEV=/dev/$(grep -H scsi_debug /sys/block/*/device/model | cut -f4 -d /)
-    [ -b $DEBUG_DEV ] || exit 1 # should not happen
+	local DEBUG_DEV=/dev/$(grep -H scsi_debug /sys/block/*/device/model | cut -f4 -d /)
+	[ -b $DEBUG_DEV ] || exit 1 # should not happen
 
-    # Create symlink to scsi_debug device in $DM_DEV_DIR
-    SCSI_DEBUG_DEV="$DM_DEV_DIR/$(basename $DEBUG_DEV)"
-    echo "$SCSI_DEBUG_DEV" > SCSI_DEBUG_DEV
-    echo "$SCSI_DEBUG_DEV" > LOOP
-    # Setting $LOOP provides means for prepare_devs() override
-    ln -snf $DEBUG_DEV $SCSI_DEBUG_DEV
-    return 0
+	# Create symlink to scsi_debug device in $DM_DEV_DIR
+	SCSI_DEBUG_DEV="$DM_DEV_DIR/$(basename $DEBUG_DEV)"
+	echo "$SCSI_DEBUG_DEV" > SCSI_DEBUG_DEV
+	echo "$SCSI_DEBUG_DEV" > LOOP
+	# Setting $LOOP provides means for prepare_devs() override
+	ln -snf $DEBUG_DEV $SCSI_DEBUG_DEV
+	return 0
 }
 
 cleanup_scsi_debug_dev()
 {
-    aux teardown_devs
-    rm -f SCSI_DEBUG_DEV
-    rm -f LOOP
+	aux teardown_devs
+	rm -f SCSI_DEBUG_DEV
+	rm -f LOOP
 }
 
 prepare_devs() {
@@ -226,14 +221,14 @@ prepare_devs() {
 	test -z "$pvname" && pvname="pv"
 
 	prepare_loop $(($n*$devsize))
-        echo -n "## preparing $n devices..."
+	echo -n "## preparing $n devices..."
 
 	if ! loopsz=`blockdev --getsz $LOOP 2>/dev/null`; then
-  		loopsz=`blockdev --getsize $LOOP 2>/dev/null`
+		loopsz=`blockdev --getsize $LOOP 2>/dev/null`
 	fi
 
 	local size=$(($loopsz/$n))
-        devs=
+		devs=
 
 	init_udev_transaction
 	for i in `seq 1 $n`; do
@@ -245,25 +240,16 @@ prepare_devs() {
 	done
 	finish_udev_transaction
 
-	#for i in `seq 1 $n`; do
-	#	local name="${PREFIX}$pvname$i"
-	#	dmsetup info -c $name
-	#done
-	#for i in `seq 1 $n`; do
-	#	local name="${PREFIX}$pvname$i"
-	#	dmsetup table $name
-	#done
-
 	udev_wait
-        echo $devs > DEVICES
-        echo "ok"
+	echo $devs > DEVICES
+	echo "ok"
 }
 
 disable_dev() {
 
 	init_udev_transaction
 	for dev in "$@"; do
-        	dmsetup remove -f $dev || true
+		dmsetup remove -f $dev || true
 	done
 	finish_udev_transaction
 
@@ -307,18 +293,19 @@ prepare_vg() {
 
 	prepare_pvs "$@"
 	vgcreate -c n $vg $devs
-	#pvs -v
 }
 
 lvmconf() {
-    if test -z "$LVM_TEST_LOCKING"; then LVM_TEST_LOCKING=1; fi
-    if test "$DM_DEV_DIR" = "/dev"; then
-	LVM_VERIFY_UDEV=${LVM_VERIFY_UDEV:-0};
-    else
-	LVM_VERIFY_UDEV=${LVM_VERIFY_UDEV:-1};
-    fi
-    test -f CONFIG_VALUES || {
-        cat > CONFIG_VALUES <<-EOF
+	if [ -z "$LVM_TEST_LOCKING" ]; then
+		LVM_TEST_LOCKING=1;
+	fi
+	if [ "$DM_DEV_DIR" = "/dev" ]; then
+		LVM_VERIFY_UDEV=${LVM_VERIFY_UDEV:-0};
+	else
+		LVM_VERIFY_UDEV=${LVM_VERIFY_UDEV:-1};
+	fi
+	test -f CONFIG_VALUES || {
+		cat > CONFIG_VALUES <<-EOF
 devices/dir = "$DM_DEV_DIR"
 devices/scan = "$DM_DEV_DIR"
 devices/filter = [ "a/dev\/mirror/", "a/dev\/mapper\/.*pv[0-9_]*$/", "r/.*/" ]
@@ -351,28 +338,28 @@ activation/monitoring = 0
 global/use_lvmetad = 0
 allocation/wipe_signatures_when_zeroing_new_lvs = 0
 EOF
-    }
+	}
 
-    for v in "$@"; do
-        echo "$v" >> CONFIG_VALUES
-    done
+	for v in "$@"; do
+		echo "$v" >> CONFIG_VALUES
+	done
 
-    rm -f CONFIG
-    for s in `cat CONFIG_VALUES | cut -f1 -d/ | sort | uniq`; do
-        echo "$s {" >> CONFIG
-        for k in `grep ^$s/ CONFIG_VALUES | cut -f1 -d= | sed -e 's, *$,,' | sort | uniq`; do
-            grep "^$k" CONFIG_VALUES | tail -n 1 | sed -e "s,^$s/,    ," >> CONFIG
-        done
-        echo "}" >> CONFIG
-        echo >> CONFIG
-    done
-    mv -f CONFIG $TESTDIR/etc/lvm.conf
+	rm -f CONFIG
+	for s in `cat CONFIG_VALUES | cut -f1 -d/ | sort | uniq`; do
+		echo "$s {" >> CONFIG
+		for k in `grep ^$s/ CONFIG_VALUES | cut -f1 -d= | sed -e 's, *$,,' | sort | uniq`; do
+			grep "^$k" CONFIG_VALUES | tail -n 1 | sed -e "s,^$s/,	," >> CONFIG
+		done
+		echo "}" >> CONFIG
+		echo >> CONFIG
+	done
+	mv -f CONFIG $TESTDIR/etc/lvm.conf
 }
 
 udev_wait() {
 	pgrep udev >/dev/null || return 0
 	which udevadm >/dev/null || return 0
-	if test -n "$1" ; then
+	if [ -n "$1"  ]; then
 		udevadm settle --exit-if-exists=$1
 	else
 		udevadm settle --timeout=15

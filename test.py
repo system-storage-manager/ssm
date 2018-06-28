@@ -30,7 +30,7 @@ os.environ['SSM_NONINTERACTIVE'] = "1"
 
 from ssmlib import main
 from ssmlib import misc
-from ssmlib.backends import lvm, crypt, btrfs
+from ssmlib.backends import lvm, crypt, btrfs, multipath
 
 from tests.unittests import *
 
@@ -107,6 +107,8 @@ def doc_tests():
             raise_on_error=False, optionflags=doctest_flags)
     result = doctest.testmod(btrfs, exclude_empty=True, report=True,
             raise_on_error=False, optionflags=doctest_flags)
+    result = doctest.testmod(multipath, exclude_empty=True, report=True,
+            raise_on_error=False, optionflags=doctest_flags)
     result = doctest.testmod(misc, exclude_empty=True, report=True,
             raise_on_error=False, optionflags=doctest_flags)
 
@@ -131,7 +133,9 @@ def unit_tests(names):
         tests_lvm = test_loader.loadTestsFromModule(test_lvm)
         tests_btrfs = test_loader.loadTestsFromModule(test_btrfs)
         tests_ssm = test_loader.loadTestsFromModule(test_ssm)
-        tests = unittest.TestSuite([tests_lvm, tests_btrfs, tests_ssm])
+        tests_misc = test_loader.loadTestsFromModule(test_misc)
+        tests_multipath = test_loader.loadTestsFromModule(test_multipath)
+        tests = unittest.TestSuite([tests_lvm, tests_btrfs, tests_ssm, tests_misc, tests_multipath])
 
     test_runner = unittest.TextTestRunner(verbosity=2)
     test_runner.run(tests)

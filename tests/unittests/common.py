@@ -17,7 +17,6 @@
 
 # Common classes for unit testing
 
-import os
 import sys
 import unittest
 import argparse
@@ -47,10 +46,9 @@ class BaseStorageHandleInit(unittest.TestCase):
         main.SSM_NONINTERACTIVE = True
 
     def mock_run(self, cmd, *args, **kwargs):
-
         # Convert all parts of cmd into string
         for i, item in enumerate(cmd):
-            if type(item) is not str:
+            if not isinstance(item, str):
                 cmd[i] = str(item)
 
         self.run_data.append(" ".join(cmd))
@@ -74,6 +72,10 @@ class MockSystemDataSource(unittest.TestCase):
         misc.run = self.mock_run
         self.get_partitions_orig = misc.get_partitions
         misc.get_partitions = self.mock_get_partitions
+        self.get_real_device_orig = misc.get_real_device
+        misc.get_real_device = self.mock_get_real_device
+        self.get_device_size_orig = misc.get_device_size
+        misc.get_device_size = self.mock_get_device_size
         self.is_bdevice_orig = misc.is_bdevice
         misc.is_bdevice = self.mock_is_bdevice
         self.is_directory_orig = main.is_directory
@@ -96,6 +98,7 @@ class MockSystemDataSource(unittest.TestCase):
         self.vol_data = {}
         self.pool_data = {}
         self.mount_data = {}
+        self.links = {}
         self._mpoint = False
         main.SSM_NONINTERACTIVE = True
 
@@ -108,6 +111,8 @@ class MockSystemDataSource(unittest.TestCase):
         self.mount_data = {}
         misc.run = self.run_orig
         misc.get_partitions = self.get_partitions_orig
+        misc.get_real_device = self.get_real_device_orig
+        misc.get_device_size = self.get_device_size_orig
         misc.is_bdevice = self.is_bdevice_orig
         main.is_directory = self.is_directory_orig
         misc.get_mounts = self.get_mounts_orig
@@ -143,7 +148,6 @@ class MockSystemDataSource(unittest.TestCase):
         """
         if expected_args:
             arg_permutations = list(misc.permutations(expected_args))
-            found = False
             args = None
             # Test cmdEq twice - once for reporting when we found
             # the equal permutation to raise a failure, and once
@@ -188,10 +192,22 @@ class MockSystemDataSource(unittest.TestCase):
 
     def mock_get_partitions(self):
         partitions = []
-        for (name, data) in self.dev_data.items():
+        for (_, data) in self.dev_data.items():
             partitions.append([data['major'], data['minor'], data['dev_size'],
-                              data['dev_name']])
+                               data['dev_name'], data['dev_name']])
         return partitions
+
+    def mock_get_real_device(self, devname):
+        for (dev, _) in self.dev_data.items():
+            if dev == devname:
+                return dev
+        for name, target in self.links.items():
+            if name == devname:
+                return self.mock_get_real_device(target)
+        return devname
+
+    def mock_get_device_size(self, device):
+        return self.dev_data[device]['dev_size']
 
     def mock_is_directory(self, string):
         if string in self.directories:
@@ -206,9 +222,8 @@ class MockSystemDataSource(unittest.TestCase):
     def mock_is_bdevice(self, path):
         if path in self.dev_data:
             return path
-        else:
-            err = "'{0}' is not valid block device".format(path)
-            raise argparse.ArgumentTypeError(err)
+        err = "'{0}' is not valid block device".format(path)
+        raise argparse.ArgumentTypeError(err)
 
     def mock_check_create_item(self, path):
         if not self._mpoint:
@@ -221,15 +236,12 @@ class MockSystemDataSource(unittest.TestCase):
         if device in self.vol_data:
             if 'fstype' in self.vol_data[device]:
                 return self.vol_data[device]['fstype']
-            else:
-                return None
+            return None
         elif device in self.dev_data:
             if 'fstype' in self.dev_data[device]:
                 return self.dev_data[device]['fstype']
-            else:
-                return None
-        else:
-                return None
+            return None
+        return None
 
     def mock_send_udev_event(self, device, event):
         pass
@@ -243,9 +255,16 @@ class MockSystemDataSource(unittest.TestCase):
     def _addDir(self, dirname):
         self.directories.append(dirname)
 
+    def _addLink(self, target, name):
+        self.links[name] = target
+
     def _addDevice(self, dev_name, dev_size, minor=0):
-        self.dev_data[dev_name] = {'dev_name': dev_name, 'dev_size': dev_size,
-                'major': '8', 'minor': str(minor)}
+        self.dev_data[dev_name] = {
+            'dev_name': dev_name,
+            'dev_size': dev_size,
+            'major': '8',
+            'minor': str(minor)
+        }
 
     def _addPool(self, pool_name, devices):
         if pool_name in self.pool_data:
@@ -267,10 +286,14 @@ class MockSystemDataSource(unittest.TestCase):
             dev_data['dev_used'] = '0.0'
 
         dev_count += len(devices)
-        self.pool_data[pool_name] = {'pool_name': pool_name,
-                'pool_size': str(pool_size), 'pool_used': str(pool_used),
-                'dev_count': str(dev_count), 'pool_free': str(pool_free),
-                'vol_count': '0'}
+        self.pool_data[pool_name] = {
+            'pool_name': pool_name,
+            'pool_size': str(pool_size),
+            'pool_used': str(pool_used),
+            'dev_count': str(dev_count),
+            'pool_free': str(pool_free),
+            'vol_count': '0'
+        }
 
     def _addVol(self, vol_name, vol_size, stripes, pool_name, devices,
                 mount=None, active=True):
@@ -295,9 +318,9 @@ class MockSystemDataSource(unittest.TestCase):
             if stripes > 1:
                 dev_data['pool_name'] = pool_name
                 dev_data['dev_used'] = str(float(dev_data['dev_used']) +
-                                                space_per_dev)
+                                           space_per_dev)
                 dev_data['dev_free'] = str(float(dev_data['dev_free']) -
-                                                space_per_dev)
+                                           space_per_dev)
                 size -= space_per_dev
             else:
                 dev_data['pool_name'] = pool_name
@@ -306,9 +329,9 @@ class MockSystemDataSource(unittest.TestCase):
                 else:
                     use = size
                 dev_data['dev_used'] = str(float(dev_data['dev_used']) +
-                                                space_per_dev)
+                                           space_per_dev)
                 dev_data['dev_free'] = str(float(dev_data['dev_free']) -
-                                                 space_per_dev)
+                                           space_per_dev)
                 size -= use
         if size > 1:
             raise Exception("Error in the test in _addVol")
@@ -319,15 +342,22 @@ class MockSystemDataSource(unittest.TestCase):
             vol_type = "linear"
             stripesize = 0
         vol_name = "/dev/{0}/{1}".format(pool_name, vol_name)
-        attr="-wi------"
-        if active == True:
+        attr = "-wi------"
+        if active:
             tmp = list(attr)
             tmp[4] = 'a'
             attr = "".join(tmp)
-        self.vol_data[vol_name] = {'dm_name': vol_name,
-                'real_dev': vol_name, 'stripes': stripes, 'dev_name': vol_name,
-                'stripesize': 0, 'pool_name': pool_name, 'vol_size': vol_size,
-                'dev_size': vol_size, 'type': vol_type, 'origin': "",
-                'mount': mount, 'attr': attr}
-
-
+        self.vol_data[vol_name] = {
+            'dm_name': vol_name,
+            'real_dev': vol_name,
+            'stripes': stripes,
+            'dev_name': vol_name,
+            'stripesize': 0,
+            'pool_name': pool_name,
+            'vol_size': vol_size,
+            'dev_size': vol_size,
+            'type': vol_type,
+            'origin': "",
+            'mount': mount,
+            'attr': attr
+        }

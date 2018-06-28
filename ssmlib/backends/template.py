@@ -55,24 +55,28 @@ class BackendPool(Backend):
 
     def reduce(self, pool, device):
         self.problem.check(self.problem.NOT_SUPPORTED,
-                        "Reducing pool with {0} backend".format(self.type))
+                        ["Reducing pool", "{} backend".format(self.type)])
 
     def new(self, pool, devices):
         self.problem.check(self.problem.NOT_SUPPORTED,
-                        "Creating new pool with {0} backend".format(self.type))
+                        ["Creating new pool", "{} backend".format(self.type)])
 
     def extend(self, pool, devices):
         self.problem.check(self.problem.NOT_SUPPORTED,
-                        "Extending pool with {0} backend".format(self.type))
+                        ["Extending pool", "{} backend".format(self.type)])
 
     def remove(self, pool):
         self.problem.check(self.problem.NOT_SUPPORTED,
-                        "Removing pool with {0} backend".format(self.type))
+                        ["Removing pool", "{} backend".format(self.type)])
 
     def create(self, pool, size=None, name=None, devs=None,
                options=None):
         self.problem.check(self.problem.NOT_IMPLEMENTED,
-                        "Creating volume with {0} backend".format(self.type))
+                        ["Creating volume", "{} backend".format(self.type)])
+
+    def migrate(self, pool, sources, targets=None):
+        self.problem.check(self.problem.NOT_IMPLEMENTED,
+                        ["Migrating data in pools", "{} backend".format(self.type)])
 
 
 class BackendVolume(Backend):
@@ -81,11 +85,11 @@ class BackendVolume(Backend):
 
     def remove(self, volume):
         self.problem.check(self.problem.NOT_SUPPORTED,
-                        "Removing volume with {0} backend".format(self.type))
+                        ["Removing volume", "{} backend".format(self.type)])
 
     def resize(self, volume, size, resize_fs=True):
         self.problem.check(self.problem.NOT_SUPPORTED,
-                        "Resizing volume with {0} backend".format(self.type))
+                        ["Resizing volume", "{} backend".format(self.type)])
 
 
 class BackendDevice(Backend):
@@ -94,4 +98,4 @@ class BackendDevice(Backend):
 
     def remove(self, devices):
         self.problem.check(self.problem.NOT_SUPPORTED,
-                        "Removing device with {0} backend".format(self.type))
+                        ["Removing device", "{} backend".format(self.type)])

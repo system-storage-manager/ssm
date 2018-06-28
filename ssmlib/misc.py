@@ -15,6 +15,8 @@
 
 # Miscellaneous functions for use by System Storage Manager
 
+from __future__ import print_function
+
 import os
 import re
 import sys
@@ -24,6 +26,13 @@ import threading
 import subprocess
 from ssmlib import problem
 from base64 import encode
+
+if sys.version < '3':
+    def __next__(iter):
+        return iter.next()
+else:
+    def __next__(iter):
+        return next(iter)
 
 # List of temporary mount points which should be cleaned up
 # before exiting
@@ -81,15 +90,14 @@ def get_unit_size(string):
     units = {'B': 1, 'K': 2 ** 10, 'M': 2 ** 20, 'G': 2 ** 30, 'T': 2 ** 40,
              'P': 2 ** 50}
     unit = re.sub(r'^\+?-?\d+(\.\d*)?', '', string)
-    if len(unit) > 0 and unit[0].upper() in units:
+    if unit and unit[0].upper() in units:
         mult = units[unit[0].upper()]
     all_units = ['B', 'K', 'M', 'G', 'T', 'P',
                  'KB', 'MB', 'GB', 'TB', 'PB',
                  'KIB', 'MIB', 'GIB', 'TIB', 'PIB']
     if unit.upper() in all_units:
         return mult, unit
-    else:
-        return 0, ""
+    return 0, ""
 
 
 def is_number(string):
@@ -216,7 +224,7 @@ def send_udev_event(device, event):
 def get_device_by_uuid(uuid):
     path = "/dev/disk/by-uuid/{0}".format(uuid)
     return os.path.abspath(os.path.join(os.path.dirname(path),
-                           os.readlink(path)))
+                                        os.readlink(path)))
 
 
 def get_major_minor(device):
@@ -240,8 +248,7 @@ def check_binary(name):
     command = ['which', name]
     if run(command, can_fail=True)[0]:
         return False
-    else:
-        return True
+    return True
 
 
 def do_mount(device, directory, options=None):
@@ -296,8 +303,7 @@ def get_signature(device, types=None):
 
     if ret:
         return None
-    else:
-        return output
+    return output
 
 
 def get_fs_type(device):
@@ -307,9 +313,8 @@ def get_fs_type(device):
 def get_real_device(device):
     if os.path.islink(device):
         return os.path.abspath(os.path.join(os.path.dirname(device),
-                               os.readlink(device)))
-    else:
-        return device
+                                            os.readlink(device)))
+    return device
 
 
 def get_swaps():
@@ -323,11 +328,14 @@ def get_swaps():
 def get_partitions():
     partitions = []
     new_line = []
-    output = run(["lsblk","-l","-b","-n","-p","-o","MAJ:MIN,SIZE,KNAME"], stdout=False)
+    output = run(["lsblk", "-l", "-b", "-n", "-p", "-o", "MAJ:MIN,SIZE,KNAME,NAME,PKNAME"],
+                 stdout=False)
 
     for line in output[1].splitlines():
-        new_line = re.split('\s+|:',line.strip())
-        if len(new_line) == 4:
+        new_line = re.split(r'\s+|:', line.strip())
+        # Not every line has the parent device name, but in either case,
+        # if we got data, convert the size to kB
+        if len(new_line) in [5, 6]:
             new_line[2] = int(new_line[2])//1024
             partitions.append(new_line)
         else:
@@ -346,7 +354,10 @@ def get_mountinfo(regex=".*"):
                 continue
             array = line.split(None, 6)
             row = dict([(names[index], array[index])
-                for index in min(list(range(len(array) - 1)), list(range(len(names))))])
+                        for index in min(
+                            list(range(len(array) - 1)),
+                            list(range(len(names)))
+                        )])
             array = line.rsplit(None, 3)
             row['fs'] = array[1]
             row['dev'] = array[2]
@@ -374,8 +385,7 @@ def get_mounts_old(regex=".*"):
 def get_mounts(regex=".*"):
     if os.path.exists("/proc/self/mountinfo"):
         return get_mountinfo(regex)
-    else:
-        return get_mounts_old(regex)
+    return get_mounts_old(regex)
 
 
 def get_dmnumber(name):
@@ -391,9 +401,9 @@ def get_dmnumber(name):
 
 
 def wipefs(devices, signatures):
-    if type(devices) is not list:
+    if not isinstance(devices, list):
         devices = [devices]
-    if type(signatures) is not list:
+    if not isinstance(signatures, list):
         signatures = [signatures]
     command = ['wipefs', '-a', '-t', ','.join(signatures)] + devices
     # Avoid race with udev
@@ -437,7 +447,7 @@ def humanize_size(arg):
     ValueError: could not convert string to float: hello world
     """
     count = 0
-    if type(arg) is str and len(arg) == 0:
+    if isinstance(arg, str) and not arg:
         return ""
     size = float(arg)
     while abs(size) >= 1024 and count < 7:
@@ -450,6 +460,25 @@ def humanize_size(arg):
         unit = "???"
     return ("{0:.2f} {1}").format(size, unit)
 
+def _can_fail_hacks(cmd, returncode, error):
+    """ A workaround for tools reporting weird exit codes. Return true
+        when a non-zero return code should be ignored.
+    """
+
+    if returncode == 5 \
+        and cmd[0:2] == ['lvm', 'lvs'] \
+        and str(error).endswith('is exported\n'):
+        # FIXME A workaround for LVM behaviour:
+        # lvm lvs' exit code is 5 on exported volumes, even if everything
+        # is ok. So, if the code is 5, command was 'lvm lvs ...'
+        # and error message says that a volume was exported, set up can_fail
+        # flag.
+        # We can't use per-object status, because that would break backward
+        # compatibility. And we can't deal with it on a higher level, because
+        # we don't have all the information then.
+        return True
+
+    return False
 
 def run(cmd, show_cmd=False, stdout=False, stderr=True, can_fail=False,
         stdin_data=None, return_stdout=True):
@@ -470,29 +499,20 @@ def run(cmd, show_cmd=False, stdout=False, stderr=True, can_fail=False,
 
     # Convert all parts of cmd into string
     for i, item in enumerate(cmd):
-        if type(item) is not str:
+        if not isinstance(item, str):
             cmd[i] = str(item)
 
     proc = subprocess.Popen(cmd, stdout=stdout,
                             stderr=stderr, stdin=stdin, close_fds=True)
 
-    if stdin_data is not None:
+    output, error = proc.communicate(input=stdin_data)
 
-        class StdinThread(threading.Thread):
+    err_msg = "ERROR exit code {0} for running command: \"{1}\"".format(
+        proc.returncode,
+        " ".join(cmd))
+    if _can_fail_hacks(cmd, proc.returncode, error):
+        can_fail = True
 
-            def run(self):
-                proc.stdin.write(stdin_data)
-                proc.stdin.close()
-        stdin_thread = StdinThread()
-        stdin_thread.daemon = True
-        stdin_thread.start()
-
-    output, error = proc.communicate()
-
-    if stdin_data is not None:
-        stdin_thread.join()
-
-    err_msg = "ERROR running command: \"{0}\"".format(" ".join(cmd))
     if proc.returncode != 0 and show_cmd:
         if output is not None:
             print(output)
@@ -505,15 +525,14 @@ def run(cmd, show_cmd=False, stdout=False, stderr=True, can_fail=False,
             print(output)
         if error is not None:
             print(error)
-        raise problem.CommandFailed(err_msg)
+        raise problem.CommandFailed(err_msg, exitcode=proc.returncode)
 
     if not return_stdout:
         output = None
 
     if output is not None:
         return (proc.returncode, __str__(output))
-    else:
-        return (proc.returncode, output)
+    return (proc.returncode, output)
 
 
 def chain(*iterables):
@@ -627,7 +646,7 @@ def terminal_size(default=(25, 80)):
     try:
         env = os.environ
         cr = (env['LINES'], env['COLUMNS'])
-    except:
+    except KeyError:
         cr = _ioctl_GWINSZ(0) or _ioctl_GWINSZ(1) or _ioctl_GWINSZ(2)
         if not cr:
             try:
@@ -663,3 +682,208 @@ def get_device_size(device):
         for line in f:
             size = int(line)//2
             return size
+
+def ptable(data, table_header=None):
+    """
+    Print data in a table, optionally with a header.
+    The data has to be a list of tuples of strings [('a', 'b', 'c'), ...]
+    The header is a tuple: (('name', type), ... ), where the type is used to decide alignment.
+    Int and float aligns to right, anything else to left.
+    All the tuples has to have the same number of members.
+    """
+    if len(data) == 0:
+        return
+
+    header = []
+    types = []
+    fmt = ""
+    skip_header = True
+    # Keep track of used columns. Then we only print out columns with values.
+    columns = [False] * len(data[0])
+
+    len_matrix = []
+    if table_header:
+        skip_header = False
+        line = []
+        for n, t in table_header:
+            if not isinstance(n, str) or not isinstance(t, type):
+                raise ValueError("The header for ptable has to be a tuple/list in the format: " +
+                                 "[('name', type), ...], but got [..., ({}, {}), ...]".format(n, t))
+            line.append(len(n))
+            header.append(n)
+            types.append(t)
+        # add header lengths into the matrix
+        len_matrix.append(line)
+    else:
+        header = [''] * len(data[0])
+        types = [str] * len(data[0])
+
+    for _ in data:
+        len_matrix.append([0 for _ in data[0]])
+
+    index = 0
+    # Gather all lines which are going to be printed into the list
+    # and create matrix of attribute lengths.
+    # Iterate through all items.
+    for itemsline in data:
+        # a line
+        for i, item in enumerate(itemsline):
+            len_matrix[index][i] = len(item)
+            if len(item) > 0:
+                columns[i] = True
+        index += 1
+
+
+    if header:
+        alignment = [(len(item)) for item in header]
+    else:
+        alignment = [0]*len(data[0])
+        types = [str]*len(data[0])
+    term_width = terminal_size()[0]
+
+    # Update matrix of attribute lengths and construct the final list
+    # of alignment for each column in the table.
+    for index in range(len(len_matrix)):
+        line = None
+        # Find maximum length for each column
+        for a, array in enumerate(len_matrix):
+            for i, item in enumerate(array):
+                if not columns[i]:
+                    alignment[i] = 0
+                    continue
+                if item > alignment[i]:
+                    alignment[i] = item
+                    line = a
+
+        # Check the overall line length and if it is longer then the
+        # actual terminal width we can wrap the line right after the
+        # first attribute. Simply set the alignment to the smaller
+        # possible and let recalculate the list of column alignments.
+        # Note that when even with the line wrap we would still exceed
+        # the terminal width, then there is nothing we can do about it
+        # so do not bother with line wrapping at all since it would
+        # only screw the formatting even more.
+        length = sum(alignment) + 2 * len(header) - 2
+        if length > term_width and \
+                (length - term_width) < (alignment[0] - len(header[0])) and \
+                line is not None:
+            alignment[0] = len(header[0])
+            len_matrix[line][0] = len(header[0])
+        else:
+            break
+
+    # Get the actual line width
+    width = sum(compress(alignment, columns)) + 2 * len(header) - 2
+
+    pos = 0
+    # Use column alignments list to construct formatting string for each
+    # line in the table. Note that some lines might be wrapped later on.
+    for i, t in enumerate(types):
+        if not columns[i]:
+            continue
+        if t in (float, int):
+            fmt += "{{{0}:>{1}}}  ".format(pos, alignment[i])
+        else:
+            # Do not append additional spaces if this is the last item
+            if i == len(header) - 1:
+                fmt += "{{{0}:{1}}}".format(pos, alignment[i])
+            else:
+                fmt += "{{{0}:{1}}}  ".format(pos, alignment[i])
+        pos += 1
+
+
+    if not skip_header:
+        print("-" * width)
+        print(fmt.format(*tuple(header)))
+    print("-" * width)
+    # Now print each line of the table. When the first attribute of the
+    # line is longer than it should be we know that we have to wrap the
+    # line.
+    for i, line in enumerate(data):
+        line = compress(line, columns)
+        tmp1 = __next__(line)
+        if len(tmp1) > alignment[0]:
+            print(tmp1)
+            print(fmt.format('', *line))
+        else:
+            print(fmt.format(tmp1, *line))
+    print("-" * width)
+
+
+class Node(object):
+    """ A simple graph node class """
+
+    def __init__(self):
+        self._neighbours = []
+        self._parents = []
+        self._children = []
+
+    @property
+    def neighbours(self):
+        return self._neighbours
+
+    @property
+    def parents(self):
+        return self._parents
+
+    @property
+    def children(self):
+        return self._children
+
+    def add_neighbour(self, node):
+        """ A two-way method. It will add self into the other node as well. """
+        if not isinstance(node, Node):
+            raise ValueError("Only other Nodes can be added as a neighbour.")
+        if not node in self._neighbours:
+            self._neighbours.append(node)
+            node.add_neighbour(self)
+
+    def add_children(self, node):
+        """ A two-way method. It will add self into the other node as well. """
+        if not node in self._children:
+            self.add_neighbour(node)
+            self._children.append(node)
+            node.add_parent(self)
+
+    def add_parent(self, node):
+        """ A two-way method. It will add self into the other node as well. """
+        if not node in self._parents:
+            self.add_neighbour(node)
+            self._parents.append(node)
+            node.add_children(self)
+
+    def get_roots(self):
+        """ Find all root nodes by recursively traversing up all the parents. """
+        roots = set()
+        for parent in self.parents:
+            roots |= parent.get_roots()
+
+        if not roots:
+            return {self}
+        return roots
+
+    @staticmethod
+    def find_node(name, node_cls):
+        """ Search item of class node_cls and try to find one
+            with specific name.
+        """
+        if node_cls is Pool:
+            for item in pools:
+                if item['pool_name'] == name:
+                    return item
+
+        elif node_cls is Volumes:
+            for item in volumes:
+                if item['dev_name'] == name:
+                    return item
+
+        elif node_cls is Devices:
+            for item in devices:
+                if item['dev_name'] == name:
+                    return item
+
+        elif node_cls is Snapshots:
+            for item in snapshots:
+                if item['dev_name'] == name:
+                    return item
+        return None
