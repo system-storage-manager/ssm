@@ -67,6 +67,11 @@ ssm -f mount $SSM_LVM_DEFAULT_POOL/$lvol2 ${mnt2}d
 check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol2 ${mnt2}d
 umount ${mnt1}c ${mnt2}d
 
+# test ssm mount command with non existent device
+not ssm mount $SSM_LVM_DEFAULT_POOL/${lvol1}a ${mnt1}
+not ssm mount $SSM_LVM_DEFAULT_POOL/${lvol1}a ${mnt1}e
+[ ! -d ${mnt1}e ]
+
 # test ssm mount command with options
 ssm mount -o ro,data=journal $SSM_LVM_DEFAULT_POOL/$lvol1 ${mnt1}
 check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol1 ${mnt1} "ro,data=journal"

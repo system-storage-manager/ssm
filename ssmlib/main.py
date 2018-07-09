@@ -2261,6 +2261,16 @@ class StorageHandle(object):
                 return
         return self.get_bdevice(path)
 
+    def mount_target_exist(self, string):
+        vol = self.vol[string]
+        if vol:
+            return string
+        vol = misc.is_bdevice(string)
+        if vol:
+            return string
+        err = "'{0}' is not valid volume nor block deivce".format(string)
+        raise argparse.ArgumentTypeError(err)
+
     def get_bdevice(self, string):
         path = misc.is_bdevice(string)
         if path == False:
@@ -2793,7 +2803,8 @@ class SsmParser(object):
                 help='''Options are specified with a -o flag followed by a
                      comma separated string of options. This option is
                      equivalent to the same mount(8) option.''')
-        parser_mount.add_argument("volume", help="Volume to mount.")
+        parser_mount.add_argument("volume", help="Volume to mount.",
+                                  type=self.storage.mount_target_exist)
         parser_mount.add_argument("directory",
                 help="Directory to attach the volume.",
                 type=is_directory)

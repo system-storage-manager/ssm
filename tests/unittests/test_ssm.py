@@ -777,11 +777,6 @@ class SsmFunctionCheck(MockSystemDataSource):
         main.main("ssm mount --options rw,discard,neco=44 /dev/my_pool/vol002 /mnt/test1")
         self._cmdEq("mount -o rw,discard,neco=44 /dev/my_pool/vol002 /mnt/test1")
 
-        # Non existing volume
-        main.main("ssm mount nonexisting /mnt/test1")
-        self._cmdEq("mount nonexisting /mnt/test1")
-        main.main("ssm mount -o discard,rw nonexisting /mnt/test1")
-        self._cmdEq("mount -o discard,rw nonexisting /mnt/test1")
 
 class MyInfo(object):
     def __init__(self, options, data=None):
