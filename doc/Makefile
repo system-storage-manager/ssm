@@ -139,6 +139,7 @@ doctest:
 dist:	clean man text singlehtml
 	@cp $(BUILDDIR)/text/readme.txt ../README
 	@cp $(BUILDDIR)/text/install.txt ../INSTALL
+	@cp $(BUILDDIR)/man/ssm.8 ../man8/ssm.8
 
 push:
 	./publish-html-to-github.sh
