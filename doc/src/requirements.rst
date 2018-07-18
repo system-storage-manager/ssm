@@ -20,6 +20,7 @@ Python modules
 * fcntl
 * getpass
 * os
+* pwquality
 * re
 * socket
 * stat

@@ -55,6 +55,16 @@ which mkfs.ext2 && grep -E "^\sext[234]$" /proc/filesystems && fs2=ext2
 which mkfs.ext3 && grep -E "^\sext[34]$" /proc/filesystems && fs3=ext3
 which mkfs.xfs  && grep -E "^\sxfs$" /proc/filesystems && fs4=xfs
 
+# Try a short password with DEFAULT_BACKEND=crypt
+# Later in this test, check it again with a different backend, because
+# there are two paths in the code.
+! echo -e "a\na" | ssm create $dev1 -e luks
+! check list_table "$(ssm list vol)" $crypt_vol1 $SSM_CRYPT_DEFAULT_POOL none crypt
+# force it - not it should pass
+echo -e "a\na" | ssm -f create $dev1 -e luks
+check list_table "$(ssm list vol)" $crypt_vol1 $SSM_CRYPT_DEFAULT_POOL none crypt
+ssm remove ${DEV}/$crypt_vol1
+
 # Create encrypted volume
 pass | ssm create $dev1
 check crypt_vol_field $crypt_vol1 type LUKS1
@@ -103,6 +113,15 @@ lvol3=${LVOL_PREFIX}003
 lvol4=${LVOL_PREFIX}004
 export SSM_DEFAULT_BACKEND='lvm'
 
+# Try a short password with backend different than crypt
+! echo -e "a\na" | ssm create $dev1 -e luks
+! check crypt_vol_field $crypt_vol1 type LUKS1
+# force it
+echo -e "a\na" | ssm -f create $dev1 -e luks
+check crypt_vol_field $crypt_vol1 type LUKS1
+ssm remove ${DEV}/$crypt_vol1
+ssm -f remove $SSM_LVM_DEFAULT_POOL || true
+
 pass | ssm create --fs $fs3 $dev1 $dev2 $mnt1 -e
 check mountpoint $crypt_vol1 $mnt1
 check crypt_vol_field $crypt_vol1 type LUKS1
@@ -149,17 +168,3 @@ check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$lvol1 $SSM_LVM_DEFAULT
 
 ssm remove ${DEV}/$crypt_vol1
 ssm  -f remove $SSM_LVM_DEFAULT_POOL
-
-# Try a short password, one that should not be allowed if password quality is
-# checked. If the OS is configured to allow all passwords, ssm will pass. If
-# not, then ssm should abort before doing anything, and we check if a LV was
-# created (a bug) or not (the correct behaviour).
-
-set +e
-echo -e "a\na" | ssm create $dev1 -e luks
-res=$?
-set -e
-
-if [ $res -ne 0 ]; then
-	not check lv_exists $SSM_LVM_DEFAULT_POOL $lvol1
-fi

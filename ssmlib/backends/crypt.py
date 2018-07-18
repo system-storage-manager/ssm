@@ -95,32 +95,11 @@ class DmCryptPool(DmObject, template.BackendPool):
         self.data[self.default_pool_name] = pool
         '''
         self.passphrase = None
+        self.force_weak_password = False
 
-    def set_passphrase(self, passphrase):
+    def set_passphrase(self, passphrase, force=False):
         self.passphrase = passphrase.encode()
-
-
-    def check_passphrase_strength(self, passphrase):
-        """ Verify is the password is in line with system-imposed requirements.
-            This will create a temporary file and try encrypt it.
-        """
-        try:
-            with tempfile.NamedTemporaryFile() as tmp:
-                tmp.write( ('\0' * (10 * 1000 * 1000)).encode())  # 10 MB
-                tmp.flush()
-                command = ['-q', 'luksFormat', tmp.name]
-                try:
-                    if passphrase:
-                        self.run_cryptsetup(command, password=passphrase.encode())
-                    else:
-                        self.run_cryptsetup(command)
-                except problem.CommandFailed as ex:
-                    if ex.exitcode == 2:
-                        raise problem.GeneralError("Password quality check failed, see your system configuration for password requirements.")
-                    else:
-                        raise ex
-        except IOError as ex:
-            raise problem.GeneralError("SSM could not create a temporary file to test password strength.\n{}".format(str(ex)))
+        self.force_weak_password = force
 
     def create(self, pool, size=None, name=None, devs=None,
                options=None):
@@ -153,7 +132,7 @@ class DmCryptPool(DmObject, template.BackendPool):
             args.append('-q')
         if options['encrypt'] == "luks":
             command.extend(args)
-            if self.options.force:
+            if self.options.force or self.force_weak_password:
                 command.append('--force-password')
             if self.options.interactive and not self.passphrase:
                 command.append('-y')

@@ -24,6 +24,7 @@ import stat
 import atexit
 import argparse
 import getpass
+import pwquality
 from ssmlib import misc
 from ssmlib import problem
 
@@ -1772,18 +1773,24 @@ class StorageHandle(object):
             else:
                 return sys.stdin.readline()[:-1]
 
+        force_weak_password = False
+
         password = getpwd('Enter passphrase: ')
-        if self.options.interactive or True:
-            password2 = getpwd('Verify passphrase: ')
-            if password != password2:
-                raise problem.GeneralError("The passwords entered do not match.")
+        password2 = getpwd('Verify passphrase: ')
+        if password != password2:
+            raise problem.GeneralError("The passwords entered do not match.")
 
         # check password strength before we do anything
-        crypt = self.pool.get_backend("crypt")
-        tmp = crypt.check_passphrase_strength(password)
-        del crypt
+        try:
+            pwq = pwquality.PWQSettings()
+            pwq.check(password)
+        except pwquality.PWQError as ex:
+            if not PR.check(PR.WEAK_PASSWORD, ex[1]):
+                raise problem.WeakPassword(ex[1])
+            else:
+                force_weak_password = True
 
-        return password
+        return (password, force_weak_password)
 
     def create(self, args):
         """
@@ -1795,18 +1802,18 @@ class StorageHandle(object):
             PR.warn("Mount options are set, but no mount point was " +
                     "provided. Device will not be mounted")
 
-        passphrase = None
-        if args.encrypt and SSM_DEFAULT_BACKEND != 'crypt':
+        crypt = None
+        if args.encrypt or SSM_DEFAULT_BACKEND == 'crypt':
+            crypt = self.pool.get_backend("crypt")
             # we have to check the password quality before we do any operation
             # so check that now
-            passphrase = self.get_check_passphrase()
+            (password, force_weak_password) = self.get_check_passphrase()
+            crypt.set_passphrase(password, force=force_weak_password)
 
         lvname = self.create_volume(args)
 
         if args.encrypt and misc.is_bdevice(lvname) and \
            SSM_DEFAULT_BACKEND != 'crypt':
-            crypt = self.pool.get_backend("crypt")
-            crypt.set_passphrase(passphrase)
             args.pool = Item(crypt, crypt.default_pool_name, source=crypt)
             options = {'encrypt': args.encrypt}
             lvname = args.pool.create(devs=[lvname],

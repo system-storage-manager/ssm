@@ -22,7 +22,7 @@ __all__ = ["ProblemSet", "SsmError", "GeneralError", "ProgrammingError",
            "BadEnvVariable", "NotEnoughSpace", "ResizeMatch", "FsNotSpecified",
            "DeviceUsed", "ExistingFilesystem", "NoDevices", "ToolMissing",
            "CanNotRun", "CommandFailed", "UserInterrupted", "NotSupported",
-           "NotImplemented"]
+           "NotImplemented", "WeakPassword"]
 
 # Define prompt codes
 PROMPT_NONE =           0
@@ -152,6 +152,10 @@ class NotImplemented(SsmError):
     def __init__(self, msg, errcode=2016):
         super(NotImplemented, self).__init__(msg, errcode)
 
+class WeakPassword(SsmError):
+    def __init__(self, msg, errcode=2017):
+        super(WeakPassword, self).__init__(msg, errcode)
+
 
 class ProblemSet(object):
 
@@ -239,6 +243,10 @@ class ProblemSet(object):
         self.CREATE_DIRECTORY = \
             ['Directory \'{0}\' does not exist!',
              PROMPT_CREATE, FL_FORCE_YES, None]
+
+        self.WEAK_PASSWORD = \
+            ['The password is too weak: {0}.\n',
+             PROMPT_CONTINUE, FL_FORCE_YES | FL_DEFAULT_NO, WeakPassword]
 
     def _can_print_message(self, flags):
         if (flags & FL_DEBUG_ONLY):
