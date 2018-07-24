@@ -103,7 +103,7 @@ def check_system_dependencies():
     return True
 
 
-def run_bash_tests(names, want_logs=False):
+def run_bash_tests(names, exclude=[], want_logs=False):
     cur = os.getcwd()
     os.chdir('./tests/bashtests')
     command = ['ls', '-m']
@@ -112,6 +112,7 @@ def run_bash_tests(names, want_logs=False):
 
     failed = []
     passed = []
+    skipped = []
     count = 0
     misc.run('./set.sh', stdout=False)
     output = misc.run(command, stdout=False)[1]
@@ -122,12 +123,20 @@ def run_bash_tests(names, want_logs=False):
             continue
         if names and script not in names and script[:3] not in names:
             continue
+        if exclude and (script in exclude or script[:3] in exclude):
+            skipped.append(script)
+            print("{0:<29} \033[90m[SKIPPED]\033[0m".format(script))
+            continue
+
         count += 1
         sys.stdout.write("{0:<29}".format(script) + " ")
         sys.stdout.flush()
         bad_file = re.sub("\.sh$",".bad", script)
+        skip_file = re.sub("\.sh$",".skipped", script)
         if os.access(bad_file, os.R_OK):
             os.remove(bad_file)
+        if os.access(skip_file, os.R_OK):
+            os.remove(skip_file)
         ret, out, err = misc.run(['./' + script], stdout=False, can_fail=True)
         if ret:
             print("\033[91m[FAILED]\033[0m")
@@ -139,6 +148,11 @@ def run_bash_tests(names, want_logs=False):
             out += "\nWARNING: Traceback in the output!\n"
             print("\033[93m[WARNING]\033[0m")
             with open(bad_file, 'w') as f:
+                f.write(out)
+        elif re.search("\[TEST SKIPPED\]", out):
+            print("\033[90m[SKIPPED]\033[0m")
+            skipped.append(script)
+            with open(skip_file, 'w') as f:
                 f.write(out)
         else:
             print("\033[92m[PASSED]\033[0m")
@@ -156,6 +170,10 @@ def run_bash_tests(names, want_logs=False):
     print("Ran {0} tests in {1} seconds.".format(count, round(t1, 2)))
     print("{0} tests PASSED: {1}".format(len(passed), ", ".join(passed)))
     ret = 0
+    if len(skipped) > 0:
+        print("{0} tests SKIPPED: {1}".format(len(skipped), ", ".join(skipped)))
+        print("See files with \"skipped\" extension for output")
+
     if len(failed) > 0:
         print("{0} tests FAILED: {1}".format(len(failed), ", ".join(failed)))
         print("See files with \"bad\" extension for output")
@@ -269,7 +287,11 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--logs', dest='want_logs', action='store_true',
                     help='if a bash test fails, print out it\'s log to stdout')
     parser.add_argument('-s', '--system', dest='system', action='store_true',
-                    help='Test the installed version of ssm in system. Implies --bash.')
+                    help='test the installed version of ssm in system. implies --bash.')
+    parser.add_argument('--skip', metavar='TEST', type=str, nargs='+',
+                    help='Bash tests to to be skipped. '
+                         'Can\'t be used together with an explicit list of tests to run.'
+                         'Tests can be specified either with a full name, or by just their number.')
     parser.add_argument('tests', metavar='TEST', type=str, nargs='*',
                     help='Specific tests to be run. For bash tests, '
                          'that means either a full name (001-foo.sh), '
@@ -277,9 +299,14 @@ if __name__ == '__main__':
                          'For unit tests, it means something like '
                          'BtrfsFunctionCheck.test_btrfs_resize for a specific test, '
                          'BtrfsFunctionCheck for specific test suite '
-                         'and test_btrfs for a whole file of tests.')
+                         'and test_btrfs for a whole file of tests.'
+                         'Can\'t be used together with --skip.')
 
     args = parser.parse_args()
+
+    if args.skip and args.tests:
+        print("Do not use --skip together with a list of tests to be run.")
+        sys.exit(1)
 
     check_system_dependencies()
     if args.system:
@@ -306,5 +333,5 @@ if __name__ == '__main__':
             print("\nRoot privileges required to run more tests!\n")
             sys.exit(0)
         print("[+] Running bash tests")
-        result = run_bash_tests(names=args.tests, want_logs=args.want_logs)
+        result = run_bash_tests(names=args.tests, exclude=args.skip, want_logs=args.want_logs)
     sys.exit(result)

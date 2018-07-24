@@ -25,11 +25,11 @@ if ! mpath_is_configured; then
 	echo "Multipath is not installed or configured!"
 	echo "If it is installed, then you need to have an empty configuration created with this:"
 	echo "sudo mpathconf --enable --with_multipathd y"
-	exit 1
+	skip_test
 fi
 if [ mpath_verify -eq 0]; then
 	echo "This test can't be run, because there already is an existing multipath configuration."
-	exit 1
+	skip_test
 fi
 
 export COLUMNS=1024

@@ -205,3 +205,8 @@ if [ -n "$PREFIX" ]; then
 		eval "mnt$i=$mnt"
 	done
 fi
+
+skip_test() {
+	echo "[TEST SKIPPED]"
+	exit 0
+}
