@@ -223,6 +223,10 @@ def send_udev_event(device, event):
         f.write(event)
 
 
+def udev_settle():
+    run(['udevadm', 'settle'], stderr=False, can_fail=True)
+
+
 def get_device_by_uuid(uuid):
     path = "/dev/disk/by-uuid/{0}".format(uuid)
     return os.path.abspath(os.path.join(os.path.dirname(path),
@@ -409,7 +413,7 @@ def wipefs(devices, signatures):
         signatures = [signatures]
     command = ['wipefs', '-a', '-t', ','.join(signatures)] + devices
     # Avoid race with udev
-    run(['udevadm', 'settle'], stderr=False, can_fail=True)
+    udev_settle()
     run(command)
 
 

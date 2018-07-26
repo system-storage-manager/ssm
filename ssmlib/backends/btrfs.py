@@ -466,7 +466,9 @@ class BtrfsPool(Btrfs, template.BackendPool):
             command.extend(['--force'])
         command.extend(devs)
         misc.run(command, stdout=True)
-        misc.send_udev_event(devs[0], "change")
+        for dev in devs[:]:
+            misc.send_udev_event(dev, "change")
+        misc.udev_settle()
         return name
 
     def _check_new_path(self, path, name):

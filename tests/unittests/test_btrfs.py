@@ -23,6 +23,8 @@ from ssmlib import main
 from ssmlib.backends import btrfs
 from tests.unittests.common import *
 
+IGNORE_CMDS = ['udevadm']
+
 class BtrfsFunctionCheck(MockSystemDataSource):
 
     def setUp(self):
@@ -54,7 +56,9 @@ class BtrfsFunctionCheck(MockSystemDataSource):
             if type(item) is not str:
                 cmd[i] = str(item)
 
-        self.run_data.append(" ".join(cmd))
+        # Ignore command we're not really interested in
+        if cmd[0] not in IGNORE_CMDS:
+            self.run_data.append(" ".join(cmd))
         output = ""
         if cmd[:3] == ['btrfs', 'filesystem', 'show']:
             for (pool, p_data) in self.pool_data.items():
@@ -190,18 +194,18 @@ class BtrfsFunctionCheck(MockSystemDataSource):
             "btrfs subvolume delete /mnt/test")
         self._cmdEq("wipefs -a -t btrfs ", -2,
                 expected_args=["/dev/sdc3 ", "/dev/sdc2 ", "/dev/sdc1 "])
-        self._cmdEq("wipefs -a -t btrfs ", -4,
+        self._cmdEq("wipefs -a -t btrfs ", -3,
                 expected_args=["/dev/sdd ", "/dev/sde "])
-        self._cmdEq("btrfs device delete /dev/sdb /mnt/test", -6)
-        self._cmdEq("btrfs device delete /dev/sdd /tmp/mount", -7)
+        self._cmdEq("btrfs device delete /dev/sdb /mnt/test", -4)
+        self._cmdEq("btrfs device delete /dev/sdd /tmp/mount", -5)
 
         self._removeMount("/dev/sda")
         # remove all
         self._checkCmd("ssm remove --all", [],
             "wipefs -a -t btrfs ", expected_args=["/dev/sdd ", "/dev/sde "])
-        self._cmdEq("wipefs -a -t btrfs ", -3,
+        self._cmdEq("wipefs -a -t btrfs ", -2,
                 expected_args=["/dev/sdc2 ", "/dev/sdc3 ", "/dev/sdc1 "])
-        self._cmdEq("wipefs -a -t btrfs ", -5, expected_args=["/dev/sdb ", "/dev/sda "])
+        self._cmdEq("wipefs -a -t btrfs ", -3, expected_args=["/dev/sdb ", "/dev/sda "])
 
         # TODO
         # remove force
