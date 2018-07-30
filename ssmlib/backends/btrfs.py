@@ -317,6 +317,27 @@ class Btrfs(template.Backend):
         if len(devices) > 0:
             misc.wipefs(devices, 'btrfs')
 
+    def _udev_checkpoint_fs(self, name):
+        """
+        When working with btrfs there often seems to be a problem with udev
+        interfering right after some operation on the file system
+        (migrate, create, remove). I suspect that this happens mostly when
+        the operation is performed in kernel, however btrfs does not
+        explicitly send a udev change event. This needs to be fixed in
+        kernel, meantime we need a workaround (especially for migrate)
+        Use this to send change event to every device and use udevadm settle
+        to drain the queue.
+        name is the pool name.
+
+        """
+        devices = []
+        for dev in self._dev.values():
+            if dev['pool_name'] != name:
+                continue
+            devices.append(dev['dev_name'])
+        if len(devices) > 0:
+            misc.udev_checkpoint(devices)
+
 
 class BtrfsVolume(Btrfs, template.BackendVolume):
 
@@ -357,6 +378,7 @@ class BtrfsVolume(Btrfs, template.BackendVolume):
             else:
                 path = volume['mount']
             self.run_btrfs(['subvolume', 'delete', path])
+            self._udev_checkpoint_fs(volume['pool_name'])
         else:
             self._remove_filesystem(vol)
 
@@ -374,6 +396,7 @@ class BtrfsVolume(Btrfs, template.BackendVolume):
                                'Resizing btrfs subvolume')
         command = ['filesystem', 'resize', str(int(size)) + "K", vol['mount']]
         self.run_btrfs(command)
+        self._udev_checkpoint_fs(vol['pool_name'])
 
     def snapshot(self, vol, destination, name, snap_size=None):
         vol = self[vol]
@@ -466,9 +489,7 @@ class BtrfsPool(Btrfs, template.BackendPool):
             command.extend(['--force'])
         command.extend(devs)
         misc.run(command, stdout=True)
-        for dev in devs[:]:
-            misc.send_udev_event(dev, "change")
-        misc.udev_settle()
+        misc.udev_checkpoint(devs)
         return name
 
     def _check_new_path(self, path, name):
@@ -492,7 +513,7 @@ class BtrfsPool(Btrfs, template.BackendPool):
             pool['mount'] = tmp
         command = ['device', 'delete', device, pool['mount']]
         self.run_btrfs(command)
-        misc.send_udev_event(device, "change")
+        self._udev_checkpoint_fs(pool['pool_name'])
 
     def new(self, pool, devices):
         if type(devices) is not list:
@@ -520,6 +541,7 @@ class BtrfsPool(Btrfs, template.BackendPool):
         command.extend(devices)
         command.append(pool['mount'])
         self.run_btrfs(command)
+        misc.udev_checkpoint(devices)
 
     def remove(self, pool):
         # Volume and pool name should be the same, since it actually is the
@@ -586,8 +608,8 @@ class BtrfsPool(Btrfs, template.BackendPool):
             command = ['replace', 'start', '-B', source.name, target, pool['mount']]
 
         self.run_btrfs(command)
-        misc.send_udev_event(source.name, "change")
         misc.send_udev_event(target, "change")
+        self._udev_checkpoint_fs(pool['pool_name'])
 
 
 class BtrfsSnap(Btrfs):

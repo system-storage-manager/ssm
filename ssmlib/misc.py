@@ -405,6 +405,12 @@ def get_dmnumber(name):
                 break
     return dmnumber
 
+def udev_checkpoint(devices):
+    if not isinstance(devices, list):
+        devices = [devices]
+    for dev in devices:
+        send_udev_event(dev, "change")
+    udev_settle()
 
 def wipefs(devices, signatures):
     if not isinstance(devices, list):
