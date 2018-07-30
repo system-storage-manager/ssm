@@ -64,9 +64,9 @@ DM=$(multipath -ll | head -n1 | cut -d " " -f 3)
 
 ssm list dev | grep $DM
 for dev in $USED_DEVS; do
-	! ssm list dev | grep -c $dev
+	ssm list dev | grep $dev
 done
-! ssm remove $MPATH
+not ssm remove $MPATH
 
 
 
