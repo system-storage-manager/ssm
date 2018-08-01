@@ -123,6 +123,11 @@ _test_resize()
 
 }
 
+# do not fail when no size is specified
+ssm create --fstype ext4 $dev1 $dev2
+ssm resize $SSM_LVM_DEFAULT_POOL/$lvol1 $dev3
+ssm -f remove --all
+
 ssm add $TEST_DEVS
 size=$((TEST_MAX_SIZE/3))
 ssm create --size ${size}M $TEST_DEVS

@@ -296,7 +296,6 @@ class FsInfo(object):
 
     def extN_resize(self, new_size=None):
         command = ['resize2fs', self.device]
-        new_size = int(new_size)
         if not misc.check_binary(command[0]):
             PR.warn("\'{0}\' tool does not exist. ".format(command[0]) +
                     "File system will not be resized")
@@ -306,6 +305,7 @@ class FsInfo(object):
         if self.options.verbose:
             command.insert(1, "-p")
         if new_size:
+            new_size = int(new_size)
             command.append(str(new_size) + 'K')
         # Ext3/4 can resize offline in both directions, but It can not shrink
         # the file system while online. In addition ext2 can only resize
