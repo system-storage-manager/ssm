@@ -22,7 +22,7 @@ __all__ = ["ProblemSet", "SsmError", "GeneralError", "ProgrammingError",
            "BadEnvVariable", "NotEnoughSpace", "ResizeMatch", "FsNotSpecified",
            "DeviceUsed", "ExistingFilesystem", "NoDevices", "ToolMissing",
            "CanNotRun", "CommandFailed", "UserInterrupted", "NotSupported",
-           "NotImplemented", "WeakPassword"]
+           "NotImplemented", "WeakPassword", "ExistingSignature"]
 
 # Define prompt codes
 PROMPT_NONE =           0
@@ -148,6 +148,7 @@ class ExistingFilesystem(SsmError):
     def __init__(self, msg, errcode=2015):
         super(ExistingFilesystem, self).__init__(msg, errcode)
 
+
 class NotImplemented(SsmError):
     def __init__(self, msg, errcode=2016):
         super(NotImplemented, self).__init__(msg, errcode)
@@ -155,6 +156,10 @@ class NotImplemented(SsmError):
 class WeakPassword(SsmError):
     def __init__(self, msg, errcode=2017):
         super(WeakPassword, self).__init__(msg, errcode)
+
+class ExistingSignature(SsmError):
+    def __init__(self, msg, errcode=2018):
+        super(ExistingSignature, self).__init__(msg, errcode)
 
 
 class ProblemSet(object):
@@ -216,6 +221,10 @@ class ProblemSet(object):
             ['Filesystem \'{0}\' detected on the device \'{1}\'!',
              PROMPT_USE, FL_DEFAULT_NO | FL_FORCE_YES, ExistingFilesystem]
 
+        self.EXISTING_SIGNATURE = \
+            ['Signature \'{0}\' detected on the device \'{1}\'!',
+             PROMPT_USE, FL_DEFAULT_NO | FL_FORCE_YES, ExistingSignature]
+
         self.NO_DEVICES = \
             ['No devices available to use for the \'{0}\' pool!',
              PROMPT_NONE, FL_FATAL, NoDevices]
@@ -237,7 +246,7 @@ class ProblemSet(object):
              PROMPT_NONE, FL_FATAL, NotSupported]
 
         self.NOT_IMPLEMENTED = \
-            ['\'{0}\' function is not implemented by {1}!',
+            ['\'{0}\' functionality is not implemented by {1}!',
             PROMPT_NONE, FL_FATAL, NotImplemented]
 
         self.CREATE_DIRECTORY = \

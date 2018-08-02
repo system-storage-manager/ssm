@@ -20,6 +20,7 @@
 
 import unittest
 from ssmlib import main
+from ssmlib import problem
 from ssmlib.backends import btrfs
 from tests.unittests.common import *
 
@@ -455,8 +456,10 @@ class BtrfsFunctionCheck(MockSystemDataSource):
         self._addVol('vol002', 237284225, 1, 'my_pool', ['/dev/sdc1'])
         self._addDevice('/dev/sde', 11489037516)
 
-        self._checkCmd("ssm migrate /dev/sdc1 /dev/sdc2", [],
-        "btrfs device delete /dev/sdc1 /tmp/mount")
+        try:
+            main.main("ssm migrate /dev/sdc1 /dev/sdc2")
+        except problem.DeviceUsed:
+            pass
 
         self._checkCmd("ssm migrate /dev/sdc2 /dev/sde", [],
         "btrfs replace start -B /dev/sdc2 /dev/sde /tmp/mount")

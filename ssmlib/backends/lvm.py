@@ -348,23 +348,17 @@ class VgsInfo(LvmInfo, template.BackendPool):
         target : [str]
             Path to the target device.
         """
-        pvsinfo = PvsInfo(options=self.options).data
-        if target in pvsinfo:
-            tgt = pvsinfo[target]
-            if tgt['pool_name'] != vg:
-                self.extend(vg, [target])
-        else:
-            self.extend(vg, [target])
+        # We're ready to do pvmove source and target must be already in the
+        # pool
 
         # pvmove does not accept -f, temporarily unset it
         force = self.options.force
         self.options.force = False
 
-        command = ['pvmove', '--atomic', source.name, target ]
-        self.run_lvm(command)
-        self.reduce(vg, source.name)
-        command = ['pvremove', source.name]
-        self.run_lvm(command)
+        # If the source is not used we do not have to do anything
+        if float(source['dev_used']) > 0.0:
+            command = ['pvmove', '--atomic', source.name, target ]
+            self.run_lvm(command)
 
         misc.send_udev_event(source.name, "change")
         misc.send_udev_event(target, "change")

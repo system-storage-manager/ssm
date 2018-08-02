@@ -600,12 +600,10 @@ class BtrfsPool(Btrfs, template.BackendPool):
             pool['mount'] = tmp
 
         dev = BtrfsDev(options=self.options).data
-        if dev.get(target) and dev.get(source.name):
-            # both source and target are already members of the pool
-            # so we are going to only remove source
-            command = ['device', 'delete', source.name, pool['mount']]
-        else:
-            command = ['replace', 'start', '-B', source.name, target, pool['mount']]
+        command = ['replace', 'start']
+        if self.options.force:
+            command.extend(['-f'])
+        command.extend(['-B', source.name, target, pool['mount']])
 
         self.run_btrfs(command)
         misc.send_udev_event(target, "change")

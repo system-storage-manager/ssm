@@ -76,7 +76,7 @@ class BackendPool(Backend):
 
     def migrate(self, pool, sources, targets=None):
         self.problem.check(self.problem.NOT_IMPLEMENTED,
-                        ["Migrating data in pools", "{} backend".format(self.type)])
+                        ["Migrating devices", "{} backend".format(self.type)])
 
 
 class BackendVolume(Backend):

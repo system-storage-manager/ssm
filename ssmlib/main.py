@@ -444,6 +444,41 @@ class DeviceInfo(object):
                  "to achieve by removing " +
                  "{0}".format(device))
 
+    def migrate(self, vg, source_dev, target_dev):
+        """ Migrate (in this case clone) the device onto another one.
+            Pure dd is used.
+        """
+        # TODO some possibilities:
+        # - error handling: conv=noerror,sync (continue on error and pad
+        #   with zeros), or better to fail on error?
+        source = self.data[source_dev]
+        target = self.data[target_dev]
+
+        if misc.get_signature(source_dev) == 'btrfs':
+            raise problem.ProgrammingError("BTRFS SHOULD NOT BE CLONED WITH DD")
+
+        if source['dev_size'] > target['dev_size']:
+            raise problem.GeneralError("Target device is smaller than source device")
+
+        if 'mount' in target:
+            if PR.check(PR.FS_MOUNTED, [target_dev, target['mount']]):
+                misc.do_umount(target_dev)
+
+        if 'mount' in source:
+            if PR.check(PR.FS_MOUNTED, [source_dev, source['mount']]):
+                misc.do_umount(source_dev)
+
+        print("Migrating {s} ({size}) to {t} using dd . This may take a long time...".format(
+            s=source_dev,
+            t=target_dev,
+            size=misc.humanize_size(source['dev_size'])))
+
+        command = ['dd', 'if={}'.format(source_dev), 'of={}'. \
+                   format(target_dev), 'conv=fsync']
+        misc.run(command)
+        misc.send_udev_event(source_dev, "change")
+        misc.send_udev_event(target_dev, "change")
+
     def set_globals(self, options):
         self.options = options
 
@@ -962,36 +997,6 @@ class DeviceItem(Item):
                 if self.name in alias.names:
                     return True
         return False
-
-    @classmethod
-    def migrate(cls, source, target):
-        """ Migrate (in this case clone) the device onto another one.
-            Pure dd is used.
-        """
-        # TODO some possibilities:
-        # - error handling: conv=noerror,sync (continue on error and pad
-        #   with zeros), or better to fail on error?
-
-        if misc.get_signature(source) == 'btrfs':
-            raise problem.ProgrammingError("BTRFS SHOULD NOT BE CLONED WITH DD")
-
-        if misc.get_device_size(source) > misc.get_device_size(target):
-            raise problem.GeneralError("Target device is smaller than source device")
-
-        if misc.get_mountinfo(source):
-            raise problem.GeneralError("You have to umount the source device first")
-        if misc.get_mountinfo(target):
-            raise problem.GeneralError("You have to umount the target device first")
-
-        print("Migrating {s} ({size}) to {t}. This may take a long time...".format(
-            s=source,
-            t=target,
-            size=misc.humanize_size(misc.get_device_size(source))))
-
-        command = ['dd', 'if={}'.format(source), 'of={}'.format(target)]
-        misc.run(command)
-        misc.send_udev_event(source, "change")
-        misc.send_udev_event(target, "change")
 
 
 class VolumeItem(Item):
@@ -2118,88 +2123,68 @@ class StorageHandle(object):
                                                        args.options))
 
     def migrate(self, args):
-        """ Migrate data from a device to a device"""
-        source = self._find_device_record(args.source)
-        target = self._find_device_record(args.target)
+        """
+        Migrate data from a device to a device
+        """
 
-        # decide if we have PVs or non-PV block devices
-        found_pv = False
-        pool = None
-        check_fs = True
-        signature = misc.get_signature(target)
+        source_pool = None
+        target_pool = None
+        changed = False
+        source = self.dev[args.source]
+        if source and 'pool_name' in source:
+            source_pool = self.pool[source['pool_name']]
+        target = self.dev[args.target]
+        if target and 'pool_name' in target:
+            target_pool = self.pool[target['pool_name']]
 
-        # get source dev and try to detect if it is a member of a pool
-        source_dev = self.dev[source]
-        if source_dev and 'pool_name' in source_dev:
-            found_pv = True
-            pool = self.pool[source_dev['pool_name']]
+        if target_pool:
+            if not source_pool or (target_pool.name != source_pool.name):
+                if not PR.check(PR.DEVICE_USED, [target.name, target['pool_name']]):
+                    raise problem.UserInterrupted("Terminated by user!")
+                target_pool.reduce(target.name)
+                target_pool = None
+                changed = True
+            elif target_pool.type == "btrfs":
+                raise problem.DeviceUsed(
+                    "Target and source devices are in the same btrfs pool!")
         else:
-            pass
-            # This seems to be only a case for some tests where the /tmp/<TEMP>/dev/...
-            # devices gets incorrectly identified (sometimes they do, sometimes they don't).
-            # Keep it commented out for now, because it seems to be rather an issue with
-            # the tests
-            # source_signature = misc.get_signature(source)
-            # if source_signature == 'btrfs':
-            #    print("found btrfs")
-            #    found_pv = True
-            #    import pdb; pdb.set_trace()
-
-        target_dev = self.dev[target]
-        if target_dev:
-            if 'pool_name' in target_dev and\
-                (signature != 'btrfs' or (pool and int(pool['dev_count']) > 1)):
-                check_fs = False
-
-                if target_dev['pool_name'] != '':
-                    if pool and target_dev['pool_name'] != pool.name:
-                        if PR.check(PR.DEVICE_USED,
-                            [target_dev.name, target_dev['pool_name']]):
-                            remove_args = Struct()
-                            remove_args.all = False
-                            remove_args.items = [target_dev]
-                            if not self.remove(remove_args):
-                                raise problem.CommandFailed("The device {} could not be removed from the pool {}".format(
-                                    target,
-                                    target_dev['pool_name']
-                                ))
-                            misc.wipefs(target_dev.name, signature)
-                        else:
-                            raise problem.UserInterrupted("Aborted")
+            # Check signature of existing file system on the device
+            # and ask user whether to use it or not.
+            if target and 'mount' in target:
+                if PR.check(PR.FS_MOUNTED, [args.target, target['mount']]):
+                    misc.do_umount(target.name)
             else:
-                check_fs = True
+                signature = misc.get_signature(args.target)
+                if signature and \
+                   PR.check(PR.EXISTING_SIGNATURE,
+                            [signature, args.target]):
+                    misc.wipefs(args.target, signature)
+                    changed = True
+                elif signature:
+                    raise problem.UserInterrupted("Terminated by user!")
+
+        # TODO: If the source is in lvm pool and the target is not in any pool
+        # just add it to the source pool. This should not be here because
+        # we try to be as generic as possible. However untill we have all the
+        # data accessible in the backend we need do it here to avoid
+        # re-initializing information unnecessarily
+        if source_pool and source_pool.type == "lvm" and not target_pool:
+            source_pool.extend(args.target)
 
 
+        if changed:
+            self.reinit_dev()
+            source = self.dev[args.source]
+            target = self.dev[args.target]
 
-        if check_fs:
-            mounts = misc.get_mountinfo(target)
-            if mounts:
-                if PR.check(PR.FS_MOUNTED, [target, mounts[target]['mp']]):
-                    misc.do_umount(target)
-                else:
-                    raise problem.CommandFailed("Umount of {} was not possible".format(target))
-
-            if signature and not self.options.force and\
-                PR.check(PR.EXISTING_FILESYSTEM,
-                        [signature, target]):
-                misc.wipefs(target, signature)
-            elif signature and not self.options.force:
-                # user wants to skip
-                raise problem.UserInterrupted("Aborted")
-            elif signature and self.options.force:
-                misc.wipefs(target, signature)
-
-        PR.info("Migrating from device {} to {}. This may take a long time...".format(
-            source,
-            target
-        ))
-        if not found_pv:
-            DeviceItem.migrate(source, target)
-
-        elif found_pv:
-            pool.migrate(source_dev, target)
+        if source_pool:
+            PR.info("Migrating from device {} to {}. This may take a while...".format(
+                args.source,
+                args.target
+            ))
+            source_pool.migrate(source, args.target)
         else:
-            raise problem.ProgrammingError("Neither PV or non-PV was found. This is a bug")
+            source.migrate(args.source, args.target)
 
     def can_check(self, device):
         fs = self.is_fs(device)

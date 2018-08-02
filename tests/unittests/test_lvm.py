@@ -257,20 +257,7 @@ class LvmFunctionCheck(MockSystemDataSource):
         self._addDevice('/dev/sde', 11489037516)
 
         self._checkCmd("ssm migrate /dev/sdc1 /dev/sdc2", [],
-        "lvm pvremove /dev/sdc1")
-        self.assertEqual(self.run_data[-2],
-            "lvm vgreduce my_pool /dev/sdc1")
-        self.assertEqual(self.run_data[-3],
             "lvm pvmove --atomic /dev/sdc1 /dev/sdc2")
-
-        self._checkCmd("ssm migrate /dev/sdc2 /dev/sde", [],
-        "lvm pvremove /dev/sdc2")
-        self.assertEqual(self.run_data[-2],
-            "lvm vgreduce my_pool /dev/sdc2")
-        self.assertEqual(self.run_data[-3],
-            "lvm pvmove --atomic /dev/sdc2 /dev/sde")
-        self.assertEqual(self.run_data[-4],
-            "lvm vgextend my_pool /dev/sde")
 
     def test_lvm_resize(self):
         # Generate some storage data

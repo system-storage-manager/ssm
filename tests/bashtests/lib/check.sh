@@ -257,6 +257,29 @@ lv_field()
 	fi
 }
 
+vg_devices()
+{
+	# Check the expected list of devices in the fs with the reality
+	# $1 is the vg we're inspecting
+	# the rest is list of devices
+	tmp=`mktemp`
+
+	devices=`vgs --no-headings -o pv_name $1 | awk {'print $1'}`
+	shift
+	for i in $devices; do stat -L -c '%t%T' $i; done | sort > ${tmp}.actual
+	for i in $@; do stat -L -c '%t%T' $i; done | sort > ${tmp}.expected
+
+	! diff ${tmp}.actual ${tmp}.expected 2>&1> /dev/null
+	if [ $? -eq 0 ]; then
+		echo "ACTUAL"
+		cat ${tmp}.actual
+		echo "EXPECTED"
+		cat ${tmp}.expected
+		exit 1
+	fi
+	exit 0
+}
+
 compare_fields()
 {
 	local cmd1=$1;
@@ -332,6 +355,29 @@ crypt_vol_field()
 		echo "crypt_vol_field: volume=$1, field=$2, actual=$actual, expected=$expected"
 		exit 1
 	fi
+}
+
+btrfs_devices()
+{
+	# Check the expected list of devices in the fs with the reality
+	# $1 is label for the file system we want to test
+	# the rest is list of devices
+	tmp=`mktemp`
+
+	devices=`btrfs filesystem show $1| grep devid | awk {'print $NF'}`
+	shift
+	for i in $devices; do stat -L -c '%t%T' $i; done | sort > ${tmp}.actual
+	for i in $@; do stat -L -c '%t%T' $i; done | sort > ${tmp}.expected
+
+	! diff ${tmp}.actual ${tmp}.expected 2>&1> /dev/null
+	if [ $? -eq 0 ]; then
+		echo "ACTUAL"
+		cat ${tmp}.actual
+		echo "EXPECTED"
+		cat ${tmp}.expected
+		exit 1
+	fi
+	exit 0
 }
 
 btrfs_fs_field()
