@@ -94,6 +94,14 @@ class DmCryptPool(DmObject, template.BackendPool):
                 'hide': True}
         self.data[self.default_pool_name] = pool
         '''
+        pool = {}
+        pool['type'] = 'crypt'
+        pool['pool_name'] = self.default_pool_name
+        pool['hide'] = True
+        pool['pool_free'] = 0
+        pool['pool_size'] = 0
+        pool['pool_used'] = 0
+        self.data[pool['pool_name']] = pool
         self.passphrase = None
         self.force_weak_password = False
 
