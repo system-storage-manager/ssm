@@ -395,6 +395,7 @@ class PvsInfo(LvmInfo, template.BackendDevice):
         if not pv['pool_name']:
             pv['dev_used'] = ''
             pv['dev_free'] = ''
+            del pv['pool_name']
 
     def remove(self, devices):
         if len(devices) == 0:
