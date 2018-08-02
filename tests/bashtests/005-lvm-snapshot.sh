@@ -175,6 +175,15 @@ not ssm snapthot -s $((DEV_SIZE*2)) -n $snap1 $SSM_LVM_DEFAULT_POOL/$lvol1
 check vg_field $SSM_LVM_DEFAULT_POOL lv_count 1
 ssm -f remove --all
 
+# Test for problem when ssm list crashed if snapshot volume is inactive
+ssm create $dev1 $dev2
+ssm add $dev3
+ssm snapshot -s $((DEV_SIZE/2)) -n $snap1 $SSM_LVM_DEFAULT_POOL/$lvol1
+check lv_field $SSM_LVM_DEFAULT_POOL/$snap1 lv_name $snap1
+echo y | lvchange -f -an $SSM_LVM_DEFAULT_POOL/$snap1
+ssm list
+ssm -f remove --all
+
 # Some basic thin tests
 export TVOL_PREFIX="tvol"
 tvol1=${TVOL_PREFIX}001

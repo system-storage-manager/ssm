@@ -552,8 +552,13 @@ class SnapInfo(LvmInfo):
         snap['snap_path'] = snap['dev_name']
 
         if snap['type'] != "thin":
-            size = float(snap['vol_size']) * float(snap['snap_size'])
-            snap['snap_size'] = str(size / 100.00)
+            # It's possible that snap_percent in lvm output is not defined.
+            # For example on inactive volume, so just remove it.
+            if snap['snap_size']:
+                size = float(snap['vol_size']) * float(snap['snap_size'])
+                snap['snap_size'] = str(size / 100.00)
+            else:
+                del snap['snap_size']
         else:
             # Show thin-pool as a pool name in case of thin volumes
             snap['parent_pool'] = snap['pool_name']
