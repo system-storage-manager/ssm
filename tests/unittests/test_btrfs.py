@@ -452,14 +452,25 @@ class BtrfsFunctionCheck(MockSystemDataSource):
 
     def test_btrfs_migrate(self):
         # Generate some storage data
-        self._addPool('my_pool', ['/dev/sdc1', '/dev/sdc2', '/dev/sdc3'])
-        self._addVol('vol002', 237284225, 1, 'my_pool', ['/dev/sdc1'])
+        self._addDevice('/dev/sdd1', 11489037516)
+        self._addDevice('/dev/sdd2', 11489037516)
         self._addDevice('/dev/sde', 11489037516)
+        self._addPool('my_pool', ['/dev/sdc1', '/dev/sdc2'])
+        self._addVol('vol002', 237284225, 1, 'my_pool', ['/dev/sdc1'])
+        self._addPool('my_pool2', ['/dev/sdd1', '/dev/sdd2'])
+        self._addVol('vol002', 237284225, 1, 'my_pool2', ['/dev/sdd1'])
 
-        try:
+        with self.assertRaises(problem.DeviceUsed):
             main.main("ssm migrate /dev/sdc1 /dev/sdc2")
-        except problem.DeviceUsed:
-            pass
+        with self.assertRaises(problem.UserInterrupted):
+            main.main("ssm migrate /dev/sde /dev/sdc2")
 
         self._checkCmd("ssm migrate /dev/sdc2 /dev/sde", [],
         "btrfs replace start -B /dev/sdc2 /dev/sde /tmp/mount")
+
+        # test moving a dev from one fs to another
+        with self.assertRaises(problem.UserInterrupted):
+            main.main("ssm migrate /dev/sdc1 /dev/sdd2")
+        self._checkCmd("ssm -f migrate /dev/sdc1 /dev/sdd2", [],
+            "btrfs replace start -f -B /dev/sdc1 /dev/sdd2 /tmp/mount")
+        self.assertTrue("btrfs device delete /dev/sdd2 /tmp/mount" in self.run_data)

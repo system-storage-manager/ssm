@@ -315,6 +315,9 @@ class SsmFunctionCheck(MockSystemDataSource):
         self._addDevice('/dev/sdc2', 29826161, 2)
         self._addDevice('/dev/sdc3', 1042177280, 3)
         self._addDevice('/dev/sdd', 11673)
+        self._addDevice('/dev/sde', 11673)
+        self._addDevice('/dev/sdf', 11673)
+        self._addDevice('/dev/sdg', 11673)
 
     def tearDown(self):
         super(SsmFunctionCheck, self).tearDown()
@@ -777,6 +780,43 @@ class SsmFunctionCheck(MockSystemDataSource):
         main.main("ssm mount --options rw,discard,neco=44 /dev/my_pool/vol002 /mnt/test1")
         self._cmdEq("mount -o rw,discard,neco=44 /dev/my_pool/vol002 /mnt/test1")
 
+    def test_migrate(self):
+        # Generate some storage data
+        self._addPool('default_pool', ['/dev/sda', '/dev/sdb'])
+        self._addPool('my_pool', ['/dev/sdc2', '/dev/sdc3', '/dev/sdc1'])
+        self._addVol('vol001', 117283225, 1, 'default_pool', ['/dev/sda'])
+        self._addVol('vol002', 237284225, 1, 'default_pool', ['/dev/sda'])
+        self._addVol('vol003', 1024, 1, 'default_pool', ['/dev/sdb'],)
+        self._addVol('vol004', 209715200, 2, 'default_pool', ['/dev/sda',
+                     '/dev/sdb'])
+
+        # migrate a pv to an unused device
+        main.main("ssm migrate /dev/sda /dev/sdd")
+        self._cmdEq("migrate default_pool /dev/sda /dev/sdd")
+        # migrate data between pvs within a vg
+        main.main("ssm migrate /dev/sda /dev/sdb")
+        self._cmdEq("migrate default_pool /dev/sda /dev/sdb")
+
+        # try a used device without -f
+        with self.assertRaises(problem.UserInterrupted):
+            main.main("ssm migrate /dev/sdc2 /dev/sda")
+
+        # again, this time with -f
+        main.main("ssm -f migrate /dev/sdc2 /dev/sda")
+        self._cmdEq("force migrate my_pool /dev/sdc2 /dev/sda")
+
+        # migrate raw devices
+        main.main("ssm migrate /dev/sdf /dev/sdg")
+        self._cmdEq("dd if=/dev/sdf of=/dev/sdg conv=fsync")
+
+        with self.assertRaises(SystemExit):
+            main.main("ssm migrate /dev/sdc2")
+        with self.assertRaises(SystemExit):
+            main.main("ssm migrate /dev/foo /dev/bar")
+        with self.assertRaises(SystemExit):
+            main.main("ssm migrate /dev/sda /dev/sdb /dev/sde")
+        with self.assertRaises(problem.DuplicateTarget):
+            main.main("ssm migrate /dev/sda /dev/sda")
 
 class MyInfo(object):
     def __init__(self, options, data=None):
@@ -835,6 +875,10 @@ class PoolInfo(MyInfo):
         cmd.extend(devices)
         misc.run(cmd)
 
+    def migrate(self, pool, source, target):
+        cmd = [self.f, self.v, self.y, 'migrate', pool, source.name, target]
+        misc.run(cmd)
+
     def create(self, pool, size='', name='', devs='',
                options=None):
         options = options or {}
@@ -886,6 +930,11 @@ class DevInfo(MyInfo):
         misc.run([self.f, self.v, self.y, 'dev remove', devices])
         cmd.extend(devices)
         misc.run(cmd)
+
+    def migrate(self, source, target):
+        cmd = [self.f, self.v, self.y, 'migrate', source, target]
+        misc.run(cmd)
+
 
 
 class Pool(main.Storage):

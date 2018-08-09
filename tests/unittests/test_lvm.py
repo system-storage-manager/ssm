@@ -252,12 +252,29 @@ class LvmFunctionCheck(MockSystemDataSource):
 
     def test_lvm_migrate(self):
         # Generate some storage data
+        self._addDevice('/dev/sdd1', 11489037516)
+        self._addDevice('/dev/sdd2', 11489037516)
+        self._addDevice('/dev/sde', 11489037516)
         self._addPool('my_pool', ['/dev/sdc1', '/dev/sdc2'])
         self._addVol('vol002', 237284225, 1, 'my_pool', ['/dev/sdc1'])
-        self._addDevice('/dev/sde', 11489037516)
+        self._addPool('my_pool2', ['/dev/sdd1', '/dev/sdd2'])
+        self._addVol('vol002', 237284225, 1, 'my_pool2', ['/dev/sdd1'])
 
         self._checkCmd("ssm migrate /dev/sdc1 /dev/sdc2", [],
             "lvm pvmove --atomic /dev/sdc1 /dev/sdc2")
+        self._checkCmd("ssm migrate /dev/sdc1 /dev/sde", [],
+            "lvm pvmove --atomic /dev/sdc1 /dev/sde")
+        with self.assertRaises(problem.UserInterrupted):
+            main.main("ssm migrate /dev/sde /dev/sdc2")
+
+        # test moving a pv from one pool to another
+        with self.assertRaises(problem.UserInterrupted):
+            main.main("ssm migrate /dev/sdc1 /dev/sdd2")
+        self._checkCmd("ssm -f migrate /dev/sdc1 /dev/sdd2", [],
+            "lvm pvmove --atomic /dev/sdc1 /dev/sdd2")
+        self.assertTrue("lvm vgreduce -f my_pool2 /dev/sdd2" in self.run_data)
+        self.assertTrue("lvm vgextend -f my_pool /dev/sdd2" in self.run_data)
+
 
     def test_lvm_resize(self):
         # Generate some storage data
@@ -446,4 +463,3 @@ class LvmFunctionCheck(MockSystemDataSource):
         self._cmdEq("mount -o discard /dev/default_pool/vol001 /mnt/test")
         main.main("ssm mount --options rw,discard,neco=44 /dev/my_pool/vol002 /mnt/test1")
         self._cmdEq("mount -o rw,discard,neco=44 /dev/my_pool/vol002 /mnt/test1")
-
