@@ -22,7 +22,7 @@ __all__ = ["ProblemSet", "SsmError", "GeneralError", "ProgrammingError",
            "BadEnvVariable", "NotEnoughSpace", "ResizeMatch", "FsNotSpecified",
            "DeviceUsed", "ExistingFilesystem", "NoDevices", "ToolMissing",
            "CanNotRun", "CommandFailed", "UserInterrupted", "NotSupported",
-           "NotImplemented", "WeakPassword", "ExistingSignature"]
+           "NotImplemented", "WeakPassword", "ExistingSignature", "DuplicateTarget"]
 
 # Define prompt codes
 PROMPT_NONE =           0
@@ -161,6 +161,10 @@ class ExistingSignature(SsmError):
     def __init__(self, msg, errcode=2018):
         super(ExistingSignature, self).__init__(msg, errcode)
 
+class DuplicateTarget(SsmError):
+    def __init__(self, msg, errcode=2019):
+        super(DuplicateTarget, self).__init__(msg, errcode)
+
 
 class ProblemSet(object):
 
@@ -244,6 +248,10 @@ class ProblemSet(object):
         self.NOT_SUPPORTED = \
             ['{0} is not supported!',
              PROMPT_NONE, FL_FATAL, NotSupported]
+
+        self.DUPLICATE_TARGET = \
+            ['Source and target can\'t be the same device! ({0})',
+             PROMPT_NONE, FL_FATAL, DuplicateTarget]
 
         self.NOT_IMPLEMENTED = \
             ['\'{0}\' functionality is not implemented by {1}!',

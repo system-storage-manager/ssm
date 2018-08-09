@@ -2137,6 +2137,10 @@ class StorageHandle(object):
         if target and 'pool_name' in target:
             target_pool = self.pool[target['pool_name']]
 
+        if source and target and source.name == target.name:
+            raise problem.DuplicateTarget(
+                "The source and target can't be the same device! ({})".format(target.name))
+
         if target_pool:
             if not source_pool or (target_pool.name != source_pool.name):
                 if not PR.check(PR.DEVICE_USED, [target.name, target['pool_name']]):

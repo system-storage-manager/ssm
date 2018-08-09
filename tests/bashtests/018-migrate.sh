@@ -177,6 +177,8 @@ ssm migrate $dev1 $dev5
 check vg_devices $SSM_LVM_DEFAULT_POOL $dev1 $dev2 $dev3 $dev5
 # Migrate to a device in the same pool
 ssm migrate $dev2 $dev3
+# Try to migrate with source/target being the same device
+not ssm migrate $dev3 $dev3
 ssm -f remove --all
 
 # Migrate used device to free that's already in the pool
