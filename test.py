@@ -32,6 +32,7 @@ from ssmlib import main
 from ssmlib import misc
 from ssmlib.backends import lvm, crypt, btrfs, multipath
 
+import tests.unittests as tests_module
 from tests.unittests import *
 
 def run_bash_tests(names):
@@ -51,7 +52,7 @@ def run_bash_tests(names):
         script = script.strip()
         if not re.match("^\d\d\d-.*\.sh$", script):
             continue
-        if names and script not in names:
+        if names and script not in names and script[:3] not in names:
             continue
         count += 1
         sys.stdout.write("{0:<29}".format(script) + " ")
@@ -119,13 +120,43 @@ def unit_tests(names):
 
     if names:
         for name in names:
-            if name[-3:] == ".sh":
+            if name[-3:] == ".sh" or name.isdigit():
+                # bash test, skip here
                 continue
+
+            # first try a full name
             try:
-                tests = unittest.TestSuite([tests, test_loader.loadTestsFromName(name)])
-            except:
-                # maybe the name is in bash tests, just skip...
+                tests = unittest.TestSuite([tests, test_loader.loadTestsFromName(
+                    name)])
+                continue
+            except (ImportError, AttributeError):
                 pass
+
+            # then a name with the prefix omitted
+            try:
+                tests = unittest.TestSuite([tests, test_loader.loadTestsFromName(
+                    "tests.unittests." + name)])
+                continue
+            except (ImportError, AttributeError):
+                pass
+
+            # ok, maybe even the file name was omitted, so we are down to class.method name
+            tests_classes = [cname for cname in dir(tests_module) if cname[:5] == 'test_']
+            found = False
+            for c in tests_classes:
+                try:
+                    tests = unittest.TestSuite([tests, test_loader.loadTestsFromName(
+                        "tests.unittests.{}.{}".format(c,name))])
+                    found = True
+                    break
+                except (ImportError, AttributeError):
+                    pass
+            if found:
+                continue
+
+            # still nothing found... it might be a method only, but TODO that
+            print("Warning: Test {} was not found.".format(name))
+
         if tests.countTestCases() == 0:
             print("[+] No unittest matches the name(s)")
             return
@@ -143,14 +174,21 @@ def unit_tests(names):
 
 if __name__ == '__main__':
     result = 0
-    parser = argparse.ArgumentParser(description="Run the test suite for SSM."
-            "If both --bash and --unit arguments are ommited, run both groups.")
+    parser = argparse.ArgumentParser(description="Run the test suite for SSM. "
+            "If both --bash and --unit arguments are ommited, run both groups. "
+            "If a test name is specified, only matching tests are run.")
     parser.add_argument('-b', '--bash', dest='bash', action='store_true',
                     help='run only bash tests')
     parser.add_argument('-u', '--unit', dest='unit', action='store_true',
                     help='run only unit tests')
     parser.add_argument('tests', metavar='TEST', type=str, nargs='*',
-                    help='specific tests to be run')
+                    help='Specific tests to be run. For bash tests, '
+                         'that means either a full name (001-foo.sh), '
+                         'or just the number. '
+                         'For unit tests, it means something like '
+                         'BtrfsFunctionCheck.test_btrfs_resize for a specific test, '
+                         'BtrfsFunctionCheck for specific test suite '
+                         'and test_btrfs for a whole file of tests.')
 
     args = parser.parse_args()
     run_all = not args.unit and not args.bash
