@@ -1,3 +1,28 @@
+* Fri Aug 10 2018  <jtulak@redhat.com> - v1.1
+- unittests: expand migrate testing (Jan Tulak)
+- migrate: check for source and target being the same device (Jan Tulak)
+- ssm: Rework migrate command (Lukas Czerner)
+- crypt: crypt backend need to have a pool in database (Lukas Czerner)
+- lvm: Remove pool_name key if pv not in pool (Lukas Czerner)
+- lvm: fix backtrace when vg/lv is inactive or broken (Lukas Czerner)
+- tests: better name matching for test.py (Jan Tulak)
+- resize: fix extN crash when no size was provided (Jan Tulak)
+- tests: replace exclamation mark with not (Jan Tulak)
+- btrfs: send udev change event after some more btrfs operations (Lukas Czerner)
+- btrfs: Send udev change event for every device after fs creation (Lukas Czerner)
+- mount: Check the volume argument in parser (Lukas Czerner)
+- docs: add a manpage to the root (Jan Tulak)
+- ssmlib: use pwquality to test password strength for cryptsetup (Jan Tulak)
+- multipath: make all mp objects to be devices (Jan Tulak)
+- ssmlib: info with non-existent target exits with err code (Jan Tulak)
+- docs: add missing commands into the docs (Jan Tulak)
+- Revert "tests: add a test for exported lvm volume" (Lukas Czerner)
+- tests: Test ssm list with exported volume groups (Lukas Czerner)
+- lvm: Move lvm specific error handling to lvm backend (Lukas Czerner)
+- misc: Return stderr output in run() as well (Lukas Czerner)
+- btrfs: Avoid unnecessary loops when initializing data (Lukas Czerner)
+
+
 * Tue Jun  19 2018 Jan Tulak <jtulak@redhat.com> - 1.0
 - tests: ignore errors when -e is set
 - tests: sanitize style in bashtests lib
