@@ -1,3 +1,6 @@
+* Fri Aug 10 2018  <jtulak@redhat.com> - v1.2
+- ssm: version number was not set correctly on all places for 1.1
+
 * Fri Aug 10 2018  <jtulak@redhat.com> - v1.1
 - unittests: expand migrate testing (Jan Tulak)
 - migrate: check for source and target being the same device (Jan Tulak)
