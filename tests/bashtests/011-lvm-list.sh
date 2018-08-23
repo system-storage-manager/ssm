@@ -43,6 +43,8 @@ pool1=$vg2
 pool2=$vg3
 pool3=$vg4
 
+tpool=${SSM_PREFIX_FILTER}_thinpool
+
 TEST_FS=
 which mkfs.ext2 && TEST_FS+="ext2 "
 which mkfs.ext3 && TEST_FS+="ext3 "
@@ -338,3 +340,21 @@ ssm -f remove $SSM_LVM_DEFAULT_POOL
 
 # Some situation should fail
 not ssm list wrong_type
+
+# test for same thinpool name in different VGs
+ssm create -v 1G -n $lvol1 -p $vg1 $dev1
+ssm create -v 1G -n $lvol1 -p $vg2 $dev2
+
+# ssm creates thinpool name automatically as ${vg}_${lv}
+# so we haveto rename it here to the same name in both VGs
+lvrename $vg1 ${vg1}_thin001 $tpool
+lvrename $vg2 ${vg2}_thin001 $tpool
+# check command has issues with multiple occurencies of the same name
+out=$(ssm list pools)
+echo "$out" | grep -c "^$tpool.*$vg1$"
+echo "$out" | grep -c "^$tpool.*$vg2$"
+
+# and remove it
+ssm -f remove $vg1/$tpool
+ssm -f remove $vg2/$tpool
+ssm -f remove --all

@@ -873,8 +873,17 @@ class Item(misc.Node):
     def exists(self):
         if self.name in self.obj:
             return True
-        else:
+
+        try:
+            # for some cases (like thin pool), the .name itself is not enough
+            # to guaratee uniqueness so these types of items are indexed by a
+            # name like <parent pool>/<name>. These items have the index_name
+            # data field, which is not mapped to .name
+            if 'index_name' in self and self['index_name'] in self.obj:
+                return True
+        except (AttributeError, TypeError):
             return False
+        return False
 
 class PoolItem(Item):
 

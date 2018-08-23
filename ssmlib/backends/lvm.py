@@ -199,7 +199,7 @@ class VgsInfo(LvmInfo, template.BackendPool):
         for i in range(1, MAX_LVS):
             name = "{0}{1:0>{align}}".format(lvname, i, align=len(str(MAX_LVS)))
             path = "{0}/{1}/{2}".format(DM_DEV_DIR, vg, name)
-            if name in THIN_POOL_DATA:
+            if "{}/{}".format(vg, name) in THIN_POOL_DATA:
                 continue
             try:
                 if stat.S_ISBLK(os.stat(path).st_mode):
@@ -602,6 +602,7 @@ class ThinPool(LvmInfo, template.BackendPool):
     def _fill_aditional_info(self, vg):
         vg['type'] = 'thin'
         vg['pool_name'] = os.path.basename(vg['lv_name'])
+        vg['index_name'] = "{}/{}".format(vg['parent_pool'], vg['pool_name'])
         vg['pool_size'] = vg['vol_size']
         vg['pool_used'] = float(vg['vol_size']) * (float(vg['data_percent'])/100)
         vg['pool_free'] = float(vg['vol_size']) - vg['pool_used']
@@ -610,9 +611,24 @@ class ThinPool(LvmInfo, template.BackendPool):
         else:
             vg['active'] = False
 
+    def __getitem__(self, key):
+        # we can have <key> in self.data and then it is simple
+        # but we can also have <parentpool>/<key> and then it gets complicated
+        if key in self.data:
+            return self.data[key]
+
+        found = None
+        for (name,item) in self.data.items():
+            subkey = name.split('/', 1)
+            if subkey[1] == key:
+                if not found:
+                    found = item
+                else:
+                    raise Exception("Multiple items with name {} found".format(key))
+        return found
 
     def _data_index(self, row):
-        return row['pool_name']
+        return row['index_name']
 
     def _skip_data(self, row):
         if row['attr'][0] not in ['t', 'T']:
