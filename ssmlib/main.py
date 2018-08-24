@@ -73,10 +73,29 @@ class Options(object):
         self.interactive = not SSM_NONINTERACTIVE
         self.verbose = False
         self.debug = False
+        self._vv = False
+        self._vvv = False
         self.force = False
         self.yes = False
         self.config = None
 
+    @property
+    def vv(self):
+        return self._vv
+
+    @vv.setter
+    def vv(self, value):
+        self._vv = value
+        misc.VERBOSE_VV_FLAG = value
+
+    @property
+    def vvv(self):
+        return self._vvv
+
+    @vv.setter
+    def vvv(self, value):
+        self._vvv = value
+        misc.VERBOSE_VVV_FLAG = value
 
 # Initialize problem set
 PR = problem.ProblemSet(Options())
@@ -2568,6 +2587,12 @@ class SsmParser(object):
         parser.add_argument('-v', '--verbose',
                 help="Show aditional information while executing.",
                 action="store_true")
+        parser.add_argument('-vv',
+                help="Show yet more aditional information while executing.",
+                action="store_true")
+        parser.add_argument('-vvv',
+                help="Show yet more aditional information while executing.",
+                action="store_true")
         parser.add_argument('-f', '--force',
                 help="Force execution in the case where ssm has some " +
                      "doubts or questions.",
@@ -2863,6 +2888,14 @@ def main(args=None):
 
     options.verbose = args.verbose
     options.force = args.force
+
+    if args.vv or args.vvv:
+        options.verbose = True
+        options.vv = True
+
+    if args.vvv:
+        options.vvv = True
+
 
     #storage.set_globals(args.force, args.verbose, args.yes, args.config)
     storage.set_globals(options)

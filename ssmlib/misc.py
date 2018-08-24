@@ -38,6 +38,10 @@ else:
 # before exiting
 TMP_MOUNTED = []
 
+# A debug flag, because we can't reach to main.py from here
+VERBOSE_VV_FLAG = False
+VERBOSE_VVV_FLAG = False
+
 if sys.version < '3':
     def __str__(x):
         if x is not None:
@@ -495,6 +499,9 @@ def run(cmd, show_cmd=False, stdout=False, stderr=True, can_fail=False,
         if not isinstance(item, str):
             cmd[i] = str(item)
 
+    if VERBOSE_VV_FLAG:
+        print('executing command: {}'.format(' '.join(cmd)))
+
     proc = subprocess.Popen(cmd, stdout=stdout,
                             stderr=stderr, stdin=stdin, close_fds=True)
 
@@ -516,6 +523,15 @@ def run(cmd, show_cmd=False, stdout=False, stderr=True, can_fail=False,
         if error is not None:
             print(error)
         raise problem.CommandFailed(err_msg, exitcode=proc.returncode)
+
+    if VERBOSE_VVV_FLAG:
+        msg = "Exit: {}".format(proc.returncode)
+        if error:
+            msg += ", Error: {}".format(error)
+        if output:
+            msg += "\nOutput: {}".format(output)
+
+        print(msg)
 
     if not return_stdout:
         output = None
