@@ -21,8 +21,9 @@ import sys
 __all__ = ["ProblemSet", "SsmError", "GeneralError", "ProgrammingError",
            "BadEnvVariable", "NotEnoughSpace", "ResizeMatch", "FsNotSpecified",
            "DeviceUsed", "ExistingFilesystem", "NoDevices", "ToolMissing",
-           "CanNotRun", "CommandFailed", "UserInterrupted", "NotSupported",
-           "NotImplemented", "WeakPassword", "ExistingSignature", "DuplicateTarget"]
+           "ToolMissingPrompt", "CanNotRun", "CommandFailed", "UserInterrupted",
+           "NotSupported", "NotImplemented", "WeakPassword",
+           "ExistingSignature", "DuplicateTarget"]
 
 # Define prompt codes
 PROMPT_NONE =           0
@@ -121,6 +122,11 @@ class NoDevices(SsmError):
 class ToolMissing(SsmError):
     def __init__(self, msg, errcode=2010):
         super(ToolMissing, self).__init__(msg, errcode)
+
+
+class ToolMissingPrompt(SsmError):
+    def __init__(self, msg, errcode=2010):
+        super(ToolMissingPrompt, self).__init__(msg, errcode)
 
 
 class CanNotRun(SsmError):
@@ -264,6 +270,10 @@ class ProblemSet(object):
         self.WEAK_PASSWORD = \
             ['The password is too weak: {0}.\n',
              PROMPT_CONTINUE, FL_FORCE_YES | FL_DEFAULT_NO, WeakPassword]
+
+        self.TOOL_MISSING_PROMPT = \
+            ['\'{0}\' is not installed on the system! {1}',
+             PROMPT_CONTINUE, FL_FORCE_YES | FL_DEFAULT_NO, ToolMissingPrompt]
 
     def _can_print_message(self, flags):
         if (flags & FL_DEBUG_ONLY):

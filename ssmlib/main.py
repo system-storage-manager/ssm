@@ -24,12 +24,17 @@ import stat
 import atexit
 import argparse
 import getpass
-import pwquality
 from ssmlib import misc
 from ssmlib import problem
 
 # Import backends
 from ssmlib.backends import lvm, crypt, btrfs, md, multipath
+
+# conditional import of pwquality
+try:
+    import pwquality
+except ImportError:
+    pwquality = None
 
 EXTN = ['ext2', 'ext3', 'ext4']
 SUPPORTED_FS = ['xfs', 'btrfs'] + EXTN
@@ -1787,12 +1792,20 @@ class StorageHandle(object):
             raise problem.GeneralError("The passwords entered do not match.")
 
         # check password strength before we do anything
-        try:
-            pwq = pwquality.PWQSettings()
-            pwq.check(password)
-        except pwquality.PWQError as ex:
-            if not PR.check(PR.WEAK_PASSWORD, ex[1]):
-                raise problem.WeakPassword(ex[1])
+        if pwquality:
+            # pwquality is installed
+            try:
+                pwq = pwquality.PWQSettings()
+                pwq.check(password)
+            except pwquality.PWQError as ex:
+                if not PR.check(PR.WEAK_PASSWORD, ex[1]):
+                    raise problem.WeakPassword(ex[1])
+                else:
+                    force_weak_password = True
+        else:
+            # pwquality is not installed
+            if not PR.check(PR.TOOL_MISSING_PROMPT, ["Python binding for pwquality", "SSM can't verify password strength."]):
+                raise problem.ToolMissingPrompt("Python binding for pwquality is not installed, SSM couldn't verify password strength.")
             else:
                 force_weak_password = True
 
