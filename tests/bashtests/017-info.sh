@@ -71,6 +71,42 @@ size4s=$((size4-20))
 size2r=$((size2-4))
 size5r=$((size5+16))
 
+## test a btrfs on a partition
+#
+# this is commented out, because the current testing infrastructure is not able
+# to handle such configuration. We need to move away from the lvm-like test suite
+# as anything complex and non-lvm is having issues with it. But at the same time
+# I want this test documented.
+#
+#
+# Test btrfs on a (loopback) partition.
+# This is a reproducer of a reported issue with ssm info.
+#
+# to create the partitions programatically (rather than manually)
+# we're going to simulate the manual input to fdisk
+# The sed script strips off all the comments so that we can
+# document what we're doing in-line with the actual commands
+# Note that a blank line (commented as "defualt" will send a empty
+# line terminated with a newline to take the fdisk default.
+#
+#sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' << EOF | gdisk ${dev1}
+#  n # new partition
+#  1 # partition number 1
+#    # default - start at beginning of disk
+#    # default - end at end of disk
+#    # default - partition type is not important
+#  p # print the in-memory partition table
+#  w # write the partition table
+#  Y # confirm
+#  q # and we're done
+#EOF
+#partprobe -s $dev1
+#
+#mkfs.btrfs ${dev1}p1
+#ssm info
+#
+
+
 # Test without a filesystem
 ssm -f create -n $vol1 $dev1
 ssm create -n $vol2 -p $pool1 -s ${size2}M $dev2

@@ -1434,7 +1434,7 @@ def create_graph(pools, devices, volumes, snapshots):
         for field in parent_fields:
             for source in [pools, volumes, devices, snapshots]:
                 parent = find_node(item[field], source)
-                if not parent or item.name == parent.name:
+                if not parent or item == parent:
                     continue
                 item.add_parent(parent)
 
