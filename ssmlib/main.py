@@ -426,7 +426,7 @@ class DeviceInfo(object):
                 if a == i:
                     continue
                 try:
-                    if dev['major'] != d['major']:
+                    if d['parent_name'] != dev['dev_name'] and dev['major'] != d['major']:
                         continue
                 except KeyError:
                     continue
