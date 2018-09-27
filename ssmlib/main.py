@@ -675,16 +675,17 @@ class Item(misc.Node):
         """
         if isinstance(node.source, Devices):
             alias = None
-            if 'pool_name' in node:
-                # this is a PV
+            if node.children and 'pool_name' in node:
+                # this is a PV, or btrfs volume
                 alias = node.children[0].get_alias()
             else:
                 # this is LV acessed from PV:
                 alias = node.get_alias()
 
-            if alias:
+            if alias and alias.parents:
                 return alias.parents[0]
-            return None
+
+            return node.parents[0]
 
         elif isinstance(node.source, Volumes):
             # this is a LV acessed directly
