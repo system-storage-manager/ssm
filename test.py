@@ -169,7 +169,7 @@ def unit_tests(names):
         tests = unittest.TestSuite([tests_lvm, tests_btrfs, tests_ssm, tests_misc, tests_multipath])
 
     test_runner = unittest.TextTestRunner(verbosity=2)
-    test_runner.run(tests)
+    return not test_runner.run(tests).wasSuccessful()
 
 
 if __name__ == '__main__':
@@ -200,7 +200,11 @@ if __name__ == '__main__':
     if args.unit or run_all:
         if not args.tests:
             doc_tests()
-        unit_tests(args.tests)
+        result = unit_tests(args.tests)
+        if result:
+            # if a unittest failed, break out immediately and do not try bash tests
+            sys.exit(result)
+
 
     if args.bash or run_all:
         if not os.geteuid() == 0:
