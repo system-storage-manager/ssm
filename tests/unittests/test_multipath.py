@@ -52,7 +52,7 @@ class MultipathFunctionCheck(MockSystemDataSource):
         self._addVol(mpath, size, 1, 'mapper', ('/dev/'+n for n in nodes))
         self.vol_data['/dev/mapper/'+mpath]['type']='multipath'
         self.vol_data['/dev/mapper/'+mpath]['real_dev']='/dev/'+device
-        self.dev_data['/dev/'+device]['major']='253'
+        self.dev_data['/dev/'+device]['major'] = misc.get_dmnumber('device-mapper')
 
     def setUp(self):
         super(MultipathFunctionCheck, self).setUp()
