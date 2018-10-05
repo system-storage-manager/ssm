@@ -25,6 +25,7 @@ import time
 import doctest
 import unittest
 import argparse
+import distutils.spawn
 
 os.environ['SSM_NONINTERACTIVE'] = "1"
 
@@ -34,6 +35,73 @@ from ssmlib.backends import lvm, crypt, btrfs, multipath
 
 import tests.unittests as tests_module
 from tests.unittests import *
+
+
+def prog_exists(program):
+    """ Test if given program/path/file exists and can be executed.
+        Will search in $PATH too.
+
+    Parameters
+    ----------
+    program : str
+        Absolute/relative path to search for.
+
+    Returns
+    -------
+    bool
+        True if the program exists and can be executed.
+    """
+
+    return bool(distutils.spawn.find_executable(program))
+
+
+def check_system_dependencies():
+    """ Verify if we have all dependencies in system installed and print any
+        that is missing.
+        This function will not test for python modules available, only binaries.
+
+    Returns
+    -------
+    bool
+        True if everything is ok, False if any dependency is missing.
+    """
+
+    binaries = [
+        'blkid',
+        'which',
+        'mount',
+        'wipefs',
+        'dd',
+        'tune2fs',
+        'resize2fs',
+        'mkfs.ext3',
+        'mkfs.ext4',
+        'mkfs.xfs',
+        'mkfs.btrfs',
+        'fsck.ext3',
+        'fsck.ext4',
+        'fsck.xfs',
+        'fsck.btrfs',
+        'xfs_db',
+        'xfs_growfs',
+        'xfs_repair',
+        'lvm',
+        'dmsetup',
+        'cryptsetup',
+        'multipath'
+    ]
+
+    missing = []
+    for prog in binaries:
+        if not prog_exists(prog):
+            missing.append(prog)
+
+    if missing:
+        print("Dependencies are missing; some tests will probably fail or won't run:")
+        print('\n'.join(missing))
+        return False
+    return True
+
 
 def run_bash_tests(names):
     cur = os.getcwd()
@@ -191,6 +259,9 @@ if __name__ == '__main__':
                          'and test_btrfs for a whole file of tests.')
 
     args = parser.parse_args()
+
+    check_system_dependencies()
+
     run_all = not args.unit and not args.bash
     if args.unit and args.bash:
         print("Do not use both --bash and --unit at once."
