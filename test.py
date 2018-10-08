@@ -103,7 +103,7 @@ def check_system_dependencies():
     return True
 
 
-def run_bash_tests(names):
+def run_bash_tests(names, want_logs=False):
     cur = os.getcwd()
     os.chdir('./tests/bashtests')
     command = ['ls', '-m']
@@ -149,6 +149,10 @@ def run_bash_tests(names):
         return 0
 
     t1 = time.time() - t0
+
+    if want_logs:
+        print_logs(failed)
+
     print("Ran {0} tests in {1} seconds.".format(count, round(t1, 2)))
     print("{0} tests PASSED: {1}".format(len(passed), ", ".join(passed)))
     ret = 0
@@ -162,6 +166,19 @@ def run_bash_tests(names):
         misc.run(['coverage', 'report'], stdout=True, can_fail=True)
     os.chdir(cur)
     return ret
+
+def print_logs(tests):
+    for test in tests:
+        logfile = re.sub(r"\.sh$",".bad", test)
+        print("-----------------------------------\n{}\n-----------------------------------".format(
+            logfile
+        ))
+        try:
+            with open(logfile, 'r') as f:
+                print(f.read())
+        except IOError:
+            print("The file '{}' does not exist.".format(logfile))
+    print("-----------------------------------")
 
 
 def doc_tests():
@@ -249,6 +266,8 @@ if __name__ == '__main__':
                     help='run only bash tests')
     parser.add_argument('-u', '--unit', dest='unit', action='store_true',
                     help='run only unit tests')
+    parser.add_argument('-l', '--logs', dest='want_logs', action='store_true',
+                    help='if a bash test fails, print out it\'s log to stdout')
     parser.add_argument('tests', metavar='TEST', type=str, nargs='*',
                     help='Specific tests to be run. For bash tests, '
                          'that means either a full name (001-foo.sh), '
@@ -282,5 +301,5 @@ if __name__ == '__main__':
             print("\nRoot privileges required to run more tests!\n")
             sys.exit(0)
         print("[+] Running bash tests")
-        result = run_bash_tests(args.tests)
+        result = run_bash_tests(names=args.tests, want_logs=args.want_logs)
     sys.exit(result)
