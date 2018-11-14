@@ -72,8 +72,8 @@ not ssm migrate $mnt1 $dev1
 #compare_hash $dev1 $dev2
 #
 # Migrate filesystem on plain device
-#mkfs.ext4 $dev1
-#mkfs.ext4 $dev2
+#mkfs.ext4 -F $dev1
+#mkfs.ext4 -F $dev2
 #ssm migrate $dev1 $dev3
 #not ssm migrate $dev2 $dev3
 #ssm -f migrate $dev2 $dev3
@@ -163,7 +163,7 @@ export SSM_DEFAULT_BACKEND='lvm'
 #ssm migrate $dev1 $dev2
 #check vg_devices $SSM_LVM_DEFAULT_POOL $dev1 $dev2
 #test_volume $SSM_LVM_DEFAULT_POOL/$lvol1
-#mkfs.ext4 $dev3
+#mkfs.ext4 -F $dev3
 # lvm migrate to a device with signature (ext4)
 #not ssm migrate $dev2 $dev3
 #ssm -f migrate $dev2 $dev3

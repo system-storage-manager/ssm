@@ -348,17 +348,17 @@ ssm  -f remove --all
 ssm create $dev1 $dev2
 ssm -f remove $SSM_LVM_DEFAULT_POOL
 # Create volume on device with existing file system
-mkfs.ext3 $dev1
+mkfs.ext3 -F $dev1
 not ssm create $dev1
 ssm create $dev1 $dev2
 ssm  -f remove --all
 
 # Create volume on device with existing file system with force
-mkfs.ext3 $dev1
+mkfs.ext3 -F $dev1
 ssm -f create $dev1
 check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 1
 ssm -f remove $SSM_LVM_DEFAULT_POOL
-mkfs.ext3 $dev1
+mkfs.ext3 -F $dev1
 ssm -f create $dev1 $dev2
 check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 2
 ssm  -f remove --all

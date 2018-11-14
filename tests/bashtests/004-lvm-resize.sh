@@ -240,20 +240,20 @@ ssm create $dev1
 ssm resize -s +$((DEV_SIZE/2))M  $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2
 ssm -f remove $SSM_LVM_DEFAULT_POOL
 # Use device with existing file system
-mkfs.ext3 $dev2
+mkfs.ext3 -F $dev2
 ssm create $dev1
 not ssm resize -s +$((DEV_SIZE/2))M  $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2
 ssm resize -s +$((DEV_SIZE/2))M  $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2 $dev3
 ssm -f remove --all
 
 # Use device with existing file system
-mkfs.ext3 $dev2
+mkfs.ext3 -F $dev2
 ssm create $dev1
 ssm -f resize -s +$((DEV_SIZE/2))M  $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2
 check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 2
 ssm -f remove $SSM_LVM_DEFAULT_POOL
 
-mkfs.ext3 $dev2
+mkfs.ext3 -F $dev2
 ssm create $dev1
 ssm -f resize -s +$((DEV_SIZE/2))M  $SSM_LVM_DEFAULT_POOL/$lvol1 $dev2 $dev3
 check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 3
