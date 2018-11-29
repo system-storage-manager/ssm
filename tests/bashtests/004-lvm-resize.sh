@@ -25,6 +25,7 @@ DEV_SIZE=100
 # The real size of the device which lvm will use is smaller
 TEST_MAX_SIZE=$(($DEV_COUNT*($DEV_SIZE-4)))
 aux prepare_devs $DEV_COUNT $DEV_SIZE
+aux prepare_mnts 10
 TEST_DEVS=$(cat DEVICES)
 export SSM_DEFAULT_BACKEND='lvm'
 export SSM_LVM_DEFAULT_POOL=$vg1
@@ -232,6 +233,22 @@ for fs in $TEST_FS; do
 	ssm -f check $DEFAULT_VOLUME
 	ssm -f remove $SSM_LVM_DEFAULT_POOL
 	ssm -f remove $pool1
+
+	# try to  add a single device together with a resize
+	case "$fs" in
+	ext2|ext3|ext4) # may not be mounted
+		ssm create --fs $fs $dev1
+		ssm resize --size +100%FREE $DEFAULT_VOLUME $dev2
+		ssm -f remove $SSM_LVM_DEFAULT_POOL
+		;;
+	xfs) # has to be mounted
+		ssm create --fs $fs $dev1 $mnt1
+		ssm resize --size +100%FREE $DEFAULT_VOLUME $dev2
+		umount_all
+		ssm -f remove $SSM_LVM_DEFAULT_POOL
+		;;
+	*) echo "Skipping $fs" ;;
+	esac
 done
 # There should not be anything to remove
 not ssm  -f remove --all

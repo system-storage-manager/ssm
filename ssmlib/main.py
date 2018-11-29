@@ -380,20 +380,21 @@ class FsInfo(object):
         return misc.run(command, stdout=True, can_fail=True)[0]
 
     def xfs_resize(self, new_size=None):
-        new_size = int(new_size)
-        command = ['xfs_growfs', self.device]
+        command = ['xfs_growfs']
         if not misc.check_binary(command[0]):
             PR.warn("\'{0}\' tool does not exist. ".format(command[0]) +
                     "File system will not be resized")
             return 1
         if new_size:
-            command.insert(1, ['-D', new_size + 'K'])
+            new_size = int(new_size)
+            command.append(['-D', new_size + 'K'])
         if not self.mounted:
             raise PR.error("Xfs file system on {0}".format(self.device) +
                            " has to be mounted to perform an resize")
         elif new_size and new_size < self.data['fs_size']:
             raise PR.error("Xfs file system can not shrink")
         else:
+            command.append(self.mounted)
             misc.run(command, stdout=True)
 
 
