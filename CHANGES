@@ -1,3 +1,19 @@
+* Mon Dec 10 2018 Jan Tulak <jtulak@redhat.com> - v1.3
+- ssm: Fix a case where xfs growing could fail (Jan Tulak)
+- lvm: index thinpools as vg-lv pair instead of just lv name (Jan Tulak)
+- ssm: add bash-completion script (beneso)
+- ssm: add -vv and -vvv verbose flags (Jan Tulak)
+- tests: add --logs flag to test.py (Jan Tulak)
+- tests: report missing dependencies before running tests (Jan Tulak)
+- tests: fail test.py on unittests failure (Jan Tulak)
+- tests: remove hardcoded major number for mock data (Jan Tulak)
+- tests: add -F flag to mkfs commands in tests (Jan Tulak)
+- ssmlib: missing pwquality should not crash the whole ssm (Jan Tulak)
+- ssmlib: test for identity and not just a name match (Jan Tulak)
+- ssmlib: safer device handling in get_pool_node (Jan Tulak)
+- ssmlib: partitions detecting for loopback devices (Jan Tulak)
+
+
 * Fri Aug 10 2018  <jtulak@redhat.com> - v1.2
 - ssm: version number was not set correctly on all places for 1.1
 
