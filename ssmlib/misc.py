@@ -378,7 +378,6 @@ def get_mountinfo(regex=".*"):
             mounts[dev] = row
     return mounts
 
-
 def get_mounts_old(regex=".*"):
     mounts = {}
     reg = re.compile(regex)

@@ -347,26 +347,38 @@ class FsInfo(object):
         return misc.run(command, stdout=True)[0]
 
     def xfs_get_info(self, dev):
-        command = ["xfs_db", "-r", "-c", "sb", "-c", "print", dev]
-        if not misc.check_binary(command[0]):
-            return
-        output = misc.run(command)[1]
+        # Never use xfs_db for a mounted filesystem - such use is unsupported
+        # by XFS and almost guaranteed to report stale data.
+        mount_point = misc.get_mounts(dev).get(dev, {}).get('mp', None)
+        if mount_point:
+            stat = os.statvfs(mount_point)
+            total = stat.f_blocks*stat.f_bsize
+            free = stat.f_bfree*stat.f_bsize
+            used = (stat.f_blocks-stat.f_bfree)*stat.f_bsize
+            self.data['fs_size'] = total
+            self.data['fs_free'] = free
+            self.data['fs_used'] = used
+        else :
+            command = ["xfs_db", "-r", "-c", "sb", "-c", "print", dev]
+            if not misc.check_binary(command[0]):
+                return
+            output = misc.run(command)[1]
 
-        for line in output.split("\n")[1:]:
-            array = line.split("=")
-            if len(array) == 2:
-                self.fs_info[array[0].rstrip()] = array[1].lstrip()
+            for line in output.split("\n")[1:]:
+                    array = line.split("=")
+                    if len(array) == 2:
+                        self.fs_info[array[0].rstrip()] = array[1].lstrip()
 
-        bsize = int(self.fs_info['blocksize'])
-        bcount = int(self.fs_info['dblocks'])
-        lbcount = int(self.fs_info['logblocks'])
-        bcount -= lbcount
-        agcount = int(self.fs_info['agcount'])
-        fbcount = int(self.fs_info['fdblocks'])
-        fbcount -= 4 + (4 + agcount)
-        self.data['fs_size'] = bcount * bsize // 1024
-        self.data['fs_free'] = fbcount * bsize // 1024
-        self.data['fs_used'] = (bcount - fbcount) * bsize // 1024
+            bsize = int(self.fs_info['blocksize'])
+            bcount = int(self.fs_info['dblocks'])
+            lbcount = int(self.fs_info['logblocks'])
+            bcount -= lbcount
+            agcount = int(self.fs_info['agcount'])
+            fbcount = int(self.fs_info['fdblocks'])
+            fbcount -= 4 + (4 + agcount)
+            self.data['fs_size'] = bcount * bsize // 1024
+            self.data['fs_free'] = fbcount * bsize // 1024
+            self.data['fs_used'] = (bcount - fbcount) * bsize // 1024
 
     def xfs_fsck(self):
         command = ['xfs_repair', '-n']
