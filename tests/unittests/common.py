@@ -94,6 +94,8 @@ class MockSystemDataSource(unittest.TestCase):
         misc.get_fs_type = self.mock_get_fs_type
         self.create_directory = main.create_directory
         main.create_directory = self.mock_create_directory
+        self.main_os_statvfs = main.os.statvfs
+        main.os.statvfs = self.mock_os_statvfs
         self.dev_data = {}
         self.vol_data = {}
         self.pool_data = {}
@@ -186,6 +188,12 @@ class MockSystemDataSource(unittest.TestCase):
 
     def mock_check_binary(self, name):
         return True
+
+    def mock_os_statvfs(self, mountpoint):
+        # keep the exception here - we do not need real data for now,
+        # we need to only find out if this mock function was called,
+        # and an exception works for that well.
+        raise NotImplementedError("mock data not needed")
 
     def mock_temp_mount(self, device, options=None):
         return "/tmp/mount"

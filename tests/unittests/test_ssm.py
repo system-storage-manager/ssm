@@ -626,6 +626,31 @@ class SsmFunctionCheck(MockSystemDataSource):
         self._checkCmd("ssm add", ['/dev/sda /dev/sdb'],
             "pool extend {0} /dev/sda".format(main.DEFAULT_DEVICE_POOL))
 
+    def test_list_xfs(self):
+        # Generate some storage data
+        self._addPool('default_pool', ['/dev/sda', '/dev/sdb'])
+        self._addPool('my_pool', ['/dev/sdc2', '/dev/sdc3', '/dev/sdc1'])
+        self._addVol('vol001', 117283225, 1, 'default_pool', ['/dev/sda'], fstype="xfs")
+
+        # Test what commands are called for list with xfs.
+        # For unmounted fs, it shoud be xfs_db, otherwise os.statvfs.
+
+        # This will raise an exception as we do not correctly mock the data,
+        # but we need to only test what commands have been called
+        # not what data was reported
+        with self.assertRaises(KeyError) as context:
+            main.main("ssm list volumes")
+        self._cmdEq('xfs_db -r -c sb -c print /dev/default_pool/vol001')
+
+        # mount it
+        self._mountVol('vol001', 'default_pool', ['/dev/sda'], '/mnt/test1')
+        # Here we get OSError because os.statvfs mock only throws this.
+        # We do not need to test anything else, so this hard stop is all right
+        # in this usecase.
+        # Should we get anything else, it clearly goes to some other branch.
+        with self.assertRaises(NotImplementedError) as context:
+            main.main("ssm list volumes")
+
     def test_remove(self):
         # Generate some storage data
         self._addPool('default_pool', ['/dev/sda', '/dev/sdb'])
