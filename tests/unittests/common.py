@@ -295,6 +295,19 @@ class MockSystemDataSource(unittest.TestCase):
             'vol_count': '0'
         }
 
+    def _mountVol(self, vol_name, pool_name, devices, mount):
+        """ Mount a volume created with _addVol. Use the same argumets as for
+            _addVol.
+        """
+        vol_path = "/dev/{0}/{1}".format(pool_name, vol_name)
+        self.vol_data[vol_path]['mount'] = mount
+        self.pool_data[pool_name]['mount'] =  mount
+        self._addDir(mount)
+        self.mount_data[devices[0]] = {'dev': devices[0], 'mp': mount,
+                                        'root': "/"}
+        self.mount_data[vol_path] = {'dev': vol_path, 'mp': mount,
+                                        'root': "/"}
+
     def _addVol(self, vol_name, vol_size, stripes, pool_name, devices,
                 mount=None, active=True):
         pool_data = self.pool_data[pool_name]
@@ -302,11 +315,6 @@ class MockSystemDataSource(unittest.TestCase):
         pool_used = float(pool_data['pool_used']) + vol_size
         pool_data['pool_free'] = pool_free
         pool_data['pool_used'] = pool_used
-        if mount:
-            self.pool_data[pool_name]['mount'] = mount
-            self._addDir(mount)
-            self.mount_data[devices[0]] = {'dev': devices[0], 'mp': mount,
-                                           'root': "/"}
 
         space_per_dev = vol_size // stripes
 
@@ -341,23 +349,25 @@ class MockSystemDataSource(unittest.TestCase):
         else:
             vol_type = "linear"
             stripesize = 0
-        vol_name = "/dev/{0}/{1}".format(pool_name, vol_name)
+        vol_path = "/dev/{0}/{1}".format(pool_name, vol_name)
         attr = "-wi------"
         if active:
             tmp = list(attr)
             tmp[4] = 'a'
             attr = "".join(tmp)
-        self.vol_data[vol_name] = {
-            'dm_name': vol_name,
-            'real_dev': vol_name,
+        self.vol_data[vol_path] = {
+            'dm_name': vol_path,
+            'real_dev': vol_path,
             'stripes': stripes,
-            'dev_name': vol_name,
+            'dev_name': vol_path,
             'stripesize': 0,
             'pool_name': pool_name,
             'vol_size': vol_size,
             'dev_size': vol_size,
             'type': vol_type,
             'origin': "",
-            'mount': mount,
+            'mount': None,
             'attr': attr
         }
+        if mount:
+            self._mountVol(vol_name, pool_name, devices, mount)
