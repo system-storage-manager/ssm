@@ -309,7 +309,7 @@ class MockSystemDataSource(unittest.TestCase):
                                         'root': "/"}
 
     def _addVol(self, vol_name, vol_size, stripes, pool_name, devices,
-                mount=None, active=True):
+                mount=None, active=True, fstype=None):
         pool_data = self.pool_data[pool_name]
         pool_free = float(pool_data['pool_free']) - vol_size
         pool_used = float(pool_data['pool_used']) + vol_size
@@ -369,5 +369,7 @@ class MockSystemDataSource(unittest.TestCase):
             'mount': None,
             'attr': attr
         }
+        if fstype:
+            self.vol_data[vol_path]['fstype'] = fstype
         if mount:
             self._mountVol(vol_name, pool_name, devices, mount)
