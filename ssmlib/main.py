@@ -1839,8 +1839,8 @@ class StorageHandle(object):
                 pwq = pwquality.PWQSettings()
                 pwq.check(password)
             except pwquality.PWQError as ex:
-                if not PR.check(PR.WEAK_PASSWORD, ex[1]):
-                    raise problem.WeakPassword(ex[1])
+                if not PR.check(PR.WEAK_PASSWORD, ex.args[1]):
+                    raise problem.WeakPassword(ex.args[1])
                 else:
                     force_weak_password = True
         else:
