@@ -40,7 +40,7 @@ EXTN = ['ext2', 'ext3', 'ext4']
 SUPPORTED_FS = ['xfs', 'btrfs'] + EXTN
 SUPPORTED_BACKENDS = ['lvm', 'btrfs', 'crypt', 'multipath']
 SUPPORTED_RAID = ['0', '1', '10']
-os.environ['LC_NUMERIC'] = "C"
+os.environ['LC_ALL'] = "C"
 
 # If you change this please change doc/conf.py as well
 VERSION = '1.3'
