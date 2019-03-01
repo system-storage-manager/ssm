@@ -73,7 +73,7 @@ class Multipath(template.Backend):
         command = [MP, '-ll']
         try:
             output = misc.run(command, stderr=False, can_fail=True)[1].split("\n")
-            pattern = re.compile(r"^([a-z0-9]+) \([0-9a-f]+\)")
+            pattern = re.compile(r"^([a-z0-9]+) \([^)]+\)")
         except (problem.CommandFailed, OSError):
             # probably multipath not installed
             output = []
@@ -97,7 +97,7 @@ class Multipath(template.Backend):
             output = []
 
         if len(output) > 0:
-            match = re.search(r"\(([0-9a-f]+)\)",output[0])
+            match = re.search(r"\(([^)]+)\)",output[0])
             data['wwid'] = match.group(1)
             data['dev_size'] = misc.get_device_size(data['dev_name'])
             data['nodes'] = []

@@ -100,7 +100,8 @@ class MultipathFunctionCheck(MockSystemDataSource):
                 counter += 1
                 if mp_vol != None and mp_vol != mp_name:
                     continue
-                output += "{0} (360000000000000000e00000000010001) {1} QEMU    ,QEMU HARDDISK \n".format(mp_name, basename(v_data['real_dev']))
+                mp_id="XX360000000000000000e0000000"+chr(ord('a')+counter)
+                output += "{name} ({id}) {dev} QEMU    ,QEMU HARDDISK \n".format(name=mp_name, id=mp_id, dev=basename(v_data['real_dev']))
                 output += "size={0} features='0' hwhandler='0' wp=rw\n".format(size_converted)
 
                 devs = []
