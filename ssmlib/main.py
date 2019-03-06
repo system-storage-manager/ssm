@@ -349,7 +349,8 @@ class FsInfo(object):
     def xfs_get_info(self, dev):
         # Never use xfs_db for a mounted filesystem - such use is unsupported
         # by XFS and almost guaranteed to report stale data.
-        mount_point = misc.get_mounts(dev).get(dev, {}).get('mp', None)
+        realdev = misc.get_real_device(dev)
+        mount_point = misc.get_mounts(dev).get(realdev, {}).get('mp', None)
         if mount_point:
             stat = os.statvfs(mount_point)
             total = stat.f_blocks*stat.f_bsize
