@@ -353,9 +353,9 @@ class FsInfo(object):
         mount_point = misc.get_mounts(dev).get(realdev, {}).get('mp', None)
         if mount_point:
             stat = os.statvfs(mount_point)
-            total = stat.f_blocks*stat.f_bsize
-            free = stat.f_bfree*stat.f_bsize
-            used = (stat.f_blocks-stat.f_bfree)*stat.f_bsize
+            total = stat.f_blocks*stat.f_bsize/1024
+            free = stat.f_bfree*stat.f_bsize/1024
+            used = (stat.f_blocks-stat.f_bfree)*stat.f_bsize/1024
             self.data['fs_size'] = total
             self.data['fs_free'] = free
             self.data['fs_used'] = used
