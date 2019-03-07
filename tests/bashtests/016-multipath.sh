@@ -33,7 +33,7 @@ if [ mpath_verify -eq 0]; then
 fi
 
 export COLUMNS=1024
-DEV_COUNT=1
+DEV_COUNT=5
 DEV_SIZE=10
 aux prepare_devs $DEV_COUNT $DEV_SIZE
 TEST_DEVS=$(cat DEVICES)
@@ -52,26 +52,45 @@ cleanup() {
 
 trap cleanup EXIT
 
-mpath_setup $TEST_DEVS
+mpdev=$dev1
+mpath_setup $mpdev
 
 # get devices used in multipath
 USED_DEVS=$(multipath -ll | \
 	grep "[0-9]\+:[0-9]\+:[0-9]\+:[0:9]\+" | \
 	sed -e "s/.*[0-9]\+:[0-9]\+:[0-9]\+:[0:9]\+ //" -e "s/ .*//")
 MPATH=$(multipath -ll | head -n1 | cut -d " " -f 1)
-DM=$(multipath -ll | head -n1 | cut -d " " -f 3)
+DM="/dev/$(multipath -ll | head -n1 | cut -d " " -f 3)"
 
-
-ssm list dev | grep $DM
+# basic listing
+check list_table "$(ssm list dev)" "^$DM" 9.80MB
 for dev in $USED_DEVS; do
-	ssm list dev | grep $dev
+	check list_table "$(ssm list dev)" $dev 9.80MB $DM MULTIPATH
 done
-not ssm remove $MPATH
+
+# We can't test it here automatically, because lvm filters preventing us from
+# touching anything outside of $TESTDIR slaps our hands. And I did not find
+# a reliable way how to make a link/DM to $TESTDIR that would work and ssm
+# would not try to use the /dev/foo as the real name.
+#
+# TODO: When the testing infrastructure gets around of this issue, this test
+# suite has to be expanded.
+
+# use the device
+#ssm create $DM
+#check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 1
+#ssm -f remove -a
+#
+#ssm create $DM $dev2
+#check lv_field $SSM_LVM_DEFAULT_POOL/$lvol1 pv_count 2
+#ssm -f remove -a
 
 
+# things not supported
+not ssm -f remove $MPATH
+not ssm -f remove $dev1
+not ssm -f remove $DM
+not ssm -b multipath list
+not ssm -b multipath create $dev1
 
-
-
-
-ssm list
 exit 0
