@@ -70,9 +70,6 @@ not ssm remove $MPATH
 
 
 
-ssm info $MPATH
-
-
 
 
 
