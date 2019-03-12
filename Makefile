@@ -36,7 +36,7 @@ git-clean:
 	git clean -f
 
 install:
-	@python setup.py install
+	@python3 setup.py install
 
 spec: check_vars
 	@(LC_ALL=C date +"* %a %b %e %Y `git config --get user.name` <`git config --get user.email`> - $(VERSION)"; git log --pretty="format:- %s (%an)" $(PREVIOUS)..HEAD| cat; echo -e "\n\n"; cat CHANGES) > CHANGES.bck; mv CHANGES.bck CHANGES
@@ -51,10 +51,10 @@ docs:
 	@make dist -C doc
 
 source: test clean
-	@python setup.py sdist
+	@python3 setup.py sdist
 
 test:
-	@python test.py
+	@python3 test.py
 
 push_html:
 	scp -r doc/_build/singlehtml/* lczerner@shell.sourceforge.net:/home/project-web/storagemanager/htdocs/

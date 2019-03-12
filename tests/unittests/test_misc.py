@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # (C)2018 Red Hat, Inc., Jan Tulak <jtulak@redhat.com>
 #

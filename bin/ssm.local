@@ -26,7 +26,7 @@ export PYTHONPATH="$SSMDIR"
 
 # Run coverage if the environment variable is set up.
 if [ "$RUN_COVERAGE" = "" ]; then
-	python $SSMDIR/bin/ssm "$@"
+	python3 $SSMDIR/bin/ssm "$@"
 else
 	$RUN_COVERAGE $SSMDIR/bin/ssm "$@"
 fi

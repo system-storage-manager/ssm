@@ -3,7 +3,7 @@
 Requirements
 ============
 
-Python 2.6 or higher is required to run this tool. System Storage Manager
+Python 3.6 or higher is required to run this tool. System Storage Manager
 can only be run as root since most of the commands require root privileges.
 
 There are other requirements listed below, but note that you do not

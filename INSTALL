@@ -21,7 +21,7 @@ local sources with:
 Requirements
 ************
 
-Python 2.6 or higher is required to run this tool. System Storage
+Python 3.6 or higher is required to run this tool. System Storage
 Manager can only be run as root since most of the commands require
 root privileges.
 

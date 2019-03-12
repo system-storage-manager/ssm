@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # (C)2011 Red Hat, Inc., Lukas Czerner <lczerner@redhat.com>
 #
