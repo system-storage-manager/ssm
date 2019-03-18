@@ -229,7 +229,7 @@ lv_exists() {
 
 pv_field()
 {
-	actual=$(trim $(pvs --noheadings $4 -o $2 $1))
+	actual=$(trim $(pvs --units h --noheadings $4 -o $2 $1))
 	udev_wait
 	if [ "$actual" != "$3" ]; then
 		echo "pv_field: PV=$1, field=$2, actual=$actual, expected=$3"
@@ -239,7 +239,7 @@ pv_field()
 
 vg_field()
 {
-	actual=$(trim $(vgs --noheadings $4 -o $2 $1))
+	actual=$(trim $(vgs --units h --noheadings $4 -o $2 $1))
 	udev_wait
 	if [ "$actual" != "$3" ]; then
 		echo "vg_field: vg=$1, field=$2, actual=$actual, expected=$3"
@@ -249,7 +249,7 @@ vg_field()
 
 lv_field()
 {
-	actual=$(trim $(lvs --noheadings $4 -o $2 $1))
+	actual=$(trim $(lvs --units h --noheadings $4 -o $2 $1))
 	udev_wait
 	if [ "$actual" != "$3" ]; then
 		echo "lv_field: lv=$1, field=$2, actual=$actual, expected=$3"
