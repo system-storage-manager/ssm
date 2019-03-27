@@ -81,3 +81,23 @@ check mountpoint $SSM_LVM_DEFAULT_POOL-$lvol2 ${mnt2}e "ro,data=journal"
 umount ${mnt2}e
 
 ssm  -f remove --all
+
+
+# test if ssm can detect missing dependencies - let's remove sbin dirs from
+# path and duplicate them without some binaries within TESTDIR
+old_path=$PATH
+PATH=$(echo "$PATH" | sed -e 's/:\/usr\/sbin//' -e 's/:\/sbin//' )
+mkdir $TESTDIR/sbin
+PATH=$(echo $PATH:$TESTDIR/sbin)
+cp -an /usr/sbin/* $TESTDIR/sbin/
+cp -an /sbin/* $TESTDIR/sbin/
+for f in lvm lvs pvs cryptsetup; do
+    rm $TESTDIR/sbin/$f
+done
+
+# SSM aborts with "a tool is missing" error
+out=$(not ssm add $dev1 $dev2 2>&1)
+PATH=$old_path
+test $(echo "$out" | grep -c "A tool is missing") -gt 0
+
+exit 0

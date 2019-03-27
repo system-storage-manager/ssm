@@ -27,6 +27,10 @@ __all__ = ["MultipathDevice"]
 
 MP="multipath"
 
+# a module-wide wrapper for when we don't have a pool/volume/etc yet
+def verify_requirements():
+    misc.verify_requirements([MP])
+
 class Multipath(template.Backend):
     def __init__(self, options, data=None):
         self.type = 'multipath'
@@ -44,6 +48,10 @@ class Multipath(template.Backend):
 
     def __str__(self):
         return "mp: %s" % repr(self.data)
+
+    def verify_requirements(self):
+        """ Call the module-wide test """
+        verify_requirements()
 
     def get_real_device(self, devname):
         """ Get the device for multipath volume name.

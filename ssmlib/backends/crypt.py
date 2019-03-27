@@ -48,6 +48,9 @@ except KeyError:
 DM_DEV_DIR = "/dev"
 MAX_DEVS = 999
 
+# a module-wide wrapper for when we don't have a pool/volume/etc yet
+def verify_requirements():
+    misc.verify_requirements(['cryptsetup', 'dmsetup'])
 
 def get_cryptsetup_version():
     try:
@@ -104,6 +107,10 @@ class DmCryptPool(DmObject, template.BackendPool):
         self.data[pool['pool_name']] = pool
         self.passphrase = None
         self.force_weak_password = False
+
+    def verify_requirements(self):
+        """ Call the module-wide test """
+        verify_requirements()
 
     def set_passphrase(self, passphrase, force=False):
         self.passphrase = passphrase.encode()

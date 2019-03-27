@@ -39,6 +39,11 @@ MAX_LVS = 999
 # TODO: This is ugly and needs to be removed and done properly
 THIN_POOL_DATA = {}
 
+# a module-wide wrapper for when we don't have a pool/volume/etc yet
+def verify_requirements():
+    misc.verify_requirements(['lvm'])
+
+
 def get_lvm_version():
     try:
         output = misc.run(['lvm', 'version'], can_fail=True)[1]
@@ -77,6 +82,10 @@ class LvmInfo(template.Backend):
         self.binary = misc.check_binary('lvm')
         self.default_pool_name = SSM_LVM_DEFAULT_POOL
         self.init_local_problem_set()
+
+    def verify_requirements(self):
+        """ Call the module-wide test """
+        verify_requirements()
 
     def parse_attr(self, lv, attr):
         if attr[4] == 'a':

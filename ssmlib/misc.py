@@ -51,6 +51,16 @@ else:
         if x is not None:
             return str(x, encoding='utf-8', errors='strict')
 
+def verify_requirements(binaries):
+    """ Verify, if this backends has all requirements it needs to work properly.
+        Raise an exception if something is missing.
+    """
+    if isinstance(binaries, str):
+        binaries = [binaries]
+
+    for required in binaries:
+        if not check_binary(required):
+            raise problem.ToolMissing("A tool is missing: {}".format(required))
 
 def get_unit_size(string):
     """

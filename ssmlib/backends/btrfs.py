@@ -19,6 +19,7 @@ import re
 import os
 import datetime
 from ssmlib import misc
+from ssmlib import problem
 from ssmlib.backends import template
 
 __all__ = ["BtrfsVolume", "BtrfsPool", "BtrfsDev"]
@@ -28,6 +29,10 @@ try:
 except KeyError:
     SSM_BTRFS_DEFAULT_POOL = "btrfs_pool"
 
+
+# a module-wide wrapper for when we don't have a pool/volume/etc yet
+def verify_requirements():
+    misc.verify_requirements(['btrfs'])
 
 def get_btrfs_version():
     try:
@@ -159,6 +164,10 @@ class Btrfs(template.Backend):
 
         if len(vol) > 0:
             self._store_data(vol, pool, fs_used, fs_size, pool_size, pool_name)
+
+    def verify_requirements(self):
+        """ Call the module-wide test """
+        verify_requirements()
 
     def run_btrfs(self, command):
         if not self._binary:

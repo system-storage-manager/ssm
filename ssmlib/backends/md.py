@@ -27,6 +27,10 @@ except KeyError:
 
 MDADM = "mdadm"
 
+# a module-wide wrapper for when we don't have a pool/volume/etc yet
+def verify_requirements():
+    misc.verify_requirements([MDAMD])
+
 
 class MdRaid(template.Backend):
 
@@ -56,6 +60,10 @@ class MdRaid(template.Backend):
                 self._vol[devname] = self.get_volume_data(devname)
                 for dev in misc.get_slaves(os.path.basename(devname)):
                     self._dev[dev] = self.get_device_data(dev, devsize)
+
+    def verify_requirements(self):
+        """ Call the module-wide test """
+        verify_requirements()
 
     def get_device_data(self, devname, devsize):
         data = {}

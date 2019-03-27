@@ -29,6 +29,10 @@ from ssmlib import problem
 
 # Import backends
 from ssmlib.backends import lvm, crypt, btrfs, md, multipath
+# Import backends as a whole too, because the specific backends are generic
+# names used also as variables. That could lead to scope overwriting
+# and confusion when we need to use a backend module directly.
+from ssmlib import backends
 
 # conditional import of pwquality
 try:
@@ -883,6 +887,9 @@ class Item(misc.Node):
             fs.mounted = ""
         self.data.update(fs.data)
         self.data['fs_info'] = fs
+
+    def verify_requirements(self):
+        self.obj.verify_requirements()
 
     def exists(self):
         if self.name in self.obj:
@@ -1765,6 +1772,7 @@ class StorageHandle(object):
             pool_free = 0.0
             pool_name = "none"
         else:
+            args.pool.verify_requirements()
             pool_free = float(args.pool['pool_free'])
             pool_name = args.pool.name
 
@@ -1863,6 +1871,16 @@ class StorageHandle(object):
             PR.warn("Mount options are set, but no mount point was " +
                     "provided. Device will not be mounted")
 
+        if args.encrypt:
+            backends.crypt.verify_requirements()
+
+        # the pool does not exist yet
+        if SSM_DEFAULT_BACKEND == 'lvm':
+            backends.lvm.verify_requirements()
+        elif SSM_DEFAULT_BACKEND == 'btrfs':
+            backends.btrfs.verify_requirements()
+
+
         crypt = None
         if args.encrypt or SSM_DEFAULT_BACKEND == 'crypt':
             crypt = self.pool.get_backend("crypt")
@@ -1891,6 +1909,8 @@ class StorageHandle(object):
             self._do_mount(self.vol[lvname], args.mnt_options)
 
     def create_volume(self, args):
+
+        args.pool.verify_requirements()
 
         if self._mpoint and not (args.fstype or args.pool.type == 'btrfs'):
             if PR.check(PR.CREATE_MOUNT_NOFS, self._mpoint):
@@ -2056,6 +2076,9 @@ class StorageHandle(object):
         """
         Add devices into the pool
         """
+
+        args.pool.verify_requirements()
+
         if not skip_check:
             for dev in args.device[:]:
                 item = self.dev[dev]
@@ -2149,6 +2172,8 @@ class StorageHandle(object):
         pool = self.pool[args.volume['pool_name']]
         pool_free = float(pool['pool_free'])
 
+        pool.verify_requirements()
+
         snap_size = None
         if args.size:
             snap_size = calculate_resize_size(args.size, args.volume, pool)
@@ -2189,9 +2214,11 @@ class StorageHandle(object):
         source = self.dev[args.source]
         if source and 'pool_name' in source:
             source_pool = self.pool[source['pool_name']]
+            source_pool.verify_requirements()
         target = self.dev[args.target]
         if target and 'pool_name' in target:
             target_pool = self.pool[target['pool_name']]
+            target_pool.verify_requirements()
 
         if source and target and source.name == target.name:
             raise problem.DuplicateTarget(

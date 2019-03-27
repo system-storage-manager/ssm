@@ -883,6 +883,9 @@ class PoolInfo(MyInfo):
         cmd.extend(devices)
         misc.run(cmd)
 
+    def verify_requirements(self):
+        pass
+
     def remove(self, pool):
         misc.run([self.f, self.v, self.y, 'pool remove', pool])
 
