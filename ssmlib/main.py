@@ -116,6 +116,11 @@ try:
 except KeyError:
     SSM_DEFAULT_BACKEND = 'lvm'
 
+# Get blacklist configuration
+try:
+    BLACKLISTED_ITEMS = os.environ['SSM_BLACKLISTED_ITEMS']
+except KeyError:
+    BLACKLISTED_ITEMS = ''
 
 # If this environment variable is set, ssm will only consider such devices,
 # pools and volumes which names start with this prefix. This is especially
@@ -1285,6 +1290,15 @@ class Storage(object):
 
         misc.ptable(lines, zip(self.header, self.types))
 
+    def get_paths(self):
+        """ Get canonical paths to all items in this Storage object. """
+
+        paths = set()
+        for item in self:
+            paths.add(misc.get_real_device(item.name))
+        return paths
+
+
 
 class Pool(Storage):
     """
@@ -1330,6 +1344,17 @@ class Pool(Storage):
         self.types = [str, str, str, float, float, float, str]
         self._apply_prefix_filter()
 
+    def get_paths(self):
+        """ Get canonical paths to all items in this Storage object. """
+
+        paths = set()
+        for item in self:
+            # crypt backend has a dummy pool to gather all encrypted devices
+            # that does not reflect the real state of storage, so we ignore it
+            if item.type == 'crypt':
+                continue
+            paths.add(item.name)
+        return paths
 
 class Devices(Storage):
     """
@@ -2031,6 +2056,15 @@ class StorageHandle(object):
             self.pool.psummary()
         elif args.type in ['snap', 'snapshots']:
             self.snap.psummary()
+        elif args.type == 'export-paths':
+            paths = set()
+            paths |= self.dev.get_paths()
+            paths |= self.pool.get_paths()
+            paths |= self.vol.get_paths()
+            paths |= self.snap.get_paths()
+
+            for p in paths:
+                print(p)
 
     def info(self, args):
         """
@@ -2765,7 +2799,7 @@ class SsmParser(object):
                      in the system.''')
         parser_list.add_argument('type', nargs='?',
                 choices=["volumes", "vol", "dev", "devices", "pool", "pools",
-                    "fs", "filesystems", "snap", "snapshots"])
+                    "fs", "filesystems", "snap", "snapshots", "export-paths"])
         parser_list.set_defaults(func=self.storage.list)
         return parser_list
 
@@ -2879,10 +2913,36 @@ class SsmParser(object):
         return parser_migrate
 
 
+def init_blacklist(verbose: bool):
+    """ Initialize the blacklist and make it acessible from entire ssm.
+
+        This has to happen before we try to parse user arguments, because
+        we need to be able to intercept all blacklisted names and paths
+        right away.
+    """
+    bl = []
+    for item in BLACKLISTED_ITEMS.split('\n'):
+        if item == '':
+            continue
+        bl.append(item)
+
+    misc.Blacklist(bl, verbose)
+
+
+
 def main(args=None):
 
     if args:
         sys.argv = args.split()
+
+    # Circular dependency. We want to be able to see what is happening
+    # (when a verbose flag is used), but we have to set up blacklist before
+    # arguments are parsed. So, we have to do this explicit check in advance.
+    if '--verbose' in sys.argv or '-v' in sys.argv or '-vv' in sys.argv \
+        or '-vvv' in sys.argv:
+        init_blacklist(True)
+    else:
+        init_blacklist(False)
 
     options = Options()
     PR.set_options(options)
