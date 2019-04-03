@@ -23,7 +23,7 @@ __all__ = ["ProblemSet", "SsmError", "GeneralError", "ProgrammingError",
            "DeviceUsed", "ExistingFilesystem", "NoDevices", "ToolMissing",
            "ToolMissingPrompt", "CanNotRun", "CommandFailed", "UserInterrupted",
            "NotSupported", "NotImplemented", "WeakPassword",
-           "ExistingSignature", "DuplicateTarget"]
+           "ExistingSignature", "DuplicateTarget", "BlacklistedItem"]
 
 # Define prompt codes
 PROMPT_NONE =           0
@@ -171,6 +171,11 @@ class DuplicateTarget(SsmError):
     def __init__(self, msg, errcode=2019):
         super(DuplicateTarget, self).__init__(msg, errcode)
 
+class BlacklistedItem(SsmError):
+    def __init__(self, msg, errcode=2020):
+        super(BlacklistedItem, self).__init__(msg, errcode)
+
+
 
 class ProblemSet(object):
 
@@ -274,6 +279,10 @@ class ProblemSet(object):
         self.TOOL_MISSING_PROMPT = \
             ['\'{0}\' is not installed on the system! {1}',
              PROMPT_CONTINUE, FL_FORCE_YES | FL_DEFAULT_NO, ToolMissingPrompt]
+
+        self.BLACKLISTED_ITEM = \
+            ['The name of item \'{0}\' is blacklisted and cannot be used.',
+             PROMPT_NONE, FL_FATAL, BlacklistedItem]
 
     def _can_print_message(self, flags):
         if (flags & FL_DEBUG_ONLY):

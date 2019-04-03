@@ -26,6 +26,7 @@ import threading
 import subprocess
 from ssmlib import problem
 from base64 import encode
+from typing import List, Set
 
 if sys.version < '3':
     def __next__(iter):
@@ -890,3 +891,109 @@ class Node(object):
                 if item['dev_name'] == name:
                     return item
         return None
+
+class Blacklist(object):
+    __instance = None
+    def __new__(cls, *args, **kwargs):
+        if Blacklist.__instance is None:
+            Blacklist.__instance = _Blacklist(*args, **kwargs)
+        return Blacklist.__instance
+
+    def __getattr__(self, name):
+        return getattr(self.__instance, name)
+
+    def __setattr__(self, name, value):
+        return setattr(self.__instance, name, value)
+
+class _Blacklist(object):
+    """A blacklist of devices that have to be ignored by ssm at all cost.
+
+       This class serves as a single point of truth. All input/output
+       operations with a device have to check if the device is allowed.
+
+    Raises
+    ------
+    problem.BlacklistedItem
+        Raised by allowed_or_exception(item) when item is blacklisted.
+    """
+
+
+
+    def __init__(self, blacklisted: List[str], verbose: bool=False):
+        self._blacklist = set(blacklisted)
+        self._verbose = verbose
+
+    def __str__(self):
+        items = ["'{}'".format(item) for item in sorted(list(self._blacklist))]
+        items_str = ', '.join(items)
+        return "[{0}]".format(items_str)
+
+    def __contains__(self, key: str):
+        return not self.allowed(key)
+
+    @property
+    def verbose(self) -> bool:
+        return self._verbose
+
+    @verbose.setter
+    def verbose(self, value: bool) -> None:
+        self._verbose = value
+
+    @property
+    def enforced(self) -> bool:
+        return bool(self._blacklist)
+
+    def allowed(self, item: str) -> bool:
+        """Check if given item is allowed, or is in the blacklist.
+
+        Parameters
+        ----------
+        item : str
+            Item to be tested. If it is a path, symlinks are resolved, but it
+            can be any string.
+
+        Returns
+        -------
+        bool
+            Return True if the item is allowed, or False if the item
+            is in the blacklist.
+        """
+        if not self.enforced:
+            return True
+
+        item = get_real_device(item)
+        if item in self._blacklist:
+            if self.verbose:
+                print(f"Item {item} blacklisted.")
+            return False
+        return True
+
+    def allowed_or_exception(self, item: str) -> bool:
+        """Check if given item is allowed, or is in the blacklist.
+
+        Parameters
+        ----------
+        item : str
+            Item to be tested. If it is a path, symlinks are resolved, but it
+            can be any string.
+
+        Raises
+        ------
+        problem.BlacklistedItem
+            Raised when the item is in the blacklist.
+
+        Returns
+        -------
+        bool
+            Always return True if the item is allowed or raise an exception
+            if the item is blacklisted.
+        """
+        if not self.enforced:
+            return True
+
+        item = get_real_device(item)
+        if item in self._blacklist:
+            if self.verbose:
+                print(f"Item {item} blacklisted.")
+            raise problem.BlacklistedItem(item)
+        return True
