@@ -153,3 +153,41 @@ class NodeCheck(unittest.TestCase):
         self.assertEqual(b.parents, [a])
         self.assertEqual(b.neighbours, [a])
         self.assertEqual(a.neighbours, [b])
+
+class BlacklistCheck(MockSystemDataSource):
+
+    def setUp(self):
+        super().setUp()
+        self.blacklisted_items = [
+            '/dev/blacklisted1',
+            'bl_foo',
+            '/dev/mapper/lvm_pool/blacklisted',
+        ]
+
+    def tearDown(self):
+        super().tearDown()
+
+    def test_empty(self):
+        # try to create without any scanner
+        bl = misc._Blacklist([])
+        self.assertFalse(bl.enforced)
+        self.assertTrue(bl.allowed('foo'))
+        self.assertEqual('[]', str(bl))
+
+    def test_with_items(self):
+        items = [x for x in self.blacklisted_items]
+        items.pop(0)
+        bl = misc._Blacklist(items)
+        self.assertTrue(bl.enforced)
+
+        self.assertTrue(bl.allowed(self.blacklisted_items[0]))
+        self.assertFalse(self.blacklisted_items[0] in bl)
+
+        self.assertFalse(bl.allowed(self.blacklisted_items[1]))
+        self.assertTrue(self.blacklisted_items[1] in bl)
+
+        self.assertTrue(bl.allowed_or_exception(self.blacklisted_items[0]))
+
+        with self.assertRaises(problem.BlacklistedItem):
+            bl.allowed_or_exception(self.blacklisted_items[1])
+        self.assertEqual("['/dev/mapper/lvm_pool/blacklisted', 'bl_foo']", str(bl))
