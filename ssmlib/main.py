@@ -1202,6 +1202,34 @@ class Storage(object):
                     continue
                 del source.data[item]
 
+    def _apply_blacklist_filter(self):
+        # TODO delete items from a dict that match a filter in situ
+        # then test if it hides pools
+        # then write similar thing for other types
+        if not misc.Blacklist().enforced:
+            return
+
+        #import pdb; pdb.set_trace()
+        for source in self._data.values():
+            for item in source:
+                if item in misc.Blacklist():
+                    del source.data[item]
+                    continue
+                if 'pool_name' in source.data[item] and \
+                   source.data[item]['pool_name'] in misc.Blacklist():
+                    del source.data[item]
+                    continue
+                if 'parent_pool' in source.data[item] and \
+                   source.data[item]['parent_pool'] in misc.Blacklist():
+                    del source.data[item]
+                    continue
+                if 'dm_name' in source.data[item] and \
+                   source.data[item]['dm_name'] in misc.Blacklist():
+                    del source.data[item]
+                    continue
+
+
+
     def get_backend(self, name):
         return self._data[name]
 
@@ -1342,6 +1370,7 @@ class Pool(Storage):
         self.attrs = ['pool_name', 'type', 'dev_count', 'pool_free',
                       'pool_used', 'pool_size', 'parent_pool']
         self.types = [str, str, str, float, float, float, str]
+        self._apply_blacklist_filter()
         self._apply_prefix_filter()
 
     def get_paths(self):
@@ -1416,6 +1445,7 @@ class Devices(Storage):
         self.attrs = ['dev_name', 'dev_free', 'dev_used', 'dev_size',
                       'pool_name', 'mount']
         self.types = [str, float, float, float, str, str]
+        self._apply_blacklist_filter()
         self._apply_prefix_filter()
 
 
@@ -1455,6 +1485,7 @@ class Volumes(Storage):
         self.attrs = ['dev_name', 'pool_name', 'vol_size', 'fs_type',
                       'fs_size', 'fs_free', 'type', 'mount']
         self.types = [str, str, float, str, float, float, str, str]
+        self._apply_blacklist_filter()
         self._apply_prefix_filter()
 
 
@@ -1485,6 +1516,7 @@ class Snapshots(Storage):
         self.attrs = ['dev_name', 'origin', 'pool_name', 'vol_size',
                       'snap_size', 'type', 'mount']
         self.types = [str, str, str, float, float, str, str]
+        self._apply_blacklist_filter()
         self._apply_prefix_filter()
 
 
