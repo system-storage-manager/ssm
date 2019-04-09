@@ -64,7 +64,8 @@ def create_thin_volume(parent_pool, thin_pool, virtsize, lvname):
     command = ['lvcreate', '-n', lvname, '-T', pool_volume,
                '-V', str(virtsize) + 'K']
     command.insert(0, "lvm")
-    misc.run(command, stdout=True)
+    misc.run(command, stdout=True, names_to_check=[pool_volume, parent_pool,
+        '{}/{}'.format(pool_volume, lvname)])
     return "{0}/{1}/{2}".format(DM_DEV_DIR, parent_pool, lvname)
 
 
@@ -91,7 +92,7 @@ class LvmInfo(template.Backend):
              problem.FL_DEFAULT_NO | problem.FL_EXIT_ON_NO | problem.FL_FORCE_YES,
              problem.GeneralError]
 
-    def run_lvm(self, command, noforce=False):
+    def run_lvm(self, command, noforce=False, names_to_check=[]):
         if not self.binary:
             self.problem.check(self.problem.TOOL_MISSING, 'lvm')
         if self.options.force and not noforce:
@@ -99,7 +100,7 @@ class LvmInfo(template.Backend):
         if self.options.verbose:
             command.insert(1, "-v")
         command.insert(0, "lvm")
-        misc.run(command, stdout=True)
+        misc.run(command, stdout=True, names_to_check=names_to_check)
 
     def _data_index(self, row):
         return row.values()[len(row.values()) - 1]
@@ -211,25 +212,25 @@ class VgsInfo(LvmInfo, template.BackendPool):
 
     def reduce(self, vg, device):
         command = ['vgreduce', vg, device]
-        self.run_lvm(command)
+        self.run_lvm(command, names_to_check=[vg, device])
 
     def new(self, vg, devices):
         if type(devices) is not list:
             devices = [devices]
         command = ['vgcreate', vg]
         command.extend(devices)
-        self.run_lvm(command)
+        self.run_lvm(command, names_to_check=[vg, *devices])
 
     def extend(self, vg, devices):
         if type(devices) is not list:
             devices = [devices]
         command = ['vgextend', vg]
         command.extend(devices)
-        self.run_lvm(command)
+        self.run_lvm(command, names_to_check=[vg, *devices])
 
     def remove(self, vg):
         command = ['vgremove', vg]
-        self.run_lvm(command)
+        self.run_lvm(command, names_to_check=vg)
 
     def create(self, vg, size=None, name=None, devs=None,
                options=None):
@@ -325,7 +326,7 @@ class VgsInfo(LvmInfo, template.BackendPool):
         # was not provided and is used as %PVS, otherwise let lvm decide
         # which devices to use from the pool.
         command.extend(devices)
-        self.run_lvm(command, noforce=True)
+        self.run_lvm(command, noforce=True, names_to_check=[vg, *devices, vg+"/"+lvname])
         path = "{0}/{1}/{2}".format(DM_DEV_DIR, vg, lvname)
         if 'virtsize' in options:
             thin_pool = lvname
@@ -358,7 +359,7 @@ class VgsInfo(LvmInfo, template.BackendPool):
         # If the source is not used we do not have to do anything
         if float(source['dev_used']) > 0.0:
             command = ['pvmove', '--atomic', source.name, target ]
-            self.run_lvm(command)
+            self.run_lvm(command, names_to_check=[vg, source, target])
 
         misc.send_udev_event(source.name, "change")
         misc.send_udev_event(target, "change")
@@ -396,7 +397,7 @@ class PvsInfo(LvmInfo, template.BackendDevice):
             return
         command = ['pvremove']
         command.extend(devices)
-        self.run_lvm(command)
+        self.run_lvm(command, names_to_check=devices)
 
 
 class LvsInfo(LvmInfo, template.BackendVolume):
@@ -476,7 +477,10 @@ class LvsInfo(LvmInfo, template.BackendVolume):
                 misc.do_umount(vol['mount'])
         lv = self._get_dev_name(lv)
         command = ['lvremove', lv]
-        self.run_lvm(command)
+        self.run_lvm(command, names_to_check=[
+            vol['pool_name'],
+            vol['pool_name'] + '/' + lv,
+        ])
 
     def resize(self, lv, size, resize_fs=True):
         lv = self._get_dev_name(lv)
@@ -487,7 +491,10 @@ class LvsInfo(LvmInfo, template.BackendVolume):
             self.problem.check(self.DEVICE_INACTIVE, lv)
         if resize_fs:
             command.insert(1, '-r')
-        self.run_lvm(command)
+        self.run_lvm(command, names_to_check=[
+            vol['pool_name'],
+            vol['pool_name'] + '/' + lv,
+        ])
 
     def snapshot(self, lv, destination, name, snap_size=None):
         vol = self[lv]
@@ -513,7 +520,11 @@ class LvsInfo(LvmInfo, template.BackendVolume):
         else:
             command = ['lvcreate', '--snapshot', '--name', name, lv]
 
-        self.run_lvm(command)
+        self.run_lvm(command, names_to_check=[
+            vol['pool_name'],
+            vol['pool_name'] + '/' + lv,
+            vol['pool_name'] + '/' + lv + '/'+name,
+        ])
 
 
 class SnapInfo(LvmInfo):
@@ -667,20 +678,20 @@ class ThinPool(LvmInfo, template.BackendPool):
             devices = [devices]
         command = ['vgextend', pool]
         command.extend(devices)
-        self.run_lvm(command)
-        # Now resize the thin-pool volume
         lv = vg['parent_pool'] + '/' + vg['lv_name']
+        self.run_lvm(command, names_to_check=[pool, lv, *devices])
+        # Now resize the thin-pool volume
         command = ['lvresize', lv]
         command.extend(devices)
         if vg['active'] == False:
             self.problem.check(self.DEVICE_INACTIVE, lv)
-        self.run_lvm(command)
+        self.run_lvm(command, names_to_check=[lv, devices])
 
     def remove(self, vg):
         vg = self[vg]
         lvname = vg['parent_pool'] + '/' + vg['lv_name']
         command = ['lvremove', lvname]
-        self.run_lvm(command)
+        self.run_lvm(command, names_to_check=[vg['parent_pool'], lvname])
 
     def create(self, vg, size=None, name=None, devs=None,
                options=None):
@@ -717,5 +728,5 @@ class ThinPool(LvmInfo, template.BackendPool):
         # Ignore options for non existing thin volumes somehow
         command = ['lvcreate', '-n', lvname, '-T', pool_volume,
                    '-V', str(virtsize) + 'K']
-        self.run_lvm(command)
+        self.run_lvm(command, names_to_check=[vg['parent_pool'], pool_volume, pool_volume+'/'+lvname])
         return "{0}/{1}/{2}".format(DM_DEV_DIR, vg['parent_pool'], lvname)

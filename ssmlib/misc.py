@@ -478,7 +478,10 @@ def humanize_size(arg):
 
 
 def run(cmd, show_cmd=False, stdout=False, stderr=True, can_fail=False,
-        stdin_data=None, return_stdout=True):
+        stdin_data=None, return_stdout=True, names_to_check=[]):
+
+    for name in names_to_check:
+        Blacklist().allowed_or_exception(name)
 
     stdin = None
     if stdin_data is not None:
@@ -995,5 +998,5 @@ class _Blacklist(object):
         if item in self._blacklist:
             if self.verbose:
                 print(f"Item {item} blacklisted.")
-            raise problem.BlacklistedItem(item)
+            raise problem.BlacklistedItem('The name of item \'{0}\' is blacklisted and cannot be used.'.format(item))
         return True

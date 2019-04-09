@@ -160,11 +160,11 @@ class Btrfs(template.Backend):
         if len(vol) > 0:
             self._store_data(vol, pool, fs_used, fs_size, pool_size, pool_name)
 
-    def run_btrfs(self, command):
+    def run_btrfs(self, command, names_to_check=[]):
         if not self._binary:
             self.problem.check(self.problem.TOOL_MISSING, 'btrfs')
         command.insert(0, "btrfs")
-        return misc.run(command, stdout=True)
+        return misc.run(command, stdout=True, names_to_check=names_to_check)
 
     def _list_subvolumes(self, mount, list_snapshots=False):
         command = ['btrfs', 'subvolume', 'list']
@@ -377,14 +377,14 @@ class BtrfsVolume(Btrfs, template.BackendVolume):
                 path = "{0}/{1}".format(mount, volume['path'])
             else:
                 path = volume['mount']
-            self.run_btrfs(['subvolume', 'delete', path])
+            self.run_btrfs(['subvolume', 'delete', path], names_to_check=[volume['pool_name'], volume['real_dev'], volume['pool_name']+'/'+vol])
             self._udev_checkpoint_fs(volume['pool_name'])
         else:
             self._remove_filesystem(vol)
 
     def check(self, vol):
         vol = self.data[vol]
-        return self.run_btrfs(['check', vol['real_dev']])[0]
+        return self.run_btrfs(['check', vol['real_dev']], names_to_check=[vol['real_dev']])[0]
 
     def resize(self, vol, size, resize_fs=True):
         vol = self.data[vol]
@@ -395,7 +395,7 @@ class BtrfsVolume(Btrfs, template.BackendVolume):
             self.problem.check(self.problem.NOT_SUPPORTED,
                                'Resizing btrfs subvolume')
         command = ['filesystem', 'resize', str(int(size)) + "K", vol['mount']]
-        self.run_btrfs(command)
+        self.run_btrfs(command, names_to_check=[vol['real_dev']])
         self._udev_checkpoint_fs(vol['pool_name'])
 
     def snapshot(self, vol, destination, name, snap_size=None):
@@ -415,7 +415,7 @@ class BtrfsVolume(Btrfs, template.BackendVolume):
                               "subvolumes")
 
         command = ['subvolume', 'snapshot', vol['mount'], destination]
-        self.run_btrfs(command)
+        self.run_btrfs(command, names_to_check=[vol['real_dev']])
 
 
 class BtrfsDev(Btrfs, template.BackendDevice):
@@ -488,7 +488,7 @@ class BtrfsPool(Btrfs, template.BackendPool):
         if self._can_btrfs_force(command):
             command.extend(['--force'])
         command.extend(devs)
-        misc.run(command, stdout=True)
+        misc.run(command, stdout=True, names_to_check=[pool, pool+'/'+name, *devs])
         misc.udev_checkpoint(devs)
         return name
 
@@ -512,7 +512,7 @@ class BtrfsPool(Btrfs, template.BackendPool):
             tmp = misc.temp_mount("UUID={0}".format(pool['uuid']))
             pool['mount'] = tmp
         command = ['device', 'delete', device, pool['mount']]
-        self.run_btrfs(command)
+        self.run_btrfs(command, names_to_check=[pool['pool_name'], device])
         self._udev_checkpoint_fs(pool['pool_name'])
 
     def new(self, pool, devices):
@@ -540,7 +540,7 @@ class BtrfsPool(Btrfs, template.BackendPool):
             command.extend(['--force'])
         command.extend(devices)
         command.append(pool['mount'])
-        self.run_btrfs(command)
+        self.run_btrfs(command, names_to_check=[pool['pool_name'], *devices])
         misc.udev_checkpoint(devices)
 
     def remove(self, pool):
@@ -570,7 +570,7 @@ class BtrfsPool(Btrfs, template.BackendPool):
                 vol = "{0}/{1}".format(self._pool[pool]['mount'], name)
 
             self._check_new_path(vol, name)
-            self.run_btrfs(['subvolume', 'create', vol])
+            self.run_btrfs(['subvolume', 'create', vol], names_to_check=[pool, *devs])
             vol = "{0}:{1}".format(pool, name)
         else:
             if len(devs) == 0:
@@ -605,7 +605,7 @@ class BtrfsPool(Btrfs, template.BackendPool):
             command.extend(['-f'])
         command.extend(['-B', source.name, target, pool['mount']])
 
-        self.run_btrfs(command)
+        self.run_btrfs(command, names_to_check=[pool['pool_name'], source, target])
         misc.send_udev_event(target, "change")
         self._udev_checkpoint_fs(pool['pool_name'])
 

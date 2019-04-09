@@ -71,14 +71,14 @@ class DmObject(template.Backend):
            not misc.check_binary('cryptsetup'):
             return
 
-    def run_cryptsetup(self, command, stdout=True, password=None):
+    def run_cryptsetup(self, command, stdout=True, password=None, names_to_check=[]):
         if not misc.check_binary('cryptsetup'):
             self.problem.check(self.problem.TOOL_MISSING, 'cryptsetup')
         command.insert(0, "cryptsetup")
         if password != None:
-            return misc.run(command, stdout=stdout, stdin_data=password)
+            return misc.run(command, stdout=stdout, stdin_data=password, names_to_check=names_to_check)
         else:
-            return misc.run(command, stdout=stdout)
+            return misc.run(command, stdout=stdout, names_to_check=names_to_check)
 
 
 class DmCryptPool(DmObject, template.BackendPool):
@@ -145,7 +145,7 @@ class DmCryptPool(DmObject, template.BackendPool):
             if self.options.interactive and not self.passphrase:
                 command.append('-y')
             command.extend(['luksFormat', device])
-            self.run_cryptsetup(command, password=self.passphrase)
+            self.run_cryptsetup(command, password=self.passphrase, names_to_check=[name, device])
         command = []
         command.extend(args)
         command.append('open')
@@ -154,7 +154,7 @@ class DmCryptPool(DmObject, template.BackendPool):
             size = str(float(size) * 2).split('.')[0]
             command.extend(['--size', size])
         command.extend(['--type', options['encrypt'], device, name])
-        self.run_cryptsetup(command, password=self.passphrase)
+        self.run_cryptsetup(command, password=self.passphrase, names_to_check=[name, device])
         return "{0}/mapper/{1}".format(DM_DEV_DIR, name)
 
     def _generate_devname(self):
@@ -240,7 +240,7 @@ class DmCryptVolume(DmObject, template.BackendVolume):
                                   [vol['dev_name'], vol['mount']]):
                 misc.do_umount(vol['mount'])
         command = ['remove', dm]
-        self.run_cryptsetup(command)
+        self.run_cryptsetup(command, names_to_check=[dm])
         misc.wipefs(vol['crypt_device'], CRYPT_SIGNATURES)
 
 
