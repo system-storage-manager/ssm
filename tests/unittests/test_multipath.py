@@ -167,13 +167,14 @@ class MultipathFunctionCheck(MockSystemDataSource):
         finally:
             sys.stdout = self._stdout
         vol_entries = 0
-        for line in self._stringio.getvalue().splitlines():
+        output = self._stringio.getvalue()
+        for line in output.splitlines():
             if line[:6] in ['------', 'Device']:
                 continue
             dev = line.split(" ")
             if dev[0] in ['/dev/dm-90', '/dev/dm-91']:
                 vol_entries += 1
-        self.assertEqual(vol_entries, 2, "List vol should show 2 entries for 2 multipath devices, but found {0}.".format(vol_entries))
+        self.assertEqual(vol_entries, 2, "List vol should show 2 entries for 2 multipath devices, but found {0}: {1}".format(vol_entries, output))
 
         # There should be no output for pools
         sys.stdout = self._stringio = StringIO()
