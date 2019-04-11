@@ -16,6 +16,49 @@ appreciated. See :ref:`Mailing list section <mailing-list>` section.
 
 .. _test-section:
 
+Env Variables
+-------------
+There are multiple environment variables that might be useful. If the variable
+is a flag, the safest way to use them is to use 'true' or '1' to enable it,
+and unset the flag to disable it. Values like 'false' doesn't guarantee that
+the flag will be really disabled.
+
+Variables affecting default names for storage objects::
+
+    export SSM_BTRFS_DEFAULT_POOL="btrfs_pool"
+    export SSM_CRYPT_DEFAULT_POOL="crypt_pool"
+    export SSM_CRYPT_DEFAULT_VOL_PREFIX="enc_vol"
+    export SSM_DM_DEFAULT_POOL="md_pool"
+    export SSM_LVM_DEFAULT_POOL="lvm_pool"
+
+Variable changing what backend is used as default for creating pools, same as
+the -b flag::
+
+    export SSM_DEFAULT_BACKEND="lvm"
+
+Enforce non-interactive run of ssm (always select default answer)::
+
+    export SSM_NONINTERACTIVE="true"
+
+Only storage objects starting with given prefix will be visible in SSM::
+
+    export SSM_PREFIX_FILTER="SSMPREFIX"
+
+Print out a full backtrace on errors. Without it, only a user-friendly message
+is printed out::
+
+    export SSM_PRINT_BACKTRACE="true"
+
+Directory in which bash tests are run and fake /dev/ dir is created::
+
+    export SSM_TEST_DIR="/path/to/ssm/tests/"
+
+Whether bash tests should be run against system installation instead of the local
+developmental version::
+
+    export SSM_TEST_SYSTEM="true"
+
+
 Tests
 -----
 
