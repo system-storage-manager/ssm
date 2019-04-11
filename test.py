@@ -268,6 +268,8 @@ if __name__ == '__main__':
                     help='run only unit tests')
     parser.add_argument('-l', '--logs', dest='want_logs', action='store_true',
                     help='if a bash test fails, print out it\'s log to stdout')
+    parser.add_argument('-s', '--system', dest='system', action='store_true',
+                    help='Test the installed version of ssm in system. Implies --bash.')
     parser.add_argument('tests', metavar='TEST', type=str, nargs='*',
                     help='Specific tests to be run. For bash tests, '
                          'that means either a full name (001-foo.sh), '
@@ -280,6 +282,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     check_system_dependencies()
+    if args.system:
+        args.bash = True
+        os.environ['SSM_TEST_SYSTEM'] = '1'
 
     run_all = not args.unit and not args.bash
     if args.unit and args.bash:

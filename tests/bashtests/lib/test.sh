@@ -15,8 +15,19 @@ TZ=UTC
 
 unset CDPATH
 export HERE=$(pwd)
+# If SSM_TEST_SYSTEM is set, run the test on a system-wide version instead of
+# local one.
+if [ "$SSM_TEST_SYSTEM" != "" ]; then
+	export SSM="$(which ssm)"
+	if [ "$SSM" == "" ]; then
+		echo "ERROR: SSM_TEST_SYSTEM set, but ssm wasn't found in PATH."
+		exit 1
+	fi
+else
+	export SSM="$HERE/../../bin/ssm.local"
+fi
+echo "Tested ssm executable is '$SSM'"
 export PATH=$HERE/lib:$PATH
-export SSM="$HERE/../../bin/ssm.local"
 chmod +x $SSM
 
 # grab some common utilities
