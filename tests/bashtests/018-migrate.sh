@@ -292,7 +292,6 @@ crypt_vol1=${CRYPT_VOL_PREFIX}001
 
 passwd="cai0ohMo8M"
 pass | ssm create $dev1
-check crypt_vol_field $crypt_vol1 type LUKS1
 check crypt_vol_field $crypt_vol1 device $dev1
 check list_table "$(ssm list vol)" $crypt_vol1 $SSM_CRYPT_DEFAULT_POOL none crypt
 
