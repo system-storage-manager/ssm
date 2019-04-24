@@ -1,3 +1,21 @@
+* Wed Apr 24 2019 Jan Tulak <jtulak@redhat.com> - v1.4
+- release 1.4 (Jan Tulak)
+- bashtests: add --units h to lvs/pvs/vgs (Jan Tulak)
+- tests: enhance 016-multipath.sh test (Jan Tulak)
+- tests: do not use info command in multipath test (Jan Tulak)
+- multipath: disallow multipath as default backend (Jan Tulak)
+- multipath: allow any string as mp dev id (Jan Tulak)
+- bashtests: test for delay in detecting xfs resize (Jan Tulak)
+- ssmlib: fix sizes in xfs_get_info for mounted devices (Jan Tulak)
+- ssmlib: correctly use real devname in xfs_get_info (Jan Tulak)
+- ssm: use LC_ALL=C when running tools from ssm (Jan Tulak)
+- ssmlib: fix pwquality support for python3 (Jan Tulak)
+- unittest: add a test for listing with xfs (Jan Tulak)
+- unittests: add fstype to _addVol (Jan Tulak)
+- unittests: allow to mount a mock volume after its creation (Jan Tulak)
+- ssmlib: do not use xfs_db for mounted filesystems, use statvfs (Nitin U. Yewale)
+
+
 * Mon Dec 10 2018 Jan Tulak <jtulak@redhat.com> - v1.3
 - ssm: Fix a case where xfs growing could fail (Jan Tulak)
 - lvm: index thinpools as vg-lv pair instead of just lv name (Jan Tulak)

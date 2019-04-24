@@ -1,6 +1,6 @@
 .\" Man page generated from reStructuredText.
 .
-.TH "SSM" "8" "December 10, 2018" "1.3" "System Storage Manager"
+.TH "SSM" "8" "Apr 24, 2019" "1.4" "System Storage Manager"
 .SH NAME
 ssm \- System Storage Manager: a single tool to manage your storage
 .
@@ -59,7 +59,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 ..
 .SH SYNOPSIS
 .sp
-\fBssm\fP [\fB\-h\fP] [\fB\-\-version\fP] [\fB\-v\fP] [\fB\-f\fP] [\fB\-b\fP BACKEND] [\fB\-n\fP] {check,resize,create,list,info,add,remove,snapshot,mount,migrate} ...
+\fBssm\fP [\fB\-h\fP] [\fB\-\-version\fP] [\fB\-v\fP] [\fB\-v**v] [\fP\-v**vv] [\fB\-f\fP] [\fB\-b\fP BACKEND] [\fB\-n\fP] {check,resize,create,list,info,add,remove,snapshot,mount,migrate} ...
 .sp
 \fBssm\fP \fBcreate\fP [\fB\-h\fP] [\fB\-s\fP SIZE] [\fB\-n\fP NAME] [\fB\-\-fstype\fP FSTYPE] [\fB\-r\fP LEVEL] [\fB\-I\fP STRIPESIZE] [\fB\-i\fP STRIPES] [\fB\-p\fP POOL] [\fB\-e\fP [{luks,plain}]] [\fB\-o\fP MNT_OPTIONS] [\fB\-v\fP VIRTUAL_SIZE] [\fBdevice\fP [\fBdevice\fP ...]] [mount]
 .sp
@@ -108,13 +108,19 @@ show program\(aqs version number and exit
 .B \-v\fP,\fB  \-\-verbose
 Show aditional information while executing.
 .TP
+.BI \-v\fB v
+Show yet more aditional information while executing.
+.TP
+.BI \-v\fB vv
+Show yet more aditional information while executing.
+.TP
 .B \-f\fP,\fB  \-\-force
 Force execution in the case where ssm has some doubts
 or questions.
 .TP
 .BI \-b \ BACKEND\fP,\fB \ \-\-backend \ BACKEND
 Choose backend to use. Currently you can choose from
-(lvm,btrfs,crypt,multipath).
+(lvm,btrfs,crypt).
 .TP
 .B \-n\fP,\fB  \-\-dry\-run
 Dry run. Do not do anything, just parse the command
