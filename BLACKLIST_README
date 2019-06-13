@@ -1,0 +1,3 @@
+NOTES:
+This is a RFC. It works, but it is probably not yet ideal. For example, template classes should contain some information about the blacklist. The way it works needs some further validation. Better tests. Etc.
+
