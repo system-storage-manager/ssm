@@ -2849,7 +2849,7 @@ class SsmParser(object):
         """
         parser_mount = self.subcommands.add_parser("mount",
                 help='''Mount a volume with file system to specified
-                     locaion.''')
+                     location.''')
         parser_mount.add_argument('-o', '--options',
                 help='''Options are specified with a -o flag followed by a
                      comma separated string of options. This option is
