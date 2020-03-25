@@ -2607,13 +2607,13 @@ class SsmParser(object):
         parser.add_argument('--version', action='version',
                 version='%(prog)s {0}'.format(VERSION))
         parser.add_argument('-v', '--verbose',
-                help="Show aditional information while executing.",
+                help="Show additional information while executing.",
                 action="store_true")
         parser.add_argument('-vv',
-                help="Show yet more aditional information while executing.",
+                help="Show yet more additional information while executing.",
                 action="store_true")
         parser.add_argument('-vvv',
-                help="Show yet more aditional information while executing.",
+                help="Show yet more additional information while executing.",
                 action="store_true")
         parser.add_argument('-f', '--force',
                 help="Force execution in the case where ssm has some " +
