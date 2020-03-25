@@ -435,7 +435,6 @@ class DeviceInfo(object):
             hide_dmnumbers.append(misc.get_dmnumber(name))
 
         mounts = misc.get_mounts('/dev/')
-        swaps = misc.get_swaps()
 
         for items in misc.get_partitions():
             devices = dict(zip(self.attrs, items))
@@ -454,7 +453,7 @@ class DeviceInfo(object):
             if devices['dev_name'] in mounts:
                 devices['mount'] = mounts[devices['dev_name']]['mp']
 
-        for item in swaps:
+        for item in misc.get_swaps():
             if item[0] in self.data:
                 self.data[item[0]]['mount'] = "SWAP"
 

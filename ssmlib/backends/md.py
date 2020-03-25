@@ -46,6 +46,7 @@ class MdRaid(template.Backend):
             return
 
         self.mounts = misc.get_mounts('/dev/md')
+        self.swaps = misc.get_swaps()
 
         mdnumber = misc.get_dmnumber("md")
 
@@ -81,6 +82,10 @@ class MdRaid(template.Backend):
         data['pool_name'] = SSM_DM_DEFAULT_POOL
         if data['dev_name'] in self.mounts:
             data['mount'] = self.mounts[data['dev_name']]['mp']
+        else:
+            for swap in self.swaps:
+                if swap[0] == data['dev_name']:
+                    data['mount'] = "SWAP"
         command = [MDADM, '--detail', devname]
         for line in misc.run(command, stderr=False)[1].split("\n"):
             array = line.split(":")

@@ -35,6 +35,7 @@ class Multipath(template.Backend):
         self.options = options
         self.output = None
         self.problem = problem.ProblemSet(options)
+        self.swaps = misc.get_swaps()
 
         for mp_dev in self.get_mp_devices():
             mpname = self.get_real_device(mp_dev)
@@ -102,6 +103,9 @@ class Multipath(template.Backend):
             data['dev_size'] = misc.get_device_size(data['dev_name'])
             data['nodes'] = []
             data['total_nodes'] = 0
+            for swap in self.swaps:
+                if swap[0] == data['dev_name']:
+                    data['mount'] = "SWAP"
             for entry in zip(output[2::2],output[3::2]):
                 """ Some string operations to remove the tree path symbols
                     from the output. """

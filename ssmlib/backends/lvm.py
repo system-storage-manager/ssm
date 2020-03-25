@@ -410,6 +410,7 @@ class LvsInfo(LvmInfo, template.BackendVolume):
                       'stripesize', 'type', 'lv_name', 'origin', 'attr', 'pool_lv']
         self.handle_fs = True
         self.mounts = misc.get_mounts('{0}/mapper'.format(DM_DEV_DIR))
+        self.swaps = misc.get_swaps()
         self._parse_data(command)
 
     def _fill_aditional_info(self, lv):
@@ -441,6 +442,10 @@ class LvsInfo(LvmInfo, template.BackendVolume):
 
         if lv['real_dev'] in self.mounts:
             lv['mount'] = self.mounts[lv['real_dev']]['mp']
+        else:
+            for swap in self.swaps:
+                if swap[0] == lv['real_dev']:
+                    lv['mount'] = "SWAP"
         self.parse_attr(lv, lv['attr'])
 
     def __getitem__(self, name):
