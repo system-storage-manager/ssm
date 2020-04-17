@@ -202,5 +202,8 @@ class MultipathFunctionCheck(MockSystemDataSource):
     def test_mp_mount(self):
         self._mountVol('mpatha', self.vol_data['/dev/mapper/mpatha']['pool_name'],
             ['/dev/sda', '/dev/sdb'], '/mnt/test1')
+        self._mountVol('mpathb', self.vol_data['/dev/mapper/mpathb']['pool_name'],
+            ["sdd", "sde", "sdf"], 'SWAP')
         mp = MultipathDevice(options=self._options)
         self.assertEqual(mp['mpatha']['mount'], '/mnt/test1')
+        self.assertEqual(mp['mpathb']['mount'], 'SWAP')

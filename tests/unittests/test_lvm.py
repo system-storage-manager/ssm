@@ -454,7 +454,7 @@ class LvmFunctionCheck(MockSystemDataSource):
         self._addPool('my_pool', ['/dev/sdc2', '/dev/sdc3', '/dev/sdc1'])
         self._addVol('vol001', 117283225, 1, 'default_pool', ['/dev/sda'],
                     '/mnt/test1')
-        self._addVol('vol002', 237284225, 1, 'my_pool', ['/dev/sda'])
+        self._addVol('vol002', 237284225, 1, 'my_pool', ['/dev/sda'], 'SWAP')
 
         # Simple mount test
         main.main("ssm mount /dev/default_pool/vol001 /mnt/test")
