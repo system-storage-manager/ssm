@@ -82,9 +82,11 @@ check crypt_vol_field $crypt_vol2 device $dev2
 check list_table "$(ssm list vol)" $crypt_vol2 $SSM_CRYPT_DEFAULT_POOL none crypt
 
 pass | ssm create -e luks $dev3
+mkswap ${DEV}/$crypt_vol3 && swapon ${DEV}/$crypt_vol3
 check crypt_vol_field $crypt_vol3 type $(crypt_vers $dev3)
 check crypt_vol_field $crypt_vol3 device $dev3
-check list_table "$(ssm list vol)" $crypt_vol3 $SSM_CRYPT_DEFAULT_POOL none crypt
+check list_table "$(ssm list vol)" $crypt_vol3 $SSM_CRYPT_DEFAULT_POOL none crypt SWAP
+swapoff ${DEV}/$crypt_vol3
 
 pass | ssm create --fs $fs1 -e plain $dev4 $mnt1
 check mountpoint $crypt_vol4 $mnt1
