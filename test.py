@@ -91,7 +91,8 @@ def check_system_dependencies():
         'multipath',
         'mkswap',
         'swapon',
-        'swapoff'
+        'swapoff',
+        'udevadm'
     ]
 
     missing = []

@@ -26,6 +26,7 @@ mpath_setup() {
 		1>&2 echo "An error occured with multipath configuration."
 		return 1
 	fi
+	udevadm settle --timeout 15
 	return 0
 }
 
