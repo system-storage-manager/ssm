@@ -92,7 +92,9 @@ def check_system_dependencies():
         'mkswap',
         'swapon',
         'swapoff',
-        'udevadm'
+        'udevadm',
+        'targetcli',
+        'iscsiadm'
     ]
 
     missing = []
