@@ -88,7 +88,13 @@ def check_system_dependencies():
         'lvm',
         'dmsetup',
         'cryptsetup',
-        'multipath'
+        'multipath',
+        'mkswap',
+        'swapon',
+        'swapoff',
+        'udevadm',
+        'targetcli',
+        'iscsiadm'
     ]
 
     missing = []

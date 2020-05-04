@@ -308,12 +308,15 @@ class MockSystemDataSource(unittest.TestCase):
             _addVol.
         """
         vol_path = "/dev/{0}/{1}".format(pool_name, vol_name)
+        real_dev = self.vol_data[vol_path]['real_dev']
         self.vol_data[vol_path]['mount'] = mount
         self.pool_data[pool_name]['mount'] =  mount
         self._addDir(mount)
         self.mount_data[devices[0]] = {'dev': devices[0], 'mp': mount,
                                         'root': "/"}
         self.mount_data[vol_path] = {'dev': vol_path, 'mp': mount,
+                                        'root': "/"}
+        self.mount_data[real_dev] = {'dev': real_dev, 'mp': mount,
                                         'root': "/"}
 
     def _addVol(self, vol_name, vol_size, stripes, pool_name, devices,

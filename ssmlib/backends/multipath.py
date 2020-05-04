@@ -27,6 +27,11 @@ __all__ = ["MultipathDevice"]
 
 MP="multipath"
 
+try:
+    DM_DEV_DIR = os.environ['DM_DEV_DIR']
+except KeyError:
+    DM_DEV_DIR = "/dev"
+
 class Multipath(template.Backend):
     def __init__(self, options, data=None):
         self.type = 'multipath'
@@ -35,6 +40,8 @@ class Multipath(template.Backend):
         self.options = options
         self.output = None
         self.problem = problem.ProblemSet(options)
+        self.swaps = misc.get_swaps()
+        self.mounts = misc.get_mounts('{0}/mapper'.format(DM_DEV_DIR))
 
         for mp_dev in self.get_mp_devices():
             mpname = self.get_real_device(mp_dev)
@@ -102,6 +109,13 @@ class Multipath(template.Backend):
             data['dev_size'] = misc.get_device_size(data['dev_name'])
             data['nodes'] = []
             data['total_nodes'] = 0
+            if data['dev_name'] in self.mounts:
+                data['mount'] = self.mounts[data['dev_name']]['mp']
+            else:
+                for swap in self.swaps:
+                    if swap[0] == data['dev_name']:
+                        data['mount'] = "SWAP"
+                        break
             for entry in zip(output[2::2],output[3::2]):
                 """ Some string operations to remove the tree path symbols
                     from the output. """

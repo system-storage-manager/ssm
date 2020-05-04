@@ -56,11 +56,11 @@ mpdev=$dev1
 mpath_setup $mpdev
 
 # get devices used in multipath
-USED_DEVS=$(multipath -ll | \
+MPATH=$(multipath -ll | grep md_block0 | cut -d " " -f 1)
+USED_DEVS=$(multipath -ll $MPATH | \
 	grep "[0-9]\+:[0-9]\+:[0-9]\+:[0:9]\+" | \
 	sed -e "s/.*[0-9]\+:[0-9]\+:[0-9]\+:[0:9]\+ //" -e "s/ .*//")
-MPATH=$(multipath -ll | head -n1 | cut -d " " -f 1)
-DM="/dev/$(multipath -ll | head -n1 | cut -d " " -f 3)"
+DM="/dev/$(multipath -ll | grep md_block0 | cut -d " " -f 3)"
 
 # basic listing
 check list_table "$(ssm list dev)" "^$DM" 9.80MB

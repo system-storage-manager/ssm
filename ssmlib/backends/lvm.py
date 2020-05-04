@@ -133,10 +133,10 @@ class LvmInfo(template.Backend):
                        for index in range(len(array))])
             if self._skip_data(row):
                 continue
-            self._fill_aditional_info(row)
+            self._fill_additional_info(row)
             self.data[self._data_index(row)] = row
 
-    def _fill_aditional_info(self, row):
+    def _fill_additional_info(self, row):
         pass
 
     def supported_since(self, version, string):
@@ -188,7 +188,7 @@ class VgsInfo(LvmInfo, template.BackendPool):
 
         self._parse_data(command)
 
-    def _fill_aditional_info(self, vg):
+    def _fill_additional_info(self, vg):
         vg['type'] = 'lvm'
         vg['pool_used'] = float(vg['pool_size']) - float(vg['pool_free'])
 
@@ -382,7 +382,7 @@ class PvsInfo(LvmInfo, template.BackendDevice):
     def _data_index(self, row):
         return misc.get_real_device(row['dev_name'])
 
-    def _fill_aditional_info(self, pv):
+    def _fill_additional_info(self, pv):
         pv['hide'] = False
         # If the device is not in any group we do not need this info
         # and we do not want it to show up in the device listing
@@ -410,9 +410,10 @@ class LvsInfo(LvmInfo, template.BackendVolume):
                       'stripesize', 'type', 'lv_name', 'origin', 'attr', 'pool_lv']
         self.handle_fs = True
         self.mounts = misc.get_mounts('{0}/mapper'.format(DM_DEV_DIR))
+        self.swaps = misc.get_swaps()
         self._parse_data(command)
 
-    def _fill_aditional_info(self, lv):
+    def _fill_additional_info(self, lv):
         lv['dev_name'] = "{0}/{1}/{2}".format(DM_DEV_DIR, lv['pool_name'],
                                               lv['lv_name'])
         if lv['origin'] or \
@@ -441,6 +442,11 @@ class LvsInfo(LvmInfo, template.BackendVolume):
 
         if lv['real_dev'] in self.mounts:
             lv['mount'] = self.mounts[lv['real_dev']]['mp']
+        else:
+            for swap in self.swaps:
+                if swap[0] == lv['real_dev']:
+                    lv['mount'] = "SWAP"
+                    break
         self.parse_attr(lv, lv['attr'])
 
     def __getitem__(self, name):
@@ -540,7 +546,7 @@ class SnapInfo(LvmInfo):
     def _data_index(self, row):
         return misc.get_real_device(row['dev_name'])
 
-    def _fill_aditional_info(self, snap):
+    def _fill_additional_info(self, snap):
         snap['dev_name'] = "{0}/{1}/{2}".format(DM_DEV_DIR, snap['pool_name'],
                                                 snap['lv_name'])
         snap['hide'] = False
@@ -599,7 +605,7 @@ class ThinPool(LvmInfo, template.BackendPool):
         global THIN_POOL_DATA
         THIN_POOL_DATA = self.data
 
-    def _fill_aditional_info(self, vg):
+    def _fill_additional_info(self, vg):
         vg['type'] = 'thin'
         vg['pool_name'] = os.path.basename(vg['lv_name'])
         vg['index_name'] = "{}/{}".format(vg['parent_pool'], vg['pool_name'])

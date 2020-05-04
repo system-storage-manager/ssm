@@ -435,7 +435,6 @@ class DeviceInfo(object):
             hide_dmnumbers.append(misc.get_dmnumber(name))
 
         mounts = misc.get_mounts('/dev/')
-        swaps = misc.get_swaps()
 
         for items in misc.get_partitions():
             devices = dict(zip(self.attrs, items))
@@ -454,7 +453,7 @@ class DeviceInfo(object):
             if devices['dev_name'] in mounts:
                 devices['mount'] = mounts[devices['dev_name']]['mp']
 
-        for item in swaps:
+        for item in misc.get_swaps():
             if item[0] in self.data:
                 self.data[item[0]]['mount'] = "SWAP"
 
@@ -2608,13 +2607,13 @@ class SsmParser(object):
         parser.add_argument('--version', action='version',
                 version='%(prog)s {0}'.format(VERSION))
         parser.add_argument('-v', '--verbose',
-                help="Show aditional information while executing.",
+                help="Show additional information while executing.",
                 action="store_true")
         parser.add_argument('-vv',
-                help="Show yet more aditional information while executing.",
+                help="Show yet more additional information while executing.",
                 action="store_true")
         parser.add_argument('-vvv',
-                help="Show yet more aditional information while executing.",
+                help="Show yet more additional information while executing.",
                 action="store_true")
         parser.add_argument('-f', '--force',
                 help="Force execution in the case where ssm has some " +

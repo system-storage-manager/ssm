@@ -65,6 +65,7 @@ class DmObject(template.Backend):
         super(DmObject, self).__init__(*args, **kwargs)
         self.type = 'crypt'
         self.mounts = misc.get_mounts('{0}/mapper'.format(DM_DEV_DIR))
+        self.swaps = misc.get_swaps()
         self.default_pool_name = SSM_CRYPT_DEFAULT_POOL
 
         if not misc.check_binary('dmsetup') or \
@@ -197,6 +198,11 @@ class DmCryptVolume(DmObject, template.BackendVolume):
             dm['real_dev'] = misc.get_real_device(devname)
             if dm['real_dev'] in self.mounts:
                 dm['mount'] = self.mounts[dm['real_dev']]['mp']
+            else:
+                for swap in self.swaps:
+                    if swap[0] == dm['real_dev']:
+                        dm['mount'] = "SWAP"
+                        break
 
             # Check if the device really exists in the system. In some cases
             # (tests) DM_DEV_DIR can lie to us, if that is the case, simple

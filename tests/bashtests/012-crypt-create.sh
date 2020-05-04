@@ -47,6 +47,11 @@ pass() {
 	echo -e "${passwd}\n${passwd}"
 }
 
+crypt_vers() {
+	vers=$(cryptsetup luksDump $1 | grep "^Version:" | cut -f2)
+	echo "LUKS$vers"
+}
+
 fs1=ext4
 fs2=ext4
 fs3=ext4
@@ -67,19 +72,21 @@ ssm remove ${DEV}/$crypt_vol1
 
 # Create encrypted volume
 pass | ssm create $dev1
-check crypt_vol_field $crypt_vol1 type LUKS1
+check crypt_vol_field $crypt_vol1 type $(crypt_vers $dev1)
 check crypt_vol_field $crypt_vol1 device $dev1
 check list_table "$(ssm list vol)" $crypt_vol1 $SSM_CRYPT_DEFAULT_POOL none crypt
 
 pass | ssm create $dev2 -e
-check crypt_vol_field $crypt_vol2 type LUKS1
+check crypt_vol_field $crypt_vol2 type $(crypt_vers $dev2)
 check crypt_vol_field $crypt_vol2 device $dev2
 check list_table "$(ssm list vol)" $crypt_vol2 $SSM_CRYPT_DEFAULT_POOL none crypt
 
 pass | ssm create -e luks $dev3
-check crypt_vol_field $crypt_vol3 type LUKS1
+mkswap ${DEV}/$crypt_vol3 && swapon ${DEV}/$crypt_vol3
+check crypt_vol_field $crypt_vol3 type $(crypt_vers $dev3)
 check crypt_vol_field $crypt_vol3 device $dev3
-check list_table "$(ssm list vol)" $crypt_vol3 $SSM_CRYPT_DEFAULT_POOL none crypt
+check list_table "$(ssm list vol)" $crypt_vol3 $SSM_CRYPT_DEFAULT_POOL none crypt SWAP
+swapoff ${DEV}/$crypt_vol3
 
 pass | ssm create --fs $fs1 -e plain $dev4 $mnt1
 check mountpoint $crypt_vol4 $mnt1
@@ -115,16 +122,16 @@ export SSM_DEFAULT_BACKEND='lvm'
 
 # Try a short password with backend different than crypt
 ! echo -e "a\na" | ssm create $dev1 -e luks
-! check crypt_vol_field $crypt_vol1 type LUKS1
+! check crypt_vol_field $crypt_vol1 type $(crypt_vers $dev1)
 # force it
 echo -e "a\na" | ssm -f create $dev1 -e luks
-check crypt_vol_field $crypt_vol1 type LUKS1
+check crypt_vol_field $crypt_vol1 type $(crypt_vers ${DEV}/${SSM_LVM_DEFAULT_POOL}-$lvol1)
 ssm remove ${DEV}/$crypt_vol1
 ssm -f remove $SSM_LVM_DEFAULT_POOL || true
 
 pass | ssm create --fs $fs3 $dev1 $dev2 $mnt1 -e
 check mountpoint $crypt_vol1 $mnt1
-check crypt_vol_field $crypt_vol1 type LUKS1
+check crypt_vol_field $crypt_vol1 type $(crypt_vers ${DEV}/${SSM_LVM_DEFAULT_POOL}-$lvol1)
 check crypt_vol_field $crypt_vol1 device ${SSM_LVM_DEFAULT_POOL}-$lvol1
 check list_table "$(ssm list vol)" $crypt_vol1 $SSM_CRYPT_DEFAULT_POOL none $fs3 none none crypt
 check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$lvol1 $SSM_LVM_DEFAULT_POOL none linear
@@ -138,7 +145,7 @@ check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$lvol2 $SSM_LVM_DEFAULT
 check lv_field $SSM_LVM_DEFAULT_POOL/$lvol2 pv_count 4
 
 pass | ssm create $dev5 -e luks
-check crypt_vol_field $crypt_vol3 type LUKS1
+check crypt_vol_field $crypt_vol3 type $(crypt_vers ${DEV}/${SSM_LVM_DEFAULT_POOL}-$lvol3)
 check crypt_vol_field $crypt_vol3 device ${SSM_LVM_DEFAULT_POOL}-$lvol3
 check list_table "$(ssm list vol)" $crypt_vol3 $SSM_CRYPT_DEFAULT_POOL none crypt
 check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$lvol3 $SSM_LVM_DEFAULT_POOL none linear
@@ -161,7 +168,7 @@ ssm  -f remove $SSM_LVM_DEFAULT_POOL
 ssm create $dev1 $dev2
 ssm list
 pass | ssm -b crypt create $DM_DEV_DIR/$SSM_LVM_DEFAULT_POOL/$lvol1
-check crypt_vol_field $crypt_vol1 type LUKS1
+check crypt_vol_field $crypt_vol1 type $(crypt_vers ${DEV}/${SSM_LVM_DEFAULT_POOL}-$lvol1)
 check crypt_vol_field $crypt_vol1 device ${SSM_LVM_DEFAULT_POOL}-$lvol1
 check list_table "$(ssm list vol)" $crypt_vol1 $SSM_CRYPT_DEFAULT_POOL none crypt
 check list_table "$(ssm list vol)" $SSM_LVM_DEFAULT_POOL/$lvol1 $SSM_LVM_DEFAULT_POOL none linear

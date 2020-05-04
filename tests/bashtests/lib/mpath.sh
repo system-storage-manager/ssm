@@ -26,6 +26,7 @@ mpath_setup() {
 		1>&2 echo "An error occured with multipath configuration."
 		return 1
 	fi
+	udevadm settle --timeout 15
 	return 0
 }
 
@@ -78,7 +79,7 @@ mpath_cleanup() {
 		head -n1 |\
 		tr -s ' ' |\
 		cut -d' ' -f3)
-	mdev=$(multipath -ll | head -n1 | cut -d' ' -f1)
+	mdev=$(multipath -ll | grep md_block0 | cut -d' ' -f1)
 	to_delete=$(lsblk | grep -B 1 $mdev | grep -v $mdev | cut -f1 -d ' ')
 	targetcli /iscsi/$iqn/tpg1/acls delete $hostiqn
 	targetcli /iscsi/$iqn/tpg1/portals delete 127.0.0.1 3260
