@@ -202,6 +202,7 @@ class DmCryptVolume(DmObject, template.BackendVolume):
                 for swap in self.swaps:
                     if swap[0] == dm['real_dev']:
                         dm['mount'] = "SWAP"
+                        break
 
             # Check if the device really exists in the system. In some cases
             # (tests) DM_DEV_DIR can lie to us, if that is the case, simple

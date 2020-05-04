@@ -86,6 +86,7 @@ class MdRaid(template.Backend):
             for swap in self.swaps:
                 if swap[0] == data['dev_name']:
                     data['mount'] = "SWAP"
+                    break
         command = [MDADM, '--detail', devname]
         for line in misc.run(command, stderr=False)[1].split("\n"):
             array = line.split(":")

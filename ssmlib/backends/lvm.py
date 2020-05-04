@@ -446,6 +446,7 @@ class LvsInfo(LvmInfo, template.BackendVolume):
             for swap in self.swaps:
                 if swap[0] == lv['real_dev']:
                     lv['mount'] = "SWAP"
+                    break
         self.parse_attr(lv, lv['attr'])
 
     def __getitem__(self, name):

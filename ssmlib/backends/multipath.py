@@ -115,6 +115,7 @@ class Multipath(template.Backend):
                 for swap in self.swaps:
                     if swap[0] == data['dev_name']:
                         data['mount'] = "SWAP"
+                        break
             for entry in zip(output[2::2],output[3::2]):
                 """ Some string operations to remove the tree path symbols
                     from the output. """
